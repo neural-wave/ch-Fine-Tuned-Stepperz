@@ -1,0 +1,9 @@
+.ontology_cache/
+patients/*
+!patients/.gitkeep
+ontologies/*
+!ontologies/.gitkeep
+*.output
+.DS_Store
+results/
+__pycache__/
