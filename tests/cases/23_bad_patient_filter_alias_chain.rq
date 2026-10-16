@@ -1,0 +1,14 @@
+# Il grafo paziente viene selezionato tramite una catena di alias e un filtro.
+PREFIX sphn: <https://biomedit.ch/rdf/sphn-schema/sphn#>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+
+SELECT (COUNT(DISTINCT ?lab) AS ?labs)
+WHERE {
+  GRAPH ?g {
+    ?dx a sphn:BilledDiagnosis .
+    ?lab a sphn:LabTestEvent .
+  }
+  BIND(STR(?g) AS ?first)
+  BIND(?first AS ?second)
+  FILTER(?second = "http://example.org/graph/patient-42")
+}

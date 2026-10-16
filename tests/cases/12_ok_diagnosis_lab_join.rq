@@ -1,0 +1,11 @@
+# Join tra diagnosi ed esami nello stesso grafo; restituisce solo conteggi distinti.
+PREFIX sphn: <https://biomedit.ch/rdf/sphn-schema/sphn#>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+
+SELECT (COUNT(DISTINCT ?g) AS ?patients) (COUNT(DISTINCT ?lab) AS ?labs)
+WHERE {
+  GRAPH ?g {
+    ?dx a sphn:BilledDiagnosis ; sphn:hasAdministrativeCase ?case .
+    ?lab a sphn:LabTestEvent ; sphn:hasAdministrativeCase ?case .
+  }
+}

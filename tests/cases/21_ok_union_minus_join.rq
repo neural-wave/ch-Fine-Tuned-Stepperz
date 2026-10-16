@@ -1,0 +1,15 @@
+# Combinazione di UNION, MINUS e join clinici, con output aggregato.
+PREFIX sphn: <https://biomedit.ch/rdf/sphn-schema/sphn#>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+
+SELECT (COUNT(DISTINCT ?g) AS ?patients)
+WHERE {
+  { GRAPH ?g { ?dx a sphn:OncologyDiagnosis . } }
+  UNION
+  { GRAPH ?g {
+      ?billed a sphn:BilledDiagnosis ; sphn:hasAdministrativeCase ?case .
+      ?lab a sphn:LabTestEvent ; sphn:hasAdministrativeCase ?case .
+    }
+  }
+  MINUS { GRAPH ?g { ?death a sphn:Death . } }
+}

@@ -1,0 +1,12 @@
+# Filtro numerico a intervallo su quantita e aggregazione globale.
+PREFIX sphn: <https://biomedit.ch/rdf/sphn-schema/sphn#>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+
+SELECT (COUNT(DISTINCT ?g) AS ?patients) (COUNT(DISTINCT ?measurement) AS ?measurements)
+WHERE {
+  GRAPH ?g {
+    ?measurement a sphn:Measurement ; sphn:hasQuantity ?quantity .
+    ?quantity sphn:hasValue ?value .
+    FILTER(?value >= 10 && ?value <= 100)
+  }
+}

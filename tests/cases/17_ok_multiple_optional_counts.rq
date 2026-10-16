@@ -1,0 +1,14 @@
+# Due rami OPTIONAL, con DISTINCT per evitare duplicazioni nei conteggi.
+PREFIX sphn: <https://biomedit.ch/rdf/sphn-schema/sphn#>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+
+SELECT (COUNT(DISTINCT ?g) AS ?patients)
+       (COUNT(DISTINCT ?lab) AS ?labs)
+       (COUNT(DISTINCT ?procedure) AS ?procedures)
+WHERE {
+  GRAPH ?g {
+    ?dx a sphn:BilledDiagnosis .
+    OPTIONAL { ?lab a sphn:LabTestEvent . }
+    OPTIONAL { ?procedure a sphn:BilledProcedure . }
+  }
+}

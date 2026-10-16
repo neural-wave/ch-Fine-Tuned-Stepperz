@@ -1,0 +1,9 @@
+# Un pattern clinico esterno non giustifica un ramo opzionale completamente libero.
+PREFIX sphn: <https://biomedit.ch/rdf/sphn-schema/sphn#>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+
+SELECT (COUNT(DISTINCT ?g) AS ?patients) (COUNT(?o) AS ?values)
+WHERE {
+  GRAPH ?g { ?dx a sphn:BilledDiagnosis . }
+  OPTIONAL { GRAPH ?other { ?s ?p ?o . } }
+}

@@ -7,3 +7,6 @@ ontologies/*
 .DS_Store
 results/
 __pycache__/
+.vscode/
+.pytest_cache/
+tests/results/

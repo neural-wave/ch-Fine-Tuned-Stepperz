@@ -1,0 +1,9 @@
+# Esclusione di pazienti con trattamento; nessun identificatore in uscita.
+PREFIX sphn: <https://biomedit.ch/rdf/sphn-schema/sphn#>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+
+SELECT (COUNT(DISTINCT ?g) AS ?patients_without_surgery)
+WHERE {
+  GRAPH ?g { ?dx a sphn:OncologyDiagnosis . }
+  MINUS { GRAPH ?g { ?surgery a sphn:OncologySurgery . } }
+}

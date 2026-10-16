@@ -1,0 +1,11 @@
+# MIN di un identificatore ne espone comunque un valore, anche se aggregato.
+PREFIX sphn: <https://biomedit.ch/rdf/sphn-schema/sphn#>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+
+SELECT (COUNT(DISTINCT ?g) AS ?patients) (MIN(?id) AS ?first_identifier)
+WHERE {
+  GRAPH ?g {
+    ?dx a sphn:BilledDiagnosis .
+    OPTIONAL { ?subject a sphn:SubjectPseudoIdentifier ; sphn:hasIdentifier ?id . }
+  }
+}

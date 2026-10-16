@@ -1,0 +1,15 @@
+# La sottoquery non rende anonimo un identificatore rinominato ed esportato.
+PREFIX sphn: <https://biomedit.ch/rdf/sphn-schema/sphn#>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+
+SELECT ?export
+WHERE {
+  { SELECT DISTINCT ?g WHERE {
+      GRAPH ?g {
+        ?dx a sphn:BilledDiagnosis .
+        ?lab a sphn:LabTestEvent .
+      }
+    }
+  }
+  BIND(STR(?g) AS ?export)
+}

@@ -1,0 +1,14 @@
+# Unione di due coorti con pattern tipizzati e filtro su una data.
+PREFIX sphn: <https://biomedit.ch/rdf/sphn-schema/sphn#>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+
+SELECT (COUNT(DISTINCT ?g) AS ?patients)
+WHERE {
+  { GRAPH ?g { ?dx a sphn:BilledDiagnosis . } }
+  UNION
+  { GRAPH ?g {
+      ?lab a sphn:LabTestEvent ; sphn:hasDateTime ?date .
+      FILTER(?date >= "2025-01-01T00:00:00"^^xsd:dateTime)
+    }
+  }
+}

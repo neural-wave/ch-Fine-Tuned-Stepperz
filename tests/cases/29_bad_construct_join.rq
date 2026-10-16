@@ -1,0 +1,15 @@
+# CONSTRUCT esporta le risorse cliniche collegate e i loro identificatori.
+PREFIX sphn: <https://biomedit.ch/rdf/sphn-schema/sphn#>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+
+CONSTRUCT {
+  ?dx a sphn:BilledDiagnosis ; sphn:hasSubjectPseudoIdentifier ?subject .
+  ?subject sphn:hasIdentifier ?id .
+}
+WHERE {
+  GRAPH ?g {
+    ?dx a sphn:BilledDiagnosis ; sphn:hasSubjectPseudoIdentifier ?subject .
+    ?subject sphn:hasIdentifier ?id .
+    OPTIONAL { ?lab a sphn:LabTestEvent . }
+  }
+}

@@ -1,0 +1,14 @@
+# OPTIONAL con filtro temporale su valori clinici e conteggio globale.
+PREFIX sphn: <https://biomedit.ch/rdf/sphn-schema/sphn#>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+
+SELECT (COUNT(DISTINCT ?g) AS ?patients) (COUNT(?performed) AS ?dated_labs)
+WHERE {
+  GRAPH ?g {
+    ?lab a sphn:LabTestEvent .
+    OPTIONAL {
+      ?lab sphn:hasDateTime ?performed .
+      FILTER(?performed >= "2025-01-01T00:00:00"^^xsd:dateTime)
+    }
+  }
+}

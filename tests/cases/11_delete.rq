@@ -1,0 +1,2 @@
+PREFIX sphn: <https://biomedit.ch/rdf/sphn-schema/sphn#>
+DELETE WHERE { GRAPH ?g { ?dx a sphn:BilledDiagnosis . } }

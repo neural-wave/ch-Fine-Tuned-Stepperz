@@ -1,0 +1,2 @@
+PREFIX sphn: <https://biomedit.ch/rdf/sphn-schema/sphn#>
+SELECT ?g (COUNT(?dx) AS ?diagnoses) WHERE { GRAPH ?g { ?dx a sphn:BilledDiagnosis . } } GROUP BY ?g

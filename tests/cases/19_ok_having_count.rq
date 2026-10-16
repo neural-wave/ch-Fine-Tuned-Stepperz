@@ -1,0 +1,14 @@
+# HAVING e ORDER BY basati su conteggi di coorte, non su ID.
+PREFIX sphn: <https://biomedit.ch/rdf/sphn-schema/sphn#>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+
+SELECT (COUNT(DISTINCT ?g) AS ?patients)
+WHERE {
+  GRAPH ?g {
+    ?dx a sphn:BilledDiagnosis ; sphn:hasRecordDateTime ?date .
+    FILTER(?date < "2026-01-01T00:00:00"^^xsd:dateTime)
+  }
+}
+HAVING(COUNT(DISTINCT ?g) >= 5)
+ORDER BY DESC(?patients)
+LIMIT 1

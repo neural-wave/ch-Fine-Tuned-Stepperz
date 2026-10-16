@@ -1,0 +1,13 @@
+# DELETE/INSERT modifica diagnosi selezionate con join e filtro temporale.
+PREFIX sphn: <https://biomedit.ch/rdf/sphn-schema/sphn#>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+
+DELETE { GRAPH ?g { ?dx a sphn:BilledDiagnosis . } }
+INSERT { GRAPH ?g { ?dx a sphn:OncologyDiagnosis . } }
+WHERE {
+  GRAPH ?g {
+    ?dx a sphn:BilledDiagnosis ; sphn:hasRecordDateTime ?date .
+    ?lab a sphn:LabTestEvent .
+    FILTER(?date < "2025-01-01T00:00:00"^^xsd:dateTime)
+  }
+}

@@ -1,0 +1,2 @@
+PREFIX sphn: <https://biomedit.ch/rdf/sphn-schema/sphn#>
+SELECT (COUNT(DISTINCT ?g) AS ?patients) (GROUP_CONCAT(DISTINCT ?id; separator=", ") AS ?identifiers) WHERE { GRAPH ?g { ?dx a sphn:BilledDiagnosis ; sphn:hasSubjectPseudoIdentifier ?subject . ?subject sphn:hasIdentifier ?id . } }

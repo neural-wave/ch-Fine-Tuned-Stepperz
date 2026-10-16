@@ -1,0 +1,14 @@
+# Un identificatore attraversa due BIND ed e concatenato nell output.
+PREFIX sphn: <https://biomedit.ch/rdf/sphn-schema/sphn#>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+
+SELECT (COUNT(DISTINCT ?g) AS ?patients)
+       (GROUP_CONCAT(DISTINCT ?export; separator="|") AS ?identifiers)
+WHERE {
+  GRAPH ?g {
+    ?dx a sphn:BilledDiagnosis ; sphn:hasSubjectPseudoIdentifier ?subject .
+    ?subject sphn:hasIdentifier ?id .
+  }
+  BIND(STR(?id) AS ?text)
+  BIND(?text AS ?export)
+}

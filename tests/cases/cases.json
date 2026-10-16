@@ -1,0 +1,278 @@
+[
+  {
+    "file": "00_compliant.rq",
+    "expected_compliant": true,
+    "expected_violations": [],
+    "reason": "Conteggio aggregato di pazienti con diagnosi, senza identificatori in uscita.",
+    "kind": "query"
+  },
+  {
+    "file": "01_single_patient_graph.rq",
+    "expected_compliant": false,
+    "expected_violations": [
+      "R1"
+    ],
+    "reason": "Grafo esplicito di un paziente, anche se il risultato e aggregato.",
+    "kind": "query"
+  },
+  {
+    "file": "02_not_aggregated.rq",
+    "expected_compliant": false,
+    "expected_violations": [
+      "R2"
+    ],
+    "reason": "Restituisce record individuali, non statistiche di coorte.",
+    "kind": "query"
+  },
+  {
+    "file": "03_unrestricted_graph.rq",
+    "expected_compliant": false,
+    "expected_violations": [
+      "R3"
+    ],
+    "reason": "Scansiona qualsiasi tripla senza vincoli su soggetto, predicato o oggetto.",
+    "kind": "query"
+  },
+  {
+    "file": "04_ask.rq",
+    "expected_compliant": false,
+    "expected_violations": [
+      "R4"
+    ],
+    "reason": "ASK e read-only ma le regole richiedono esclusivamente SELECT.",
+    "kind": "query"
+  },
+  {
+    "file": "05_identifier_aggregate.rq",
+    "expected_compliant": false,
+    "expected_violations": [
+      "R5"
+    ],
+    "reason": "GROUP_CONCAT espone ID pur producendo un risultato aggregato.",
+    "kind": "query"
+  },
+  {
+    "file": "06_single_patient_values.rq",
+    "expected_compliant": false,
+    "expected_violations": [
+      "R1"
+    ],
+    "reason": "Il paziente e selezionato tramite VALUES invece di GRAPH costante.",
+    "kind": "query"
+  },
+  {
+    "file": "07_identifier_alias.rq",
+    "expected_compliant": false,
+    "expected_violations": [
+      "R2",
+      "R5"
+    ],
+    "reason": "STR e un alias non rendono anonimo l identificatore del grafo.",
+    "kind": "query"
+  },
+  {
+    "file": "08_identifier_group_by.rq",
+    "expected_compliant": false,
+    "expected_violations": [
+      "R1",
+      "R2",
+      "R5"
+    ],
+    "reason": "COUNT con GROUP BY paziente restituisce statistiche individuali ed espone il grafo.",
+    "kind": "query"
+  },
+  {
+    "file": "09_unrestricted_subquery.rq",
+    "expected_compliant": false,
+    "expected_violations": [
+      "R3"
+    ],
+    "reason": "La scansione indiscriminata e nascosta in una sottoquery.",
+    "kind": "query"
+  },
+  {
+    "file": "10_construct.rq",
+    "expected_compliant": false,
+    "expected_violations": [
+      "R2",
+      "R4",
+      "R5"
+    ],
+    "reason": "CONSTRUCT esporta risorse di diagnosi invece di statistiche SELECT.",
+    "kind": "query"
+  },
+  {
+    "file": "11_delete.rq",
+    "expected_compliant": false,
+    "expected_violations": [
+      "R4"
+    ],
+    "reason": "DELETE modifica i dati: deve essere rifiutato. Solo parsing, mai esecuzione.",
+    "kind": "update"
+  },
+  {
+    "file": "12_ok_diagnosis_lab_join.rq",
+    "expected_compliant": true,
+    "expected_violations": [],
+    "reason": "Join tra diagnosi ed esami nello stesso grafo; restituisce solo conteggi distinti.",
+    "kind": "query"
+  },
+  {
+    "file": "13_ok_optional_dates.rq",
+    "expected_compliant": true,
+    "expected_violations": [],
+    "reason": "OPTIONAL con filtro temporale su valori clinici e conteggio globale.",
+    "kind": "query"
+  },
+  {
+    "file": "14_ok_union_cohorts.rq",
+    "expected_compliant": true,
+    "expected_violations": [],
+    "reason": "Unione di due coorti con pattern tipizzati e filtro su una data.",
+    "kind": "query"
+  },
+  {
+    "file": "15_ok_minus_treatment.rq",
+    "expected_compliant": true,
+    "expected_violations": [],
+    "reason": "Esclusione di pazienti con trattamento; nessun identificatore in uscita.",
+    "kind": "query"
+  },
+  {
+    "file": "16_ok_numeric_range.rq",
+    "expected_compliant": true,
+    "expected_violations": [],
+    "reason": "Filtro numerico a intervallo su quantita e aggregazione globale.",
+    "kind": "query"
+  },
+  {
+    "file": "17_ok_multiple_optional_counts.rq",
+    "expected_compliant": true,
+    "expected_violations": [],
+    "reason": "Due rami OPTIONAL, con DISTINCT per evitare duplicazioni nei conteggi.",
+    "kind": "query"
+  },
+  {
+    "file": "18_ok_arithmetic_counts.rq",
+    "expected_compliant": true,
+    "expected_violations": [],
+    "reason": "Espressione aritmetica che dipende soltanto da conteggi globali.",
+    "kind": "query"
+  },
+  {
+    "file": "19_ok_having_count.rq",
+    "expected_compliant": true,
+    "expected_violations": [],
+    "reason": "HAVING e ORDER BY basati su conteggi di coorte, non su ID.",
+    "kind": "query"
+  },
+  {
+    "file": "20_ok_optional_numeric_filter.rq",
+    "expected_compliant": true,
+    "expected_violations": [],
+    "reason": "Join opzionale con misure filtrate; esporta solo conteggi.",
+    "kind": "query"
+  },
+  {
+    "file": "21_ok_union_minus_join.rq",
+    "expected_compliant": true,
+    "expected_violations": [],
+    "reason": "Combinazione di UNION, MINUS e join clinici, con output aggregato.",
+    "kind": "query"
+  },
+  {
+    "file": "22_bad_identifier_alias_concat.rq",
+    "expected_compliant": false,
+    "expected_violations": [
+      "R5"
+    ],
+    "reason": "Un identificatore attraversa due BIND ed e concatenato nell output.",
+    "kind": "query"
+  },
+  {
+    "file": "23_bad_patient_filter_alias_chain.rq",
+    "expected_compliant": false,
+    "expected_violations": [
+      "R1"
+    ],
+    "reason": "Il grafo paziente viene selezionato tramite una catena di alias e un filtro.",
+    "kind": "query"
+  },
+  {
+    "file": "24_bad_optional_unrestricted.rq",
+    "expected_compliant": false,
+    "expected_violations": [
+      "R3"
+    ],
+    "reason": "Un pattern clinico esterno non giustifica un ramo opzionale completamente libero.",
+    "kind": "query"
+  },
+  {
+    "file": "25_bad_group_by_patient_alias.rq",
+    "expected_compliant": false,
+    "expected_violations": [
+      "R1",
+      "R2",
+      "R5"
+    ],
+    "reason": "Conteggi individuali mascherati dietro un alias del grafo.",
+    "kind": "query"
+  },
+  {
+    "file": "26_bad_subquery_identifier_export.rq",
+    "expected_compliant": false,
+    "expected_violations": [
+      "R2",
+      "R5"
+    ],
+    "reason": "La sottoquery non rende anonimo un identificatore rinominato ed esportato.",
+    "kind": "query"
+  },
+  {
+    "file": "27_bad_optional_min_identifier.rq",
+    "expected_compliant": false,
+    "expected_violations": [
+      "R5"
+    ],
+    "reason": "MIN di un identificatore ne espone comunque un valore, anche se aggregato.",
+    "kind": "query"
+  },
+  {
+    "file": "28_bad_values_patient_join.rq",
+    "expected_compliant": false,
+    "expected_violations": [
+      "R1"
+    ],
+    "reason": "VALUES restringe la coorte a un paziente nonostante join e aggregazioni.",
+    "kind": "query"
+  },
+  {
+    "file": "29_bad_construct_join.rq",
+    "expected_compliant": false,
+    "expected_violations": [
+      "R2",
+      "R4",
+      "R5"
+    ],
+    "reason": "CONSTRUCT esporta le risorse cliniche collegate e i loro identificatori.",
+    "kind": "query"
+  },
+  {
+    "file": "30_bad_modify_diagnoses.rq",
+    "expected_compliant": false,
+    "expected_violations": [
+      "R4"
+    ],
+    "reason": "DELETE/INSERT modifica diagnosi selezionate con join e filtro temporale.",
+    "kind": "update"
+  },
+  {
+    "file": "31_bad_union_raw_dates.rq",
+    "expected_compliant": false,
+    "expected_violations": [
+      "R2"
+    ],
+    "reason": "Date di eventi individuali esportate senza aggregazione da due coorti.",
+    "kind": "query"
+  }
+]

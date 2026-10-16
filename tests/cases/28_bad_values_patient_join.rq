@@ -1,0 +1,12 @@
+# VALUES restringe la coorte a un paziente nonostante join e aggregazioni.
+PREFIX sphn: <https://biomedit.ch/rdf/sphn-schema/sphn#>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+
+SELECT (COUNT(DISTINCT ?dx) AS ?diagnoses) (COUNT(DISTINCT ?lab) AS ?labs)
+WHERE {
+  VALUES ?g { <http://example.org/graph/patient-42> }
+  GRAPH ?g {
+    ?dx a sphn:BilledDiagnosis ; sphn:hasAdministrativeCase ?case .
+    OPTIONAL { ?lab a sphn:LabTestEvent ; sphn:hasAdministrativeCase ?case . }
+  }
+}

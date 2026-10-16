@@ -1,0 +1,149 @@
+@prefix ns1: <http://example.org/graph/> .
+@prefix ns2: <https://biomedit.ch/rdf/sphn-schema/sphn#> .
+@prefix ns3: <urn:synthetic:> .
+
+ns1:synthetic-0006 {
+    ns3:diagnosis-0006-0 a ns2:BilledDiagnosis ;
+        ns2:hasSubjectPseudoIdentifier ns3:patient-0006 .
+
+    ns3:patient-0006 a ns2:SubjectPseudoIdentifier ;
+        ns2:hasIdentifier "SYNTH-0006" ;
+        ns3:email "synthetic-0006@example.invalid" ;
+        ns3:name "Persona fittizia 0006" .
+}
+
+ns1:synthetic-0007 {
+    ns3:diagnosis-0007-0 a ns2:BilledDiagnosis ;
+        ns2:hasSubjectPseudoIdentifier ns3:patient-0007 .
+
+    ns3:patient-0007 a ns2:SubjectPseudoIdentifier ;
+        ns2:hasIdentifier "SYNTH-0007" ;
+        ns3:email "synthetic-0007@example.invalid" ;
+        ns3:name "Persona fittizia 0007" .
+}
+
+ns1:synthetic-0002 {
+    ns3:diagnosis-0002-0 a ns2:BilledDiagnosis ;
+        ns2:hasSubjectPseudoIdentifier ns3:patient-0002 .
+
+    ns3:patient-0002 a ns2:SubjectPseudoIdentifier ;
+        ns2:hasIdentifier "SYNTH-0002" ;
+        ns3:email "synthetic-0002@example.invalid" ;
+        ns3:name "Persona fittizia 0002" .
+}
+
+ns1:synthetic-0003 {
+    ns3:diagnosis-0003-0 a ns2:BilledDiagnosis ;
+        ns2:hasSubjectPseudoIdentifier ns3:patient-0003 .
+
+    ns3:diagnosis-0003-1 a ns2:BilledDiagnosis ;
+        ns2:hasSubjectPseudoIdentifier ns3:patient-0003 .
+
+    ns3:diagnosis-0003-2 a ns2:BilledDiagnosis ;
+        ns2:hasSubjectPseudoIdentifier ns3:patient-0003 .
+
+    ns3:patient-0003 a ns2:SubjectPseudoIdentifier ;
+        ns2:hasIdentifier "SYNTH-0003" ;
+        ns3:email "synthetic-0003@example.invalid" ;
+        ns3:name "Persona fittizia 0003" .
+}
+
+ns1:synthetic-0005 {
+    ns3:diagnosis-0005-0 a ns2:BilledDiagnosis ;
+        ns2:hasSubjectPseudoIdentifier ns3:patient-0005 .
+
+    ns3:patient-0005 a ns2:SubjectPseudoIdentifier ;
+        ns2:hasIdentifier "SYNTH-0005" ;
+        ns3:email "synthetic-0005@example.invalid" ;
+        ns3:name "Persona fittizia 0005" .
+}
+
+ns1:synthetic-0011 {
+    ns3:patient-0011 a ns2:SubjectPseudoIdentifier ;
+        ns2:hasIdentifier "SYNTH-0011" ;
+        ns3:email "synthetic-0011@example.invalid" ;
+        ns3:name "Persona fittizia 0011" .
+}
+
+ns1:synthetic-0004 {
+    ns3:diagnosis-0004-0 a ns2:BilledDiagnosis ;
+        ns2:hasSubjectPseudoIdentifier ns3:patient-0004 .
+
+    ns3:diagnosis-0004-1 a ns2:BilledDiagnosis ;
+        ns2:hasSubjectPseudoIdentifier ns3:patient-0004 .
+
+    ns3:patient-0004 a ns2:SubjectPseudoIdentifier ;
+        ns2:hasIdentifier "SYNTH-0004" ;
+        ns3:email "synthetic-0004@example.invalid" ;
+        ns3:name "Persona fittizia 0004" .
+}
+
+ns1:synthetic-0000 {
+    ns3:diagnosis-0000-0 a ns2:BilledDiagnosis ;
+        ns2:hasSubjectPseudoIdentifier ns3:patient-0000 .
+
+    ns3:diagnosis-0000-1 a ns2:BilledDiagnosis ;
+        ns2:hasSubjectPseudoIdentifier ns3:patient-0000 .
+
+    ns3:diagnosis-0000-2 a ns2:BilledDiagnosis ;
+        ns2:hasSubjectPseudoIdentifier ns3:patient-0000 .
+
+    ns3:lab-0 a ns2:LabTestEvent .
+
+    ns3:lab-1 a ns2:LabTestEvent .
+
+    ns3:lab-2 a ns2:LabTestEvent .
+
+    ns3:lab-3 a ns2:LabTestEvent .
+
+    ns3:lab-4 a ns2:LabTestEvent .
+
+    ns3:lab-5 a ns2:LabTestEvent .
+
+    ns3:lab-6 a ns2:LabTestEvent .
+
+    ns3:lab-7 a ns2:LabTestEvent .
+
+    ns3:lab-8 a ns2:LabTestEvent .
+
+    ns3:lab-9 a ns2:LabTestEvent .
+
+    ns3:rare-diagnosis a ns2:OncologyDiagnosis .
+
+    ns3:patient-0000 a ns2:SubjectPseudoIdentifier ;
+        ns2:hasIdentifier "SYNTH-0000" ;
+        ns3:email "synthetic-0000@example.invalid" ;
+        ns3:name "Persona fittizia 0000" .
+}
+
+ns1:synthetic-0001 {
+    ns3:diagnosis-0001-0 a ns2:BilledDiagnosis ;
+        ns2:hasSubjectPseudoIdentifier ns3:patient-0001 .
+
+    ns3:patient-0001 a ns2:SubjectPseudoIdentifier ;
+        ns2:hasIdentifier "SYNTH-0001" ;
+        ns3:email "synthetic-0001@example.invalid" ;
+        ns3:name "Persona fittizia 0001" .
+}
+
+ns1:synthetic-0010 {
+    ns3:patient-0010 a ns2:SubjectPseudoIdentifier ;
+        ns2:hasIdentifier "SYNTH-0010" ;
+        ns3:email "synthetic-0010@example.invalid" ;
+        ns3:name "Persona fittizia 0010" .
+}
+
+ns1:synthetic-0009 {
+    ns3:patient-0009 a ns2:SubjectPseudoIdentifier ;
+        ns2:hasIdentifier "SYNTH-0009" ;
+        ns3:email "synthetic-0009@example.invalid" ;
+        ns3:name "Persona fittizia 0009" .
+}
+
+ns1:synthetic-0008 {
+    ns3:patient-0008 a ns2:SubjectPseudoIdentifier ;
+        ns2:hasIdentifier "SYNTH-0008" ;
+        ns3:email "synthetic-0008@example.invalid" ;
+        ns3:name "Persona fittizia 0008" .
+}
+

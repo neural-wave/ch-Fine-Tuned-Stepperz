@@ -137,7 +137,7 @@ Loading SNOMED CT-sized files takes several minutes the first time; after that, 
 
 Three interchangeable ways in:
 
-```bash
+```bash 
 ./query.sh queries/classes.rq                          # from a file, with timing
 ./query.sh 'SELECT * WHERE { GRAPH ?g { ?s ?p ?o } } LIMIT 10'
 docker exec -it hackathon-virtuoso isql 1111 dba dba   # interactive isql shell
@@ -238,3 +238,20 @@ the problem.
 
 
 ATTENTION:  SNOMED-CT terminology must not use or distribute the SNOMED files outside the hackathon. If participants wish to use SNOMED outside the hackathon, they should also register via the MLDS and apply for a licence.
+
+## Analizzatore SPARQL in Python
+
+Il codice Python aggiunto e organizzato in:
+
+- `sparql_analyzer/`: parser, validatore deterministico e demo locale.
+- `tests/`: test pytest, query di esempio e risultati separati.
+- `docs/sparql.md`: utilizzo, policy e limiti del validatore.
+
+```powershell
+python -m pip install -r requirements-test.txt
+python -m pytest -v
+python -m sparql_analyzer.demo
+python -m tests.export_results
+```
+
+Vedi [test](tests/README.md) e [documentazione](docs/sparql.md).

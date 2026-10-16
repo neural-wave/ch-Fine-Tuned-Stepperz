@@ -1,0 +1,15 @@
+# Join opzionale con misure filtrate; esporta solo conteggi.
+PREFIX sphn: <https://biomedit.ch/rdf/sphn-schema/sphn#>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+
+SELECT (COUNT(DISTINCT ?g) AS ?patients) (COUNT(DISTINCT ?measurement) AS ?high_measurements)
+WHERE {
+  GRAPH ?g {
+    ?dx a sphn:BilledDiagnosis .
+    OPTIONAL {
+      ?measurement a sphn:Measurement ; sphn:hasQuantity ?quantity .
+      ?quantity sphn:hasValue ?value .
+      FILTER(?value > 100)
+    }
+  }
+}

@@ -1,0 +1,20 @@
+# Date di eventi individuali esportate senza aggregazione da due coorti.
+PREFIX sphn: <https://biomedit.ch/rdf/sphn-schema/sphn#>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+
+SELECT DISTINCT ?date
+WHERE {
+  { GRAPH ?g {
+      ?dx a sphn:BilledDiagnosis ; sphn:hasRecordDateTime ?date .
+      ?lab a sphn:LabTestEvent .
+    }
+  }
+  UNION
+  { GRAPH ?g {
+      ?procedure a sphn:BilledProcedure ; sphn:hasStartDateTime ?date .
+    }
+  }
+  FILTER(?date >= "2025-01-01T00:00:00"^^xsd:dateTime)
+}
+ORDER BY ?date
+LIMIT 100
