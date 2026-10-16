@@ -13,7 +13,7 @@ def main():
     root = Path(__file__).parent
     path = root / "data/synthetic/cohort.trig"
     if not path.is_file():
-        raise SystemExit("Prima eseguire: python -m tests.generate_synthetic_data")
+        raise SystemExit("Prima eseguire: uv run python -m tests.generate_synthetic_data")
     dataset = Dataset()
     dataset.parse(path, format="trig")
     scenarios = [

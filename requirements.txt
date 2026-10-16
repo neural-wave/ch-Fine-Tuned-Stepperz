@@ -1,2 +1,0 @@
-rdflib==6.3.2
-pyparsing==3.2.1

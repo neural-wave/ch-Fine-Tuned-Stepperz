@@ -1,0 +1,18 @@
+[project]
+name = "sparql-analyzer"
+version = "0.1.0"
+description = "Analisi SPARQL e controlli deterministici di compliance"
+requires-python = ">=3.12"
+dependencies = [
+    "rdflib==6.3.2",
+    "pyparsing==3.2.1",
+]
+
+[dependency-groups]
+dev = ["pytest==9.1.1"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+pythonpath = ["."]
+addopts = "-ra"

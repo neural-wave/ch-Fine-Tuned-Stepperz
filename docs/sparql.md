@@ -6,10 +6,10 @@ statiche. A parita di query, policy e versioni delle dipendenze restituisce
 lo stesso risultato.
 
 ```powershell
-python -m sparql_analyzer.compliance tests/cases/00_compliant.rq
-python -m sparql_analyzer.compliance tests/cases/07_identifier_alias.rq --out verdict.json
-python -m tests.export_results
-python -m pytest -v
+uv run python -m sparql_analyzer.compliance tests/cases/00_compliant.rq
+uv run python -m sparql_analyzer.compliance tests/cases/07_identifier_alias.rq --out verdict.json
+uv run python -m tests.export_results
+uv run pytest -v
 ```
 
 Il CLI restituisce exit code 0 solo per query approvate, 1 per query bloccate.
@@ -71,19 +71,19 @@ I test pytest comprendono 19 regressioni e i 32 file .rq, ciascuno come test
 separato tramite @pytest.mark.parametrize. Per eseguirne uno: 
 
 ```powershell
-python -m pytest -v -k identifier_alias
+uv run pytest -v -k identifier_alias
 ```
 
-Dipendenze dei test: `python -m pip install -r requirements-test.txt`.
+Dipendenze dei test: `uv sync --locked`.
 
 ## Alberi e demo locale
 
 Dalla radice del progetto:
 
 ```powershell
-python -m sparql_analyzer.demo
-python -m sparql_analyzer.demo --query queries/classes.rq --out tests/results/manual
-python -m tests.export_results
+uv run python -m sparql_analyzer.demo
+uv run python -m sparql_analyzer.demo --query queries/classes.rq --out tests/results/manual
+uv run python -m tests.export_results
 ```
 
 Il demo senza --query esegue una query di conteggio in memoria su dati fittizi
@@ -96,9 +96,9 @@ contiene il riepilogo. Sono rigenerabili con il comando export_results.
 ## Controllo runtime locale
 
 ```powershell
-python -m tests.generate_synthetic_data --patients 12 --seed 42
-python -m tests.demo_runtime
-python -m pytest -v
+uv run python -m tests.generate_synthetic_data --patients 12 --seed 42
+uv run python -m tests.demo_runtime
+uv run pytest -v
 ```
 
 Il generatore locale tests/generate_synthetic_data.py crea esclusivamente dati

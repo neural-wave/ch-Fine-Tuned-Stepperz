@@ -248,10 +248,30 @@ Il codice Python aggiunto e organizzato in:
 - `docs/sparql.md`: utilizzo, policy e limiti del validatore.
 
 ```powershell
-python -m pip install -r requirements-test.txt
-python -m pytest -v
-python -m sparql_analyzer.demo
-python -m tests.export_results
+uv sync --locked
+uv run pytest -v
+uv run python -m sparql_analyzer.demo
+uv run python -m tests.export_results
 ```
 
 Vedi [test](tests/README.md) e [documentazione](docs/sparql.md).
+
+### Ambiente Python con uv
+
+Le dipendenze sono definite in `pyproject.toml`; `uv.lock` fissa anche quelle
+transitive. Versione Python richiesta: 3.12 o superiore, con 3.12 come default.
+Il gruppo `dev` include pytest ed e installato normalmente da `uv sync`.
+
+Installazione di uv: [guida ufficiale](https://docs.astral.sh/uv/getting-started/installation/).
+Dopo il clone eseguire `uv sync --locked`, quindi `uv run pytest -v`.
+Non serve attivare manualmente l'ambiente `.venv`.
+
+- Aggiungere una dipendenza: `uv add nome-pacchetto`.
+- Aggiungere un tool di sviluppo: `uv add --dev nome-pacchetto`.
+- Ambiente senza dipendenze di sviluppo: `uv sync --locked --no-dev`.
+- Committare insieme `pyproject.toml` e `uv.lock`; escludere `.venv/`.
+
+In VS Code selezionare l'interprete `.venv` del progetto con
+**Python: Select Interpreter**, poi aggiornare il pannello Testing.
+Se uv non e nel PATH, gli stessi comandi funzionano con `python -m uv`
+(ad esempio `python -m uv run pytest -v`).
