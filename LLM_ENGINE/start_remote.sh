@@ -6,7 +6,7 @@
 set -Eeuo pipefail
 
 APP_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
-MODEL="Qwen/Qwen3-30B-A3B-GPTQ-Int4"
+MODEL="daniel-dona/sparql-model-era-lora-128-qwen3-8b"
 LLM_URL="http://127.0.0.1:18000/v1"
 MCP_URL="http://127.0.0.1:18888/mcp"
 VLLM_SESSION="sphn-qwen"
@@ -42,7 +42,7 @@ mkdir -p "$LOG_DIR" "$MODEL_DIR" "$APP_DIR/results"
 if [[ ! -f "$ENV_FILE" ]]; then
   cat > "$ENV_FILE" <<'ENV'
 LLM_BASE_URL=http://127.0.0.1:18000/v1
-LLM_MODEL=Qwen/Qwen3-30B-A3B-GPTQ-Int4
+LLM_MODEL=daniel-dona/sparql-model-era-lora-128-qwen3-8b
 LLM_API_KEY=EMPTY
 MCP_URL=http://127.0.0.1:18888/mcp
 RETRIEVAL_BACKEND=sphn-void
@@ -55,7 +55,7 @@ fi
 # Validate critical settings, so an old Windows tunnel address cannot be used accidentally.
 for required in \
   'LLM_BASE_URL=http://127.0.0.1:18000/v1' \
-  'LLM_MODEL=Qwen/Qwen3-30B-A3B-GPTQ-Int4' \
+  'LLM_MODEL=daniel-dona/sparql-model-era-lora-128-qwen3-8b' \
   'MCP_URL=http://127.0.0.1:18888/mcp' \
   'ENABLE_SPARQL_EXECUTION=false'; do
   grep -Fxq "$required" "$ENV_FILE" || fail ".env.remote must contain: $required"
@@ -117,9 +117,9 @@ else
       "exec $command_str >> '$LOG_DIR/qwen30b.log' 2>&1"
   fi
 
-  info "Waiting for model readiness (up to 15 minutes)..."
+  info "Waiting for model readiness (up to 30 minutes)..."
   ready=0
-  for ((i=0; i<180; i++)); do
+  for ((i=0; i<360; i++)); do
     if model_ready; then ready=1; break; fi
     if model_response >/dev/null; then
       fail "A different model responded on port 18000."
