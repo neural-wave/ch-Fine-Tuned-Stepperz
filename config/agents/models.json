@@ -1,0 +1,11 @@
+{
+  "base_url": "http://localhost:11434/v1",
+  "model": "qwen3:14b",
+  "laya": {
+    "model_id": "convaiinnovations/laya",
+    "subfolder": "multilingual",
+    "device": "cpu",
+    "max_len": 8192
+  },
+  "mcp_settings": "sparql-mcp.json"
+}

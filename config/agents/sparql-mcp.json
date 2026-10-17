@@ -1,0 +1,15 @@
+{
+  "app_org": "SPHN local workflow",
+  "app_topics": "SPHN clinical schema and aggregate cohort statistics",
+  "auto_init": true,
+  "vectordb_url": "artifacts/sparql-mcp-vectordb",
+  "endpoints": [
+    {
+      "label": "SPHN",
+      "endpoint_url": "http://localhost:8890/sparql",
+      "description": "Declared SPHN schema; data existence and permissions are checked separately.",
+      "void_file": "schemas/void/sphn-schema-void.ttl",
+      "examples_file": "schemas/void/query-examples.ttl"
+    }
+  ]
+}

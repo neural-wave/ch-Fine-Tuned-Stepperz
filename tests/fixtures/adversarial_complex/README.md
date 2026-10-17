@@ -1,33 +1,34 @@
-# Query complesse per aggirare il controllore
+# Sonde avversarie complesse
 
 ## Obiettivo e perimetro
 
-Queste sonde cercano un'esposizione effettiva con gli operatori ammessi dalla
-policy numeric-aggregates-v3. Non basta che la query passi il controllo statico:
+Queste sonde cercano un'esposizione effettiva con gli operatori numerici ammessi
+dal profilo predefinito. Non basta che la query passi il controllo statico:
 per dichiarare un bypass deve superare execute_checked e produrre il valore
 sintetico che dimostra l'isolamento o una statistica individuale.
 
 Si usano esclusivamente fixture RDFLib locali e dati fittizi. SERVICE e altri
 costrutti bloccati non vengono eseguiti; nessuna connessione a un database reale.
-Non viene modificato il controllore per fare passare i test.
+Le aspettative e i valori sintetici sono in [`cases.json`](cases.json).
 
 ## Fixture
 
-complex_fixture.py crea otto grafi con join tra diagnosi, caso, soggetto, esame,
+[`complex_fixture.py`](../../support/complex_fixture.py) crea otto grafi con join tra diagnosi, caso, soggetto, esame,
 quantita e marcatore numerico noto. I valori di misura sono 1000..1007; un solo
 paziente ha una misura rara pari a 4242. Il default graph contiene una misura
 7777 non correlata ai pazienti. I numeri sono fittizi e scelti per rendere
 verificabile ogni risultato. Il marcatore 0..7 simula un quasi-identificatore
 conosciuto dall'attaccante, non una protezione o un dato clinico realistico.
 
-Le fixture non sono validate SHACL. La variante duplicate_person modifica i
+Le fixture sono minimali e non vengono validate contro tutte le shape SPHN.
+La variante `duplicate_person` modifica i
 collegamenti in modo che tutti i grafi facciano riferimento alla stessa persona.
 
 ## Esito riprodotto
 
 Gli esiti BYPASS riportati sotto si riferiscono al profilo storico predefinito.
 Gli stessi 11 casi sono ora bloccati nei test del profilo hardened, con
-contesto fidato e nuove [policy privacy](../../../docs/policies/privacy.md).
+contesto fidato e [policy privacy](../../../docs/policies/privacy.md).
 Le 3 query positive continuano a funzionare anche con quel profilo.
 
 - 25 query separate, ciascuna sintatticamente valida.
@@ -41,7 +42,7 @@ La dimensione della coorte formale non basta a stabilire l'anonimato.
 
 ## Casi
 
-| File | Esito osservato atteso | Spiegazione |
+| File | Esito sul profilo predefinito | Spiegazione |
 |---|---|---|
 | [c01_masked_sum.rq](queries/c01_masked_sum.rq) | BYPASS | Otto contribuenti formali, ma sette contributi sono azzerati: espone il valore del solo target. |
 | [c02_scaled_masked_average.rq](queries/c02_scaled_masked_average.rq) | BYPASS | Media mascherata e numerosita ricostruiscono il valore individuale. |
@@ -69,77 +70,52 @@ La dimensione della coorte formale non basta a stabilire l'anonimato.
 | [c24_combined_join_union_mask.rq](queries/c24_combined_join_union_mask.rq) | BYPASS | Composizione di costrutti ammessi: misura individuale sotto una somma con coorte gonfiata. |
 | [c25_rare_indicator_sum.rq](queries/c25_rare_indicator_sum.rq) | BYPASS | SUM di indicatori pubblica un gruppo positivo di una persona, pur dichiarando otto contribuenti. |
 
-## Perche i bypass funzionano
+## Famiglie di bypass
 
-### Mascheramento e zeri di riempimento
-
-Una query puo usare SUM(IF(..., valore, 0)) per selezionare la misura di una
-persona e assegnare zero agli altri sette. Formalmente otto grafi contribuiscono
-all'espressione, ma il risultato numerico coincide con un singolo valore.
-COALESCE su un OPTIONAL raro e un ramo UNION che aggiunge zeri producono varianti
-dello stesso problema. DISTINCT non lo risolve.
-
-Nella sonda c24 vengono combinati join su caso e soggetto, due alias numerici,
-OPTIONAL, UNION, MINUS, un filtro, HAVING, ORDER BY, LIMIT e arrotondamento.
-Il risultato rilasciato resta 1000, la misura del solo target.
-
-### Media invertibile
-
-AVG della misura selezionata, riempita a zero per gli altri pazienti, moltiplicata
-per il conteggio della coorte ricostruisce il valore individuale. Il risultato
-puo apparire come una normale espressione tra aggregati approvati.
-
-### Provenienza non correlata
-
-Un valore nel default graph viene associato a ogni riga di otto grafi paziente.
-Il runtime conta otto grafi contribuenti, ma la sorgente reale del valore e una
-sola risorsa esterna alla coorte. AVG o SUM/COUNT restituiscono 7777.
-
-### Grafo non equivalente a persona
-
-Otto grafi possono contenere dati della stessa persona. Una media sui suoi eventi
-non diventa una statistica di otto persone soltanto perche cambia l'URI del grafo.
-
-### Conteggio condizionale di un gruppo raro
-
-SUM(IF(...,1,0)) e formalmente una somma su otto pazienti ma puo restituire 1
-per un sottogruppo identificabile. La sonda c25 dimostra la differenza tra
-controllare gli input formali e applicare una regola di soppressione ai sottogruppi.
-Non ogni valore 1 e automaticamente una violazione: qui il rischio dipende
-anche dalla conoscenza del marcatore e della popolazione sintetica.
+- **Maschere e zeri artificiali:** IF, COALESCE o UNION fanno apparire ampia una
+  coorte in cui un solo paziente contribuisce davvero al valore rilasciato.
+- **Media invertibile:** media mascherata e numerosità ricostruiscono una misura
+  individuale. Le composizioni più articolate non cambiano questo risultato.
+- **Provenienza non correlata:** un valore nel default graph viene ripetuto su
+  più grafi paziente; la coorte formale non descrive la sorgente reale del valore.
+- **Grafi duplicati:** più grafi della stessa persona non equivalgono a più persone.
+- **Indicatori di gruppi rari:** una somma su una coorte ampia può rivelare un solo
+  membro di un sottogruppo noto. Il rischio dipende anche dalla conoscenza simulata
+  del marcatore e della popolazione, non soltanto dal valore numerico finale.
 
 ## Esecuzione e significato dei test
 
 ```powershell
 uv run pytest tests/privacy/test_complex_attacks.py -v
 uv run python -m tests.support.complex_attacks
-uv run pytest tests/privacy/test_complex_attacks.py -m security_gap --runxfail -v
+uv run pytest tests/privacy/test_complex_attacks.py -m security_gap -v
 ```
 
 Le 25 osservazioni verificano risultati esatti, blocchi controllati o controlli
 positivi. Quelle che riproducono un bypass hanno il marker risk_demonstration:
 il loro successo significa che il problema e riproducibile, non risolto.
 
-Gli 11 requisiti separati di blocco hanno xfail strict. Falliscono perche
-execute_checked rilascia il valore invece di sollevare ResultBlocked. Un crash
-inatteso non e accettato come xfail per questi test. Il terzo comando mostra
-11 fallimenti effettivi. Un futuro blocco corretto genera XPASS strict e richiede
-l'aggiornamento della classificazione del caso.
+I requisiti separati con marker `security_gap` verificano invece il blocco con
+`Policy.hardened()`, contesto fidato, `adequacy_shacl=False` e
+`privacy_normalize_errors=False`. Sono test ordinari, non `xfail`: soltanto
+`ResultBlocked` soddisfa l'aspettativa; un crash imprevisto fa fallire il test.
+Il terzo comando esegue solo queste regressioni. I controlli positivi hardened
+sono in [`test_privacy_policies.py`](../../privacy/test_privacy_policies.py).
 
 Il report e in artifacts/tests/adversarial_complex/report.json; ogni query ha
 anche parse_tree.json, algebra.json e verdict.json in una sottocartella dedicata.
 privacy_bypass_reproduced distingue i bypass dalle normali query consentite.
-L'export generale tools.export_test_results include questa suite.
+L'export generale `tools.export_test_results` include questa suite. Il report
+osserva il profilo predefinito, non esegue le regressioni hardened.
 
 ## Implicazioni per il controllore
 
 La lista di operatori vietati e il controllo dei datatype non bastano per questi
-casi. Serve una politica di provenienza e contribuzione che consideri maschere,
+casi. Le protezioni hardened considerano provenienza, contribuzione, maschere,
 riempimenti, rami e correlazione tra risorse e persone. Non basta eliminare tutti
 gli zeri: zero puo essere una misura reale e il criterio va definito semanticamente.
 
-Prima di considerare sicure espressioni libere sugli aggregati bisogna restringere
-o validare questi usi e scegliere come gestire la divulgazione dei gruppi piccoli.
-Autorizzazioni, identificazione delle persone e composizione tra query restano
-requisiti ulteriori. I report riguardano il prototipo locale, non provano un
-comportamento di Virtuoso o una garanzia su dati reali.
+Il contesto fidato deve fornire autorizzazioni, mapping delle persone, storico
+e snapshot corretti; queste fixture non verificano l'integrazione con identità
+e dati reali. I report riguardano RDFLib locale, non il comportamento di Virtuoso
+o una garanzia di anonimato. Comandi generali in [`tests/README.md`](../../README.md).

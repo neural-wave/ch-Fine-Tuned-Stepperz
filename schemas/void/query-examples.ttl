@@ -1,0 +1,15 @@
+@prefix sh: <http://www.w3.org/ns/shacl#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+[] sh:prefix "sphn" ; sh:namespace "https://biomedit.ch/rdf/sphn-schema/sphn#"^^xsd:anyURI .
+[] sh:prefix "rdf" ; sh:namespace "http://www.w3.org/1999/02/22-rdf-syntax-ns#"^^xsd:anyURI .
+[] sh:prefix "rdfs" ; sh:namespace "http://www.w3.org/2000/01/rdf-schema#"^^xsd:anyURI .
+[] sh:prefix "xsd" ; sh:namespace "http://www.w3.org/2001/XMLSchema#"^^xsd:anyURI .
+
+<urn:sphn:example:count-patients> a sh:SPARQLExecutable ;
+    rdfs:comment "Conta i grafi paziente distinti con almeno una diagnosi fatturata. Esempio di riferimento del gruppo 00_compliant: escludere questo gruppo da valutazioni indipendenti che usano questi esempi." ;
+    sh:select """PREFIX sphn: <https://biomedit.ch/rdf/sphn-schema/sphn#>
+SELECT (COUNT(DISTINCT ?g) AS ?patients)
+WHERE { GRAPH ?g { ?dx a sphn:BilledDiagnosis . } }
+""" .

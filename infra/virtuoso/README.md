@@ -1,244 +1,125 @@
-# Infrastruttura Virtuoso
+# Virtuoso: avvio e caricamento
 
-Eseguire i comandi dalla radice del repository.
-Il codice Python e descritto nel [README principale](../../README.md).
+Questa cartella gestisce un triplestore Virtuoso tramite Docker. Servono Bash,
+Docker attivo e `unzip` se si caricano archivi di ontologie. Eseguire i comandi
+dalla radice del repository, su Linux o in un ambiente Bash con accesso a Docker.
 
-A ready-to-run Virtuoso triplestore for the hackathon. Drop your patient `.ttl` files in a
-folder, run two scripts, and query them — with the same container setup, bulk-loading strategy
-and RDFS inference as our production pipeline.
+Il triplestore e indipendente dal [workflow Python](../../docs/guides/agent-workflow.md):
+i test offline non richiedono Docker. Gli script `query.sh` e l'endpoint SPARQL
+eseguono query direttamente, senza passare dal controllore privacy Python.
 
-Docker is the only requirement. No Python, no build step.
+## Avvio
 
-## Quick start
-
-```bash
-./infra/virtuoso/scripts/start.sh           # boots Virtuoso, loads the ontologies, registers the bulk loader
-./infra/virtuoso/scripts/load-patients.sh   # loads every patients/*.ttl, one named graph per file
-./infra/virtuoso/scripts/query.sh infra/virtuoso/queries/count-per-graph.rq
-```
-
-Then browse to the SPARQL endpoint at <http://localhost:8890/sparql>.
-
-To try it before you have data, use the two example files:
+Inserire i file paziente Turtle in `patients/`, poi eseguire:
 
 ```bash
-./infra/virtuoso/scripts/start.sh && ./infra/virtuoso/scripts/load-patients.sh
+chmod +x infra/virtuoso/scripts/*.sh
+bash infra/virtuoso/scripts/start.sh
+bash infra/virtuoso/scripts/load-patients.sh
+bash infra/virtuoso/scripts/query.sh infra/virtuoso/queries/count-per-graph.rq
 ```
 
-## Scripts
+`start.sh` crea il container, registra il bulk loader e carica `ontologies/`.
+Se il container esiste gia, lo riusa. L'endpoint e
+[http://localhost:8890/sparql](http://localhost:8890/sparql).
+Il `chmod` serve al primo avvio su Linux: gli script si richiamano anche tra loro.
 
-| Script | What it does |
+## Dati e grafi
+
+- Il loader considera soltanto i file `*.ttl` direttamente in `patients/`;
+  non visita sottocartelle.
+- Ogni file rappresenta un paziente. `patient-42.ttl` diventa il grafo
+  `http://example.org/graph/patient-42`, con prefisso configurabile.
+- Il caricamento e additivo. Dopo aver modificato o rimosso file, usare
+  `load-patients.sh --reset` per eliminare anche le vecchie triple.
+- Gli script modificano il database, senza cancellare i Turtle sorgenti.
+
+I file vengono accodati in `DB.DBA.load_list` e caricati da worker paralleli.
+Durante il bulk load sono disattivati checkpoint periodici e logging
+transazionale; vengono ripristinati all'uscita dello script.
+
+## Comandi disponibili
+
+Tutti gli script sono in [`scripts/`](scripts/).
+
+| Script | Funzione |
 | --- | --- |
-| `./infra/virtuoso/scripts/start.sh` | Starts the container (sizing the buffer pool from available RAM), waits until Virtuoso answers, registers the bulk-loader procedure, and loads the ontologies. Resumes a stopped container instead of recreating it. |
-| `./infra/virtuoso/scripts/load-patients.sh [--reset]` | Bulk-loads every `.ttl` in the patients folder. `--reset` clears previously loaded patient graphs first. |
-| `./infra/virtuoso/scripts/generate-patients.sh --patients N --concepts K` | Writes N synthetic patients into the patients folder, recombined from the existing ones — see [Scaling up the cohort](#scaling-up-the-cohort). |
-| `./infra/virtuoso/scripts/load-ontologies.sh [--force]` | Loads `ontologies/` (called by `start.sh`). Skips if already loaded; `--force` reloads. |
-| `./infra/virtuoso/scripts/query.sh <file.rq \| "SPARQL text"> [--out results.txt]` | Runs a query and prints the results plus Virtuoso's own server-side timing. |
-| `./infra/virtuoso/scripts/reset-patients.sh` | Clears all patient graphs, keeping the ontologies loaded. |
-| `./infra/virtuoso/scripts/status.sh` | Shows what is running and how much is loaded. |
-| `./infra/virtuoso/scripts/stop.sh` | Stops the container but **keeps** everything loaded — `./infra/virtuoso/scripts/start.sh` resumes it. |
-| `./infra/virtuoso/scripts/destroy.sh` | Removes the container and its data. The next `./infra/virtuoso/scripts/start.sh` starts empty and reloads the ontologies. |
+| `start.sh` | Crea, avvia o riprende il container e carica le ontologie mancanti. |
+| `load-patients.sh [--reset]` | Carica i Turtle; `--reset` svuota prima i grafi con `GRAPH_URI_PREFIX`. |
+| `load-ontologies.sh [--force]` | Carica le ontologie; `--force` svuota e ricarica il loro grafo. |
+| `query.sh <file.rq oppure testo> [--out file]` | Esegue la query e stampa risultati e tempo riportato da Virtuoso. |
+| `status.sh` | Mostra stato del container, grafi e triple caricati. |
+| `reset-patients.sh` | Svuota i grafi con il prefisso pazienti, mantenendo le ontologie. |
+| `stop.sh` | Esegue un checkpoint e ferma il container, conservando il database. |
+| `destroy.sh` | Rimuove il container e il database al suo interno. |
 
-Your `.ttl` files on disk are never modified or deleted by any of these.
+I dati persistono tra `stop.sh` e `start.sh`; `destroy.sh` richiede poi un
+nuovo caricamento. Non viene configurato un volume separato per il database.
 
-## Your patient files
+## Ontologie e inferenza
 
-Put them in `patients/` (or point `PATIENTS_DIR` elsewhere). Requirements:
+`start.sh` carica i file `ontologies/*.ttl` e i Turtle contenuti negli archivi
+`ontologies/*.zip` in un unico grafo, registrato come rule set RDFS.
+Gli archivi estratti restano in `.ontology_cache/`. Se si sostituisce un archivio,
+aggiornare anche la relativa copia in cache prima di ricaricare.
 
-- **Turtle only.** Loading uses Virtuoso's Turtle parser; `.nt`, `.rdf` and `.jsonld` files are
-  ignored. Anything not ending in `.ttl` is skipped, so a stray `.DS_Store` is harmless.
-- **One file per patient**, flat in the folder (subfolders are not scanned).
-- **The file name becomes the graph name**: `patient-42.ttl` is loaded into the named graph
-  `http://example.org/graph/patient-42`. Keep names unique.
+Il loader legge [`ontologies/`](../../ontologies/), mentre gli schemi per il
+generatore sono descritti in [`schemas/`](../../schemas/README.md). Caricare
+un'ontologia non esegue la validazione SHACL.
 
-That per-file named graph is what lets a query count or filter per patient, e.g.
-`SELECT DISTINCT ?g WHERE { GRAPH ?g { ... } }`.
-
-## Scaling up the cohort
-
-A thousand patients fit in memory and every reasonable query answers in milliseconds, so query
-performance only shows with more data. `generate-patients.sh` adds synthetic patients next to the
-existing ones:
-
-```bash
-./infra/virtuoso/scripts/generate-patients.sh --patients 20000 --concepts 150 --seed 42       # total ~ normal(150, ~12)
-./infra/virtuoso/scripts/generate-patients.sh --patients 20000 --concepts 100-200            # total ~ normal(150, 16.7), within 100-200
-./infra/virtuoso/scripts/load-patients.sh
-```
-
-Each new patient gets a backbone (pseudo identifier, data provider, source system, administrative
-case, administrative sex) plus patient-level records — diagnoses, lab test events, measurements,
-procedures, ... — copied from a pool of existing patients together with everything they link to
-(codes, quantities, units, results), under fresh IRIs and identifiers.
-
-Unlike the mock data, where every patient has exactly one record of each type, **every concept type
-gets its own normal distribution of records per patient**, without having to name any. A type's
-mean is its Zipf-like share of the average total `--concepts`, so some concepts are common across
-the cohort and others rare (`--skew 0` gives every type an equal share; higher values let a few
-types dominate), and its standard deviation is √mean, the natural spread of a count. A patient's
-total is the sum of these, itself normal. A draw below zero means the patient has none of that
-concept, which keeps rare types rare; the draws are centred so that each type still averages its
-mean. The script prints each type's distribution before generating, and how many types average
-below one record per patient — those show up 0 or 1 times rather than as a visible bell curve, so
-raise `--concepts` or lower `--skew` if you want one on every type.
-
-Two things bend the plan, both to keep patients consistent. Birth, death and vital status appear at
-most once per patient (their share goes to the other types). And a record that links to another
-patient-level record — a lab test event to its sample, a diagnosis to the patient's age, a birth to
-its date — reuses one the patient already has, or brings one along if there is none yet, so those
-linked types average at least about one wherever something needs them; totals run a few percent
-above `--concepts`.
-
-`--concept TYPE=MEAN[:SD]` optionally pins a type to a distribution of its own instead of its share.
-Types are the patient-level ones — `LabTestEvent`, not `LabTest`, which hangs off an event; the
-script suggests the right name if you pick one that isn't.
-
-| Option | Default | Notes |
-| --- | --- | --- |
-| `--patients N` | required | Number of patients to generate. |
-| `--concepts K` or `MIN-MAX` | required | Average patient-level records per patient, shared out over all concept types. `MIN-MAX` averages its midpoint and keeps each patient's total within the range (patients outside it are redrawn). |
-| `--concepts-sd SD` | ≈√`K` for `K`, `(MAX-MIN)/6` for `MIN-MAX` | Spread of the total, reached by scaling every type's spread; must be > 0. With many rare types the total comes out somewhat narrower. |
-| `--skew S` | `1.0` | Zipf exponent for how unevenly the concept types share the total. |
-| `--concept TYPE=MEAN[:SD]` | none | Optional: pin a type to ~ normal(`MEAN`, `SD`) per patient, `SD` defaulting to √`MEAN`; taken out of the total, repeatable. `LabTestEvent=2:0` gives every patient exactly two. |
-| `--donors N` | `100` | Existing files to sample records from. |
-| `--seed N` | random | Makes the output reproducible. |
-| `--prefix NAME` | `generated` | Files are `NAME-000001.ttl`, ...; numbering continues after existing ones, so running again adds more. |
-
-Sizes, measured on 1,000 generated patients (a mock patient is ~330 KB and ~3,400 triples):
-
-| `--concepts` | Per patient | 100,000 patients |
-| --- | --- | --- |
-| `50` | ~6 ms, ~205 KB, ~2,100 triples | ~10 minutes, ~20 GB of disk, ~210 million triples |
-| `150` | ~11 ms, ~550 KB, ~5,700 triples | ~18 minutes, ~55 GB of disk, ~570 million triples |
-
-Size `VIRTUOSO_RAM_GB` and the disk accordingly. It needs
-`python3`; without it the script runs the generator in a `python:3-alpine` container. To remove
-generated patients again: `rm patients/generated-*.ttl && ./infra/virtuoso/scripts/load-patients.sh --reset`.
-
-## Ontologies and inference (optional but recommended)
-
-Put the SPHN schema and any terminology files (`.ttl`, or `.zip` archives containing `.ttl`) into
-`ontologies/`. `start.sh` loads them all into a single graph and registers that graph as an
-inference rule set — one merged graph and one `RDFS_RULE_SET` call, exactly as production does,
-so class- and property-hierarchy reasoning behaves the same way here.
-
-A query then opts into reasoning per triple pattern:
+Le query possono richiedere l'inferenza con la sintassi specifica di Virtuoso:
 
 ```sparql
-?lab_test rdf:type sphn:LabTest OPTION (inference "https://biomedit.ch/rdf/sphn-resource/global") .
+?lab_test rdf:type sphn:LabTest
+  OPTION (inference "https://biomedit.ch/rdf/sphn-resource/global") .
 ```
 
-Without that clause, a query matches only the triples literally present in your data. Without any
-ontology files loaded, a query using the clause fails with *"refers to undefined inference rule
-set"* — load the ontologies, or drop the clause.
+Il rule set deve essere stato caricato e il suo URI deve coincidere con
+`RULE_SET_URI`. Gli esempi in [`queries/`](queries/) mostrano conteggi,
+classi presenti e inferenza.
 
-Extracted archives are cached in `.ontology_cache/`, so a large terminology is only unpacked once.
-Loading SNOMED CT-sized files takes several minutes the first time; after that, `./infra/virtuoso/scripts/stop.sh` and
-`./infra/virtuoso/scripts/start.sh` resume without reloading anything.
+## Configurazione
 
-## Querying
-
-Three interchangeable ways in:
-
-```bash 
-./infra/virtuoso/scripts/query.sh infra/virtuoso/queries/classes.rq                          # from a file, with timing
-./infra/virtuoso/scripts/query.sh 'SELECT * WHERE { GRAPH ?g { ?s ?p ?o } } LIMIT 10'
-docker exec -it hackathon-virtuoso isql 1111 dba dba   # interactive isql shell
-```
-
-…plus the HTTP endpoint at <http://localhost:8890/sparql>, which any SPARQL client or a plain
-`curl` can use.
-
-The `infra/virtuoso/queries/` folder has four examples to start from: `count-triples.rq`, `count-per-graph.rq`,
-`classes.rq`, and `with-inference.rq`.
-
-The time `query.sh` reports is the figure isql prints — Virtuoso's own server-side elapsed time,
-excluding Docker and connection overhead, so it's the number worth comparing between two queries.
-
-In the interactive shell, prefix SPARQL with `SPARQL` and end with `;`:
-
-```
-SQL> SPARQL SELECT * WHERE { GRAPH ?g { ?s ?p ?o } } LIMIT 5;
-```
-
-## Configuration
-
-Every setting in `config.sh` can be overridden from the environment:
+Le variabili di [`config.sh`](scripts/config.sh) si possono impostare
+nell'ambiente. Mantenere gli stessi valori tra i comandi:
 
 ```bash
-PATIENTS_DIR=~/data/cohort-a ./infra/virtuoso/scripts/start.sh
-VIRTUOSO_VERSION=7.2.13 ./infra/virtuoso/scripts/start.sh
-HTTP_HOST_PORT=8891 ISQL_HOST_PORT=1112 CONTAINER_NAME=my-virtuoso ./infra/virtuoso/scripts/start.sh
+export PATIENTS_DIR=/percorso/coorte
+export VIRTUOSO_RAM_GB=4
+bash infra/virtuoso/scripts/start.sh
+bash infra/virtuoso/scripts/load-patients.sh
 ```
 
-| Variable | Default | Notes |
-| --- | --- | --- |
-| `VIRTUOSO_VERSION` | `7.2.16` | Any `openlink/virtuoso-opensource-7` tag. |
-| `CONTAINER_NAME` | `hackathon-virtuoso` | Change it to run several side by side (give each its own ports too). |
-| `PATIENTS_DIR` | `./patients` | Fixed when the container is created — see below. |
-| `ONTOLOGIES_DIR` | `./ontologies` | Same. |
-| `ISQL_HOST_PORT` / `HTTP_HOST_PORT` | `1111` / `8890` | Change if the ports are taken. |
-| `GRAPH_URI_PREFIX` | `http://example.org/graph/` | Prefix of the per-file graph names. |
-| `RULE_SET_URI` | `https://biomedit.ch/rdf/sphn-resource/global` | Must match the `OPTION (inference ...)` value in your queries. |
-| `LOAD_WORKER_COUNT` | `8` | Parallel loader workers. |
-| `VIRTUOSO_RAM_GB` | auto | Buffer pool budget; defaults to 80% of the RAM Docker reports. |
+| Variabile | Valore predefinito |
+| --- | --- |
+| `VIRTUOSO_VERSION` | `7.2.16` |
+| `CONTAINER_NAME` | `hackathon-virtuoso` |
+| `DBA_PASSWORD` | `dba` (configurazione di esempio) |
+| `ISQL_HOST_PORT` / `HTTP_HOST_PORT` | `1111` / `8890` |
+| `PATIENTS_DIR` / `ONTOLOGIES_DIR` | `patients/` / `ontologies/` nella radice del progetto |
+| `ONTOLOGY_CACHE_DIR` | `.ontology_cache/` nella radice del progetto |
+| `GRAPH_URI_PREFIX` | `http://example.org/graph/` |
+| `RULE_SET_URI` | `https://biomedit.ch/rdf/sphn-resource/global` |
+| `LOAD_WORKER_COUNT` | `8` |
+| `VIRTUOSO_RAM_GB` | Budget calcolato dall'80% della RAM riportata da Docker |
 
-Folders are bind-mounted when the container is **created**, so changing `PATIENTS_DIR` or
-`ONTOLOGIES_DIR` afterwards needs `./infra/virtuoso/scripts/destroy.sh` then `./infra/virtuoso/scripts/start.sh`. `load-patients.sh` checks this
-and tells you if they've drifted apart.
+Il numero di buffer usa il 65% del budget RAM e i dirty buffer il 75% dei buffer.
+Mount, immagine, porte e password sono fissati alla creazione del container:
+modificare le variabili non riconfigura un container esistente. Per cambiarli
+occorre ricrearlo, perdendo il database caricato; conservare i file sorgenti.
 
-## How the loading works
+## Problemi comuni
 
-Worth knowing if you're comparing timings or loading a lot of files:
+- **Docker assente o fermo:** verificare `docker info` e avviare il daemon.
+- **Porte occupate:** impostare `HTTP_HOST_PORT` e `ISQL_HOST_PORT` libere prima
+  di creare il container.
+- **Caricamento incompleto:** controllare gli errori stampati dal loader e i log
+  con `docker logs hackathon-virtuoso` (adattare il nome se configurato).
+- **Nessun risultato:** usare `status.sh` e `query.sh infra/virtuoso/queries/classes.rq`
+  per confrontare dati caricati e pattern della query.
+- **Rule set non definito:** aggiungere le ontologie e rieseguire
+  `load-ontologies.sh`; dopo modifiche a ontologie gia caricate usare `--force`.
 
-- Files are loaded through Virtuoso's own `load_list` queue: the bulk-loader procedure queues one
-  row per file, then **8 parallel `rdf_loader_run()` workers** each pull unclaimed rows off the
-  queue. This is Virtuoso's documented way to parallelize a bulk load and is dramatically faster
-  than loading files one at a time — it scales to hundreds of thousands of files.
-- During the load, checkpointing and transaction logging are disabled and restored afterwards
-  (standard bulk-load tuning). Your files are the source of truth, so the trade is free here.
-- The buffer pool is sized from the RAM Docker reports, not left at Virtuoso's tiny default.
-- Virtuoso's pre-execution cost-estimate guard is disabled, so an expensive exploratory query
-  runs instead of being refused with *"the estimated execution time exceeds the limit"*.
-- Reloading is additive: the same file loaded twice yields the same triples, but if you **edit** a
-  file, use `./infra/virtuoso/scripts/load-patients.sh --reset` so removed triples actually disappear.
-
-## Troubleshooting
-
-**`Docker is not running`** — start Docker Desktop (or your daemon) and retry.
-
-**Port already in use** — something else holds 1111 or 8890:
-`HTTP_HOST_PORT=8891 ISQL_HOST_PORT=1112 ./infra/virtuoso/scripts/start.sh`.
-
-**Some files failed to load** — `load-patients.sh` prints the offending files and Virtuoso's parse
-error. Almost always malformed Turtle or a missing prefix declaration in that one file; fix it and
-rerun. To see them again:
-
-```bash
-docker exec hackathon-virtuoso isql 1111 dba dba \
-  "exec=SELECT ll_file, ll_error FROM DB.DBA.load_list WHERE ll_error IS NOT NULL;"
-```
-
-**A query returns 0 rows** — check `./infra/virtuoso/scripts/status.sh` shows your graphs loaded, then confirm your
-patterns match the data as written: `./infra/virtuoso/scripts/query.sh infra/virtuoso/queries/classes.rq` lists which types are actually
-present. If you're relying on `OPTION (inference ...)`, confirm the ontologies loaded.
-
-**`refers to undefined inference rule set`** — no ontology files were loaded. Put them in
-`ontologies/` and run `./infra/virtuoso/scripts/load-ontologies.sh`.
-
-**A query is slow** — get the plan Virtuoso chose:
-
-```bash
-docker exec hackathon-virtuoso isql 1111 dba dba \
-  "exec=EXPLAIN ('SPARQL SELECT * WHERE { GRAPH ?g { ?s ?p ?o } }');"
-```
-
-Adding `DEFINE sql:select-option "order"` at the top of a query forces Virtuoso to evaluate the
-triple patterns in the order you wrote them, which is the usual lever when its own join order is
-the problem.
-
-**Container logs** — `docker logs hackathon-virtuoso`.
-
-
-ATTENTION:  SNOMED-CT terminology must not use or distribute the SNOMED files outside the hackathon. If participants wish to use SNOMED outside the hackathon, they should also register via the MLDS and apply for a licence.
-
+Le risorse SNOMED CT fornite per l'hackathon restano soggette alle relative
+restrizioni: l'uso o la distribuzione fuori dall'hackathon richiedono la licenza
+prevista tramite MLDS.

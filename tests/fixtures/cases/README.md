@@ -1,6 +1,22 @@
 # Query di test
 
-32 file SPARQL separati. Le aspettative in cases.json sono indipendenti dal validatore.
+32 file SPARQL separati. [`cases.json`](cases.json) contiene aspettative
+annotate indipendentemente dal validatore per il profilo predefinito. Sono
+verificate da [`test_compliance.py`](../../analysis/test_compliance.py).
+
+```bash
+uv run pytest tests/analysis/test_compliance.py -q
+```
+
+Il verdetto statico non garantisce il rilascio: coorte, privacy e adeguatezza
+dipendono anche dal runtime e dalle policy abilitate. Le associazioni tra queste
+query e i prompt sono in [`prompt_query_links.json`](../system/prompt_query_links.json);
+per oracoli e valutazione vedere la [guida al workflow](../../../docs/guides/agent-workflow.md).
+
+R1: singolo paziente; R2: output non aggregato; R3: scansione libera;
+R4: query diversa da SELECT; R5: identificatori in uscita. Un caso può violare
+più regole; le violazioni elencate sono quelle attese, non necessariamente tutte
+quelle segnalate. I casi non supportati vengono bloccati.
 
 | Query | Esito atteso | Motivo |
 |---|---|---|

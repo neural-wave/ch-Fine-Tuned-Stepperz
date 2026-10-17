@@ -2,8 +2,9 @@
 
 Questa guida accompagna una presentazione ai compagni. Parti dalla mappa dei
 moduli, segui una richiesta e usa gli esempi numerici per spiegare la privacy.
-I diagrammi descrivono il codice attuale di `sparql_analyzer`, non una futura
-integrazione con un agente che traduce linguaggio naturale in SPARQL.
+I diagrammi descrivono il controllore deterministico `sparql_analyzer`.
+Il workflow che traduce il linguaggio naturale e lo chiama e documentato nella
+[guida agentica](../guides/agent-workflow.md).
 
 Il controllore esegue query su un **Dataset RDFLib locale**. Virtuoso e gli script
 di caricamento appartengono allo stesso repository, ma `infra/virtuoso/scripts/query.sh` interroga

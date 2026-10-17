@@ -1,0 +1,22 @@
+{
+  "mapping_verified_with_sparql_llm_reader_query": true,
+  "target_class_coverage_verified": true,
+  "target_classes": 208,
+  "all_referenced_classes": 630,
+  "class_property_pairs": 980,
+  "type_links": 1451,
+  "rdf_triples": 5488,
+  "complex_property_shapes_not_flattened": 95,
+  "observed_dataset_statistics": false,
+  "source_files": [
+    {
+      "file": "schemas/shacl/shacler_shapes.ttl",
+      "Hash": "559E5EC517A78B6FDDF2A9651F3DCA95CFEFF0C82426ED4E15B8E0A108370EF3"
+    },
+    {
+      "file": "schemas/sphn/sphn_rdf_schema.ttl",
+      "Hash": "531DE61E930AAD7D1EFB8B9ABAE733E7EE8DE706D73FF2A36D6D0DF18B46E918"
+    }
+  ],
+  "output_sha256": "1946E8A1CC8D27EE84FB9E5AC04680D95708C58C3E730159592FC9EBB4A0036A"
+}

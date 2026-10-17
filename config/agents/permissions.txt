@@ -1,0 +1,3 @@
+Profilo dimostrativo: analista abilitato a statistiche aggregate, non amministratore.
+In produzione sostituire con permessi derivati dall'identita autenticata e
+configurare gli stessi vincoli nel contesto fidato dell'esecutore.

@@ -1,16 +1,50 @@
-# Orchestrazione degli agenti
+# Workflow e modelli
 
-Questo package e riservato al codice che coordinera modelli, strumenti e stato
-delle richieste. Non contiene ancora agenti, chiamate LLM o un workflow eseguibile.
+Il flusso è: **validazione del prompt → generazione SPARQL → analisi statica →
+esecuzione controllata**. `SparqlWorkflow` si ferma al primo blocco o errore.
+Con `run(request, execute=False)` prepara soltanto la query e restituisce
+`query_ready`; l'executor serve per l'esecuzione, abilitata per default.
+La valutazione semantica confronta i risultati con gli oracoli nei test offline.
 
-La dipendenza deve andare da `agent_orchestration` verso le API pubbliche di
-`sparql_analyzer`. Il validatore non importa l'orchestrazione e non dipende da
-un particolare framework per agenti.
+## Scegliere i modelli
 
-Quando il flusso verra implementato, potra costruire query o piani strutturati,
-ma il rilascio dei risultati dovra attraversare `execute_checked`. Identita,
-ACL, storico e shape devono essere forniti dal servizio autenticato, non decisi
-dal modello. La scelta del profilo compete all'applicazione.
+- **Reali:** modificare [models.json](../../config/agents/models.json) e usare
+  `open_models()` da `local_models.py`. Restituisce validatore Laya e generatore
+  PydanticAI con strumenti MCP. Istruzioni nella [guida ai modelli locali](../../docs/guides/local-models.md).
+- **Fittizi:** assegnare `FakeClassifier` e `FakeSparqlLLM` nel codice, anche
+  combinandoli con modelli reali. Strategie ed esempi nella [guida](../../docs/guides/fake-models.md).
 
-Ruoli degli agenti, adattatori dei modelli e workflow andranno separati quando
-esisteranno implementazioni concrete, senza introdurre classi vuote in anticipo.
+La demo pronta per partire senza pesi o server è:
+
+```bash
+uv run python -m examples.fake_workflow
+```
+
+Il [workflow completo](../../docs/guides/agent-workflow.md) spiega come assemblare
+i componenti. [Config](../../config/README.md) raccoglie i file da modificare;
+[tests](../../tests/README.md) contiene i comandi per verificarli offline.
+
+## Dove intervenire
+
+| File | Responsabilità |
+|---|---|
+| `__main__.py` | CLI applicativa: `python -m agent_orchestration` |
+| `models.py` | Contratti asincroni `LLM`, `SparqlLLM`, `SystemOneModel` e tipi di richiesta/risposta |
+| `adapters.py` | Collegamento a PydanticAI o a una funzione di classificazione personalizzata |
+| `local_models.py` | Endpoint chat, Laya e connessione MCP |
+| `fakes.py` | Modelli fittizi e strategie di risposta |
+| `validation.py` | Validatori del prompt e adattatore dell'analizzatore statico |
+| `workflow.py` | Sequenza dei controlli ed executor RDF locale |
+| `semantic.py` | Confronto dei risultati di esecuzione |
+| `evaluation.py` | Valutazione separata del sistema e della generazione |
+
+Il comando del benchmark e `python -m tools.evaluate_workflow`; gli esempi in
+`examples/` sono demo. I test agentici sono raggruppati in `tests/agents/`.
+
+`PromptRequest` e un alias di `SparqlRequest`: guard e generatore condividono
+prompt, schema, policy e permessi. Tutti i modelli espongono `await run(request)`.
+Il generatore restituisce
+`SparqlResult`, il classificatore `Decision`; questi tipi da soli non certificano
+la sicurezza. `Decision.probability` è facoltativa e va fornita solo quando il
+backend espone una probabilità significativa. Gli executor applicano i controlli
+deterministici; non richiedono un modello.

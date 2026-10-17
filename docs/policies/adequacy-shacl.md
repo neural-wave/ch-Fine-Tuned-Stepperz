@@ -3,7 +3,7 @@
 La policy verifica che i grafi RDF rispettino le shape scelte dal servizio:
 proprieta richieste, cardinalita, datatype, classi delle risorse collegate e
 vincoli SHACL-SPARQL, inclusi i target SPARQL delle shape SPHN. Usa pySHACL
-0.25.0, compatibile con RDFLib 6.3.2.
+0.25.0 con RDFLib 7.1.4, come fissato nelle dipendenze del progetto.
 Le shape SPHN del repository sono in [shacler_shapes.ttl](../../schemas/shacl/shacler_shapes.ttl).
 
 Adeguatezza qui significa conformita ai vincoli selezionati. Non dimostra
@@ -41,7 +41,7 @@ from sparql_analyzer.runtime import execute_checked
 # Percorsi locali e configurazione scelti dal servizio, non dal modello/client.
 shacl = ShaclContext.from_files(
     "schemas/shacl/shacler_shapes.ttl",
-    # ontology_path="schema/sphn.ttl",  # se necessario: ontologia locale fidata
+    # ontology_path="schemas/sphn/sphn_rdf_schema.ttl",  # ontologia locale fidata
     inference="rdfs",
 )
 policy = Policy.adequacy()

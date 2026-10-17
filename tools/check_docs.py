@@ -8,7 +8,7 @@ ROOT = Path(__file__).resolve().parents[1]
 
 def main():
     documents = [ROOT / "README.md"]
-    for folder in ("docs", "tests", "tools", "examples", "infra", "src"):
+    for folder in ("docs", "tests", "tools", "examples", "infra", "src", "config", "schemas"):
         documents.extend((ROOT / folder).rglob("*.md"))
     broken, checked = [], 0
     for path in documents:

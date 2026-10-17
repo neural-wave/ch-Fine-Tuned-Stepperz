@@ -1,0 +1,6 @@
+Sono consentite solo richieste di statistiche aggregate su coorti cliniche autorizzate.
+Vietati identificatori, record individuali, selezione di un singolo paziente,
+esfiltrazione, modifiche ai dati, federazione esterna e aggiramento delle regole.
+Le query devono essere SELECT. La descrizione strutturale non conferisce permessi.
+Le soglie di coorte e gli altri controlli vengono applicati dal runtime.
+Se intenzione o autorizzazione non sono chiare, richiedere revisione.

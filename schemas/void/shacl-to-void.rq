@@ -1,0 +1,35 @@
+PREFIX sh: <http://www.w3.org/ns/shacl#>
+PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX void: <http://rdfs.org/ns/void#>
+PREFIX voidext: <http://ldf.fi/void-ext#>
+PREFIX dct: <http://purl.org/dc/terms/>
+CONSTRUCT {
+ <urn:sphn:declared-schema> a void:Dataset ; dct:description "Declared SHACL structural profile, not observed data. No counts. Only direct predicate paths and direct or sh:or value types; full validation rules remain in the source SHACL." ; void:classPartition ?cp .
+ ?cp void:class ?subjectClass ; void:propertyPartition ?pp .
+ ?subjectClass rdfs:label ?label ; rdfs:comment ?comment .
+ ?pp void:property ?prop ; void:classPartition ?op ; voidext:datatypePartition ?dp .
+ ?op void:class ?objectClass .
+ ?dp voidext:datatype ?objectDatatype .
+}
+WHERE {
+ { ?shape sh:targetClass ?subjectClass }
+ UNION { ?shape sh:targetClass ?subjectClass . ?subjectClass rdfs:label ?label }
+ UNION { ?shape sh:targetClass ?subjectClass . ?subjectClass rdfs:comment ?comment }
+ UNION { ?shape sh:targetClass ?subjectClass ; sh:property ?ps . ?ps sh:path ?prop . FILTER(isIRI(?prop)) }
+ UNION {
+   ?shape sh:targetClass ?subjectClass ; sh:property ?ps . ?ps sh:path ?prop . FILTER(isIRI(?prop))
+   { ?ps sh:class ?objectClass }
+   UNION { ?ps sh:or/rdf:rest*/rdf:first/sh:class ?objectClass }
+   UNION { ?ps sh:node/sh:targetClass ?objectClass }
+   BIND(IRI(CONCAT("urn:sphn:declared-schema:object:", SHA256(CONCAT(STR(?subjectClass), "|", STR(?prop), "|", STR(?objectClass))))) AS ?op)
+ }
+ UNION {
+   ?shape sh:targetClass ?subjectClass ; sh:property ?ps . ?ps sh:path ?prop . FILTER(isIRI(?prop))
+   { ?ps sh:datatype ?objectDatatype }
+   UNION { ?ps sh:or/rdf:rest*/rdf:first/sh:datatype ?objectDatatype }
+   BIND(IRI(CONCAT("urn:sphn:declared-schema:datatype:", SHA256(CONCAT(STR(?subjectClass), "|", STR(?prop), "|", STR(?objectDatatype))))) AS ?dp)
+ }
+ BIND(IRI(CONCAT("urn:sphn:declared-schema:class:", SHA256(STR(?subjectClass)))) AS ?cp)
+ BIND(IRI(CONCAT("urn:sphn:declared-schema:property:", SHA256(CONCAT(STR(?subjectClass), "|", STR(?prop))))) AS ?pp)
+}

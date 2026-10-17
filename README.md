@@ -1,90 +1,76 @@
 # Fine-Tuned Stepperz
 
-Analisi deterministica delle query SPARQL, controllo dei risultati e validazione
-SHACL dei dati RDF. Il repository include anche gli strumenti per il triplestore
-Virtuoso e uno spazio separato per la futura orchestrazione degli agenti.
+Workflow da linguaggio naturale a SPARQL: validazione del prompt, generazione
+della query, analisi statica ed esecuzione verificata su un Dataset RDFLib locale.
+I modelli sono sostituibili; i controlli sulla query e sui risultati sono
+deterministici. Virtuoso ha un percorso di gestione separato.
 
-## Struttura
+Servono **Python 3.12+** e [uv](https://docs.astral.sh/uv/getting-started/installation/).
+Eseguire i comandi dalla radice del repository.
 
-```text
-src/
-  sparql_analyzer/       Libreria e API pubbliche
-    configuration/      Policy, dipendenze dei toggle ed export
-    parsing/            Parser, scope e analisi dell'algebra
-    static/             Regole e validazione statica
-    execution/          Esecuzione verificata, aggregazioni e provenienza
-    governance/         ACL, storico, snapshot e adeguatezza SHACL
-    shared/             Vocabolario, espressioni e contratto dei risultati
-  agent_orchestration/  Spazio riservato agli agenti, ancora senza workflow
-config/policies/        Profili JSON: default, adequacy, hardened, unrestricted
-schemas/shacl/          Shape SPHN
-infra/virtuoso/         Script Docker, query e manuale operativo
-tests/                  Suite per area, fixture e supporto
-tools/                  Generazione fixture ed export di sviluppo
-examples/               Demo eseguibili ed esempi clinici
-docs/                   Architettura, guide, policy, sicurezza e specifiche
-artifacts/              Output generati, esclusi da Git
-```
+## Inizia offline
 
-`patients/`, `ontologies/` e `.ontology_cache/` conservano i percorsi dei dati
-locali gia usati dai mount Docker. I dati non vengono spostati dalla riorganizzazione.
-
-La [guida alla struttura](docs/architecture/project-layout.md) spiega le dipendenze
-e dove aggiungere codice. Per presentare il progetto al gruppo:
-[diagrammi e spiegazione](docs/architecture/overview.md).
-
-## Ambiente Python
-
-Python 3.12 o superiore e [uv](https://docs.astral.sh/uv/getting-started/installation/).
-Eseguire dalla radice del repository:
-
-```powershell
-uv sync --locked
-uv run sparql-check tests/fixtures/cases/00_compliant.rq --policy config/policies/default.json
-uv run pytest -q
-```
-
-Il progetto viene installato in modalita editable da `src/`. Restano disponibili
-i comandi e gli import pubblici principali:
-
-```powershell
-uv run python -m sparql_analyzer.compliance tests/fixtures/cases/00_compliant.rq
-uv run python -m sparql_analyzer.demo
-uv run python -m examples.diagram_walkthrough
-uv run python -m examples.runtime_demo
-```
-
-```python
-from sparql_analyzer import Policy, ExecutionContext, ReleaseHistory, ShaclContext
-from sparql_analyzer.compliance import validate
-from sparql_analyzer.runtime import execute_checked, ResultBlocked
-```
-
-`validate` e `sparql-check` applicano solo i controlli statici. L'esecuzione con
-controlli sui dati, risultati e storico passa da `execute_checked`.
-Hardened richiede sia il contesto privacy fidato sia `shacl_context`.
-
-## Virtuoso
-
-Eseguire con Bash e Docker dalla radice del repository:
+Non servono GPU, Ollama o pesi. La demo usa modelli fittizi e dati sintetici:
 
 ```bash
-./infra/virtuoso/scripts/start.sh
-./infra/virtuoso/scripts/load-patients.sh
-./infra/virtuoso/scripts/query.sh infra/virtuoso/queries/count-per-graph.rq
+uv sync --locked --extra agents --extra mcp
+uv run python -m examples.fake_workflow
+uv run --extra agents --extra mcp pytest -m offline_workflow -q
 ```
 
-Configurazione e gestione dei dati sono nel [manuale Virtuoso](infra/virtuoso/README.md).
-Gli script interrogano direttamente il database: non attraversano il runtime
-verificato Python. L'integrazione tra i due percorsi resta da realizzare.
+Il gruppo di test include gli agenti PydanticAI, il client HTTP con risposte
+controllate e un MCP locale di test. Verifica collegamenti, blocchi, errori e
+oracoli; non misura l'accuratezza dei modelli reali.
+Per le strategie fittizie vedere la [guida](docs/guides/fake-models.md);
+per selezione dei test e report vedere [tests/README.md](tests/README.md).
 
-## Documentazione
+## Usa i modelli reali
 
-- [Indice delle guide](docs/README.md)
-- [Policy e toggle](docs/policies/configuration.md), [catalogo](docs/policies/checks.md)
-- [Controlli privacy](docs/policies/privacy.md) e [adeguatezza SHACL](docs/policies/adequacy-shacl.md)
-- [Attacchi e limiti della copertura](docs/security/anonymity-attacks.md)
-- [Test e profili verificati](tests/README.md)
-- [Tool di manutenzione](tools/README.md) ed [esempi](examples/README.md)
+Scegli LLM, indirizzo del server e checkpoint Laya in
+[config/agents/models.json](config/agents/models.json).
+Su un'istanza Linux con `curl` e `python3`:
 
-Le shape e i test non certificano l'anonimato generale delle risposte.
+```bash
+bash start-ollama.sh
+uv sync --locked --extra local
+uv run --extra local python -m agent_orchestration --prompt "Conta i pazienti distinti con diagnosi fatturata"
+```
+
+Lo script installa Ollama se manca (root o sudo), avvia il server se necessario
+e prepara il modello configurato. Laya viene caricato da Python; l'MCP fornisce
+schemi ed esempi. La CLI genera e analizza la query, **senza eseguirla**.
+Per configurazione, permessi e integrazione nel programma vedere
+[modelli locali](docs/guides/local-models.md) e [workflow](docs/guides/agent-workflow.md).
+
+## Usa solo l'analizzatore
+
+La libreria SPARQL funziona anche senza dipendenze agentiche:
+
+```bash
+uv run sparql-check tests/fixtures/cases/00_compliant.rq --policy config/policies/default.json
+```
+
+`sparql-check` e `validate` applicano i controlli statici. L'esecuzione verificata
+passa da `execute_checked`; i profili `adequacy` e `hardened` richiedono anche
+i contesti fidati documentati nelle [guide alle policy](docs/policies/configuration.md).
+
+## Dove trovare le cose
+
+| Percorso | Contenuto |
+|---|---|
+| `src/sparql_analyzer/` | Parser, analisi, controlli di esecuzione, privacy e SHACL |
+| [src/agent_orchestration/](src/agent_orchestration/README.md) | Modelli, adattatori, workflow e valutazione |
+| [config/](config/README.md) | Modelli, MCP, policy e permessi di esempio |
+| [schemas/](schemas/README.md) | Schemi sorgenti, shape SHACL e VoID derivato |
+| [tests/](tests/README.md) | Suite, fixture e profili verificati |
+| [examples/](examples/README.md) | Demo del workflow e del controllore |
+| [tools/](tools/README.md) | Benchmark, generazione di fixture, export e verifiche documentali |
+| [infra/virtuoso/](infra/virtuoso/README.md) | Gestione del triplestore con Bash e Docker |
+| [docs/](docs/README.md) | Guide, architettura, sicurezza e specifiche |
+| `artifacts/` | Log, cache e report generati, esclusi da Git |
+
+La [mappa del codice](docs/architecture/project-layout.md) descrive le dipendenze.
+Gli script Virtuoso interrogano direttamente il database: il collegamento al
+runtime verificato Python resta da realizzare. Inferenza reale e compatibilita
+con la GPU richiedono una prova sull'istanza; shape e test non certificano
+l'anonimato generale delle risposte.

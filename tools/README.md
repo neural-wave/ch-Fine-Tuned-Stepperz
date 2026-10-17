@@ -1,16 +1,52 @@
-# Tool di sviluppo
+# Strumenti di sviluppo
 
 Eseguire dalla radice del repository dopo `uv sync --locked`.
+Questi comandi generano fixture, report o documentazione e possono sostituire
+i file nella destinazione indicata.
 
-| Comando | Output |
+## Benchmark del workflow
+
+Per valutare il corpus prompt-query con risposte predisposte, senza modelli:
+
+```bash
+uv run --extra agents python -m tools.evaluate_workflow --offline
+```
+
+Il report e `artifacts/workflow-evaluation/report.json`. `--component generation`
+e `--component system` isolano le due parti. Per usare i backend di `models.json`:
+
+```bash
+uv run --extra local python -m tools.evaluate_workflow --models-config config/agents/models.json
+```
+
+L'offline verifica i collegamenti tra componenti; la misura dei modelli richiede
+i backend reali. Oracoli e limiti sono nella [guida al workflow](../docs/guides/agent-workflow.md).
+La CLI per una singola richiesta e `python -m agent_orchestration`; istruzioni
+nella [guida ai modelli locali](../docs/guides/local-models.md).
+
+## Dataset e prompt
+
+| Comando | Risultato |
 |---|---|
-| `uv run python -m tools.generate_synthetic_data --patients 12 --seed 42` | `tests/fixtures/synthetic/cohort.trig`; `--out` permette un file diverso |
+| `uv run python -m tools.generate_synthetic_data --patients 12 --seed 42` | Rigenera `tests/fixtures/synthetic/cohort.trig`; `--out` cambia destinazione |
+| `uv run python -m tools.build_prompt_links` | Rigenera le associazioni prompt-query in `tests/fixtures/system/prompt_query_links.json` |
+| `uv run python -m tools.generate_system_dataset` | Crea il piccolo benchmark sintetico in `artifacts/system-dataset/`; `--out` cambia destinazione |
+
+Dopo aver modificato query o prompt, rivedere le associazioni e le etichette.
+`generate_workflow_fixtures.py` è una libreria usata da test e valutazione:
+non serve eseguirla separatamente. Per scegliere il dataset adatto vedere la
+[guida ai dataset](../docs/system-dataset.md).
+
+## Report e documentazione
+
+| Comando | Risultato |
+|---|---|
 | `uv run python -m tools.export_test_results` | Alberi, verdetti e osservazioni avversarie in `artifacts/tests/` |
 | `uv run python -m tools.export_adversarial` | Sottocorpus avversario in `artifacts/tests/adversarial/` |
-| `uv run python -m sparql_analyzer.export_policy` | Profili JSON e catalogo dei controlli |
-| `uv run python -m tools.export_diagrams` | Sei file Mermaid sincronizzati con la guida |
-| `uv run python -m tools.check_docs` | Controllo dei collegamenti locali Markdown |
+| `uv run python -m sparql_analyzer.export_policy` | Rigenera i profili in `config/policies/` e il catalogo dei controlli |
+| `uv run python -m tools.export_diagrams` | Rigenera i sei file Mermaid dai diagrammi della guida |
+| `uv run python -m tools.check_docs` | Verifica i percorsi locali dei collegamenti Markdown |
 
-I comandi di export sono strumenti del checkout, non parti del servizio che
-risponde alle richieste. Le osservazioni avversarie nel default possono
-dimostrare un rischio: un esito atteso non significa sempre attacco bloccato.
+Le osservazioni avversarie possono dimostrare un rischio: un esito atteso non
+significa sempre che l'attacco sia stato bloccato. I comandi per eseguire i test
+sono in [tests](../tests/README.md); le demo sono in [examples](../examples/README.md).

@@ -8,13 +8,26 @@ version = "0.1.0"
 description = "Analisi SPARQL e controlli deterministici di compliance"
 requires-python = ">=3.12"
 dependencies = [
-    "rdflib==6.3.2",
+    "rdflib==7.1.4",
     "pyparsing==3.2.1",
     "pyshacl==0.25.0",
 ]
 
 [project.scripts]
 sparql-check = "sparql_analyzer.cli:main"
+
+[project.optional-dependencies]
+agents = [
+    "pydantic-ai-slim[openai]>=1.0,<2",
+]
+mcp = [
+    "mcp>=1.12,<2",
+]
+local = [
+    "pydantic-ai-slim[openai]>=1.0,<2",
+    "laya>=0.4.9,<0.5",
+    "mcp>=1.12,<2",
+]
 
 [tool.setuptools.packages.find]
 where = ["src"]
@@ -28,6 +41,7 @@ python_files = ["test_*.py"]
 pythonpath = ["src", "."]
 addopts = "-ra"
 markers = [
+    "offline_workflow: scripted models and local workflow interactions, without inference services",
     "security_gap: regressione delle lacune storiche, verificata con il profilo hardened",
     "risk_demonstration: test che dimostra un rischio osservato, non una protezione",
 ]

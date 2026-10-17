@@ -1,126 +1,126 @@
-# Test dell'analizzatore SPARQL
+# Test
 
-Le suite sono suddivise in `analysis/`, `runtime/`, `configuration/`, `privacy/`
-e `adequacy/`. Query e dati versionati sono in `fixtures/`, i costruttori comuni
-in `support/`. `tests/paths.py` centralizza i percorsi. Gli export rigenerabili
-vengono scritti in `artifacts/tests/` dalla radice del repository.
+Tutti i comandi partono dalla radice del repository. Le suite usano dati RDF
+sintetici locali; i test dei modelli usano risposte controllate, senza scaricare
+pesi o contattare servizi di inferenza.
 
-## Profili usati nei test
+## Esecuzione
 
-L'ultima esecuzione completa, con la policy SHACL, ha prodotto **503 test passati, nessun xfail**.
-Questo e il totale di una suite con configurazioni diverse: non significa
-che tutti i 503 casi siano stati eseguiti con il profilo hardened.
+Per la suite completa, incluse le integrazioni PydanticAI e MCP:
 
-| Gruppo | Configurazione effettiva | Cosa dimostra |
-|---|---|---|
-| Parsing, compliance, runtime, sottoquery e aggregazioni preesistenti | Predefinita, salvo override espliciti nel singolo test | Compatibilita e comportamento del percorso storico |
-| 6 regressioni generali in `test_adversarial_sequences.py` | Hardened con `adequacy_shacl=False` e contesto fidato | Blocco dei bypass privacy su fixture minimali, senza confonderlo con un rifiuto SHACL |
-| 11 regressioni complesse in `test_complex_attacks.py` | Hardened con `privacy_normalize_errors=False`, `adequacy_shacl=False` e contesto fidato | Blocco dei bypass; un crash imprevisto non viene scambiato per un rifiuto corretto |
-| Controlli positivi complessi e aggregazioni individuali intermedie in `test_privacy_policies.py` | Hardened con `privacy_normalize_errors=False`, `adequacy_shacl=False` | Le query lecite di questi casi continuano a funzionare sulle fixture privacy |
-| `test_adequacy.py` | Profilo adequacy e override espliciti; un caso con hardened completo e i due contesti fidati | SHACL Core/SPARQL, target SPARQL, grafi separati, meta-schema, severita, errori, RDFS, stabilita dei dati e combinazione con privacy |
-| Verifica di toggle e prerequisiti in `test_policy.py` e `test_privacy_policies.py` | Configurazioni specifiche per test, anche unrestricted | Effetto reale di attivazione/disattivazione, dipendenze e mancanza di metadati |
-| Osservazioni dei bypass e test `risk_demonstration` | Predefinita | Il rischio storico esiste senza le nuove protezioni: un test verde qui non prova che l'attacco sia bloccato |
-
-La suite verifica il blocco dei **17 scenari noti** e il funzionamento dei
-controlli positivi indicati. Non e stata eseguita l'intera suite nuovamente sotto
-un unico profilo hardened, ne costituisce una prova di riconoscimento di ogni
-attacco o di accettazione di ogni query innocua. Alcune regole sono conservative.
-
-Per eseguire le regressioni dei 17 scenari:
-
-```powershell
-uv run pytest tests/privacy/test_complex_attacks.py tests/privacy/test_adversarial_sequences.py -m security_gap -v
+```bash
+uv sync --locked --extra agents --extra mcp
+uv run --extra agents --extra mcp pytest -q
 ```
 
-Per i controlli positivi e i toggle privacy: `uv run pytest tests/privacy/test_privacy_policies.py -v`.
-I dettagli del contesto necessario e dei limiti sono nella [guida privacy](../docs/policies/privacy.md).
-Le fixture privacy restano intenzionalmente minimali e non conformi alle shape
-SPHN complete. La nuova suite usa [shape dedicate](fixtures/shacl/shapes.ttl) e carica
-anche il file SPHN completo per verificare un'istanza Algorithm valida e una
-invalida tramite target SPARQL. Il meta-schema del file completo e verificato
-nel caso valido, non nuovamente nella variante invalida con shape identiche.
-Per eseguirla: `uv run pytest tests/adequacy/test_adequacy.py -v`.
-Vedi [policy di adeguatezza e limiti](../docs/policies/adequacy-shacl.md).
+Per lavorare soltanto sul workflow offline prima del deployment:
 
-Dalla radice del progetto:
+```bash
+uv run --extra agents --extra mcp pytest -m offline_workflow -q --junitxml=artifacts/tests/offline-workflow.xml
+```
 
-```powershell
+Il marker comprende contratti dei modelli, strategie fittizie, combinazioni tra
+classificazione e generazione, arresto dopo un blocco, propagazione del contesto,
+output invalidi e retry, errori, timeout, cancellazione, riuso e concorrenza.
+Verifica anche gli oracoli sulle fixture e il collegamento HTTP/MCP con risposte
+controllate. Il client HTTP usa un trasporto simulato; il server MCP è un processo
+stdio minimale locale, non il server upstream. Laya è sostituito nei test.
+
+Senza gli extra si possono eseguire i controlli deterministici e i modelli fittizi:
+
+```bash
 uv sync --locked
-uv run pytest -v
+uv run pytest -q
+uv run pytest tests/agents/test_offline_workflow_interactions.py -q
 ```
 
-- `test_compliance.py`: 19 regressioni e 32 casi parametrizzati (51 test statici).
-- `fixtures/cases/`: query .rq separate, indice e cases.json con esiti attesi e motivi.
-- `tools/export_test_results.py`: genera alberi, verdetti e osservazioni runtime dei sottocorpus.
-- `artifacts/tests/`: un risultato per caso e report.json riepilogativo, rigenerabili.
+I moduli che richiedono PydanticAI o MCP vengono saltati quando la dipendenza
+manca: controllare il riepilogo degli skip prima di dichiarare completa una prova.
+Per filtrare un caso: `uv run pytest -k identifier_alias -v`.
 
-Per rigenerare i risultati: `uv run python -m tools.export_test_results`.
-Per un singolo caso: `uv run pytest -v -k identifier_alias`.
-In VS Code usare il pannello Testing, che cerca nella cartella tests/.
+## Dove trovare i test
 
-Regole: R1 singolo paziente; R2 risultati non aggregati; R3 scansione libera;
-R4 query diversa da SELECT; R5 identificatori in uscita. Una query puo violare
-piu regole. I casi non supportati sono bloccati senza essere approvati.
+| Percorso | Copertura |
+|---|---|
+| [`analysis/`](analysis/) | Parsing, regole statiche, operatori e sottoquery |
+| [`runtime/`](runtime/) | Coorti, risultati, soppressione e aggregazioni numeriche |
+| [`configuration/`](configuration/) | Profili, toggle e prerequisiti delle policy |
+| [`privacy/`](privacy/) | Attacchi, risposte alterate e regressioni hardened |
+| [`adequacy/`](adequacy/) | SHACL Core/SPARQL e interazione con privacy |
+| [`agents/`](agents/) | Contratti, modelli fittizi e integrazioni del workflow |
+| [`test_system_dataset.py`](test_system_dataset.py) | Dataset sintetico iniziale di sistema |
+| [`fixtures/`](fixtures/) | Query, associazioni prompt-query e dati versionati |
+| [`support/`](support/) | Costruttori di fixture e server MCP di test |
 
-[Indice delle query](fixtures/cases/README.md) e [policy e limiti](../docs/guides/sparql.md).
+[`paths.py`](paths.py) centralizza i percorsi. Gli output rigenerabili vanno
+in `artifacts/`, non accanto alle fixture.
 
-## Pazienti sintetici e runtime
+## Valutare prompt, generazione e sistema
 
-```powershell
+```bash
+uv run --extra agents python -m tools.evaluate_workflow --offline
+```
+
+Il report è `artifacts/workflow-evaluation/report.json`. `TestModel` riceve
+etichette e query già note: il report verifica collegamenti e oracoli, non
+l'accuratezza di un modello. L'uguaglianza dei risultati sulle fixture non prova
+equivalenza semantica universale.
+
+La [guida al workflow](../docs/guides/agent-workflow.md) descrive associazioni,
+split e confronto dei risultati. Per cambiare modelli usare le guide ai
+[modelli fittizi](../docs/guides/fake-models.md) e
+[modelli locali](../docs/guides/local-models.md). Il
+[dataset di sistema iniziale](../docs/system-dataset.md) resta uno smoke test
+separato dal corpus principale.
+
+## Leggere i test di sicurezza
+
+La suite usa configurazioni diverse: un risultato verde non significa che tutti
+i casi siano stati eseguiti con il profilo hardened.
+
+| Gruppo | Profilo e significato |
+|---|---|
+| Controlli deterministici e osservazioni avversarie | Predefinito, salvo override nel test |
+| Marker `security_gap` | Verifica il blocco degli scenari generali e delle varianti complesse con hardened, contesto fidato e SHACL disattivato sulle fixture privacy minimali |
+| Regressioni complesse e controlli positivi privacy | Disattivano anche `privacy_normalize_errors`, così un crash imprevisto non vale come blocco riuscito |
+| Marker `risk_demonstration` | Riproduce un rischio sul profilo predefinito: il test passa quando osserva quel rischio |
+| Suite adequacy | Usa configurazioni e contesti SHACL espliciti; non presume che le fixture privacy rispettino tutte le shape SPHN |
+
+```bash
+uv run pytest tests/privacy -m security_gap -v
+uv run pytest tests/privacy/test_privacy_policies.py -q
+uv run pytest tests/adequacy -q
+```
+
+Le regressioni `security_gap` sono test ordinari, non `xfail`. Il loro blocco
+non dimostra la copertura di ogni attacco o l'accettazione di ogni query lecita;
+alcune regole sono conservative. Dettagli e limiti nelle guide a
+[privacy](../docs/policies/privacy.md) e [SHACL](../docs/policies/adequacy-shacl.md).
+
+I test offline non verificano l'accuratezza dei modelli reali, la GPU, Virtuoso,
+ACL e isolamento del deployment, né garantiscono anonimato sui dati reali.
+
+## Corpus e report
+
+- [Query di compliance](fixtures/cases/README.md): query `.rq` con aspettative statiche.
+- [Corpus avversario](fixtures/adversarial/README.md): attacchi singoli, sequenze e risposte alterate.
+- [Sonde complesse](fixtures/adversarial_complex/README.md): osservazioni sul profilo predefinito e regressioni hardened.
+
+Per rigenerare alberi, verdetti e osservazioni dei corpus:
+
+```bash
+uv run python -m tools.export_test_results
+```
+
+Output in `artifacts/tests/`; gli export descrivono il profilo usato dal relativo
+tool e non sostituiscono le regressioni hardened di pytest.
+
+Per rigenerare la fixture RDF sintetica e provare il runtime locale:
+
+```bash
 uv run python -m tools.generate_synthetic_data --patients 12 --seed 42
 uv run python -m examples.runtime_demo
 ```
 
-- test_runtime.py: 29 test di coorte, risultato, soppressione e tipi inattesi.
-- data/synthetic/cohort.trig: fixture generata localmente e riproducibile.
-- results/runtime-demo.json: scenari consentiti e bloccati.
-
-La suite originaria comprende 80 test. Il runtime locale non e collegato a Virtuoso.
-
-## Casi avversari avanzati
-
-I 17 requisiti storici prima xfail (6 scenari generali e 11 varianti complesse)
-sono ora test di blocco del profilo hardened. La configurazione predefinita
-mantiene le dimostrazioni dei rischi per verificare l'effetto dei toggle.
-Vedi `test_privacy_policies.py` e la [guida alle nuove policy](../docs/policies/privacy.md).
-I conteggi e gli xfail indicati nelle sezioni storiche sotto documentano le suite precedenti.
-
-Vedi [corpus, matrice e lacune](fixtures/adversarial/README.md): 45 casi singoli con query
-separate, 12 test di risposte alterate e 10 scenari con 6 lacune riprodotte come
-xfail strict e 4 dimostrazioni di rischio. Con i divieti espliciti e le statistiche numeriche, la suite precedente comprende 241 test:
-235 passano e 6 sono fallimenti attesi, non protezioni riuscite.
-
-```powershell
-uv run pytest -v
-uv run python -m tools.export_test_results
-uv run pytest -m security_gap --runxfail -v
-```
-
-L'ultimo comando rende visibili i sei fallimenti di sicurezza ancora aperti.
-
-La policy v2 ha test dedicati in `test_forbidden_operators.py`: divieti espliciti,
-operatori annidati, parole innocue nel testo e conservazione di UNION/OPTIONAL.
-
-## Statistiche numeriche v3
-
-`test_numeric_operations.py` aggiunge 55 test su SUM/AVG, DISTINCT, aritmetica,
-arrotondamenti, IF/COALESCE numerici, filtri, dati non numerici, coorti piccole,
-aggregati nascosti in HAVING e risposte alterate. Esempi separati in
-`numeric/queries/`. Il corpus avversario r04 e ora bloccato prima dell'esecuzione;
-r05 e diventato un controllo positivo dell'aritmetica su conteggi.
-
-## Query complesse che aggirano il controllo
-
-Vedi [sonde complesse e bypass riprodotti](fixtures/adversarial_complex/README.md).
-La nuova suite aggiunge 25 query separate e 36 test: 25 osservazioni, di cui 11
-riproducono esposizioni, e 11 requisiti di blocco ancora falliti (xfail strict).
-Sono varianti di alcune famiglie di lacune, non 11 vulnerabilita indipendenti.
-
-Snapshot storico precedente: 277 test, 260 passati e 17 fallimenti attesi. I test marcati
-risk_demonstration non sono prove di protezione. Il controllore non e stato
-modificato per questa aggiunta: si sta misurando il suo comportamento attuale.
-
-```powershell
-uv run pytest tests/privacy/test_complex_attacks.py -v
-uv run python -m tests.support.complex_attacks
-```
+La fixture è `tests/fixtures/synthetic/cohort.trig`; il report è
+`artifacts/tests/runtime-demo.json`.
