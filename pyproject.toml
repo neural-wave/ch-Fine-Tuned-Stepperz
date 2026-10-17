@@ -19,6 +19,7 @@ sparql-check = "sparql_analyzer.cli:main"
 sparql-run = "agent_orchestration.cli:main"
 
 [project.optional-dependencies]
+validation = ["httpx>=0.28,<1"]
 api = ["uvicorn>=0.30,<1"]
 agents = [
     "pydantic-ai-slim[openai]>=1.0,<2",
@@ -39,7 +40,7 @@ where = ["src"]
 dev = ["pytest==9.1.1"]
 
 [tool.pytest.ini_options]
-testpaths = ["tests"]
+testpaths = ["tests", "system_validation/tests"]
 python_files = ["test_*.py"]
 pythonpath = ["src", "."]
 addopts = "-ra"

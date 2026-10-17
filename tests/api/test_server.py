@@ -50,6 +50,18 @@ def test_success_returns_original_query_and_all_models_tokens():
     assert len(translator.generator.calls) == 2
 
 
+def test_opt_in_analytics_exposes_real_counters_and_stage_times():
+    with TestClient(server.create_app(service())) as client:
+        result = client.post("/nl-to-sparql", json={"text": "count"}, headers={"X-Include-Analytics": "true"}).json()
+    analytics = result["analytics"]
+    assert analytics["token_usage"]["total_tokens"] == result["tokens_consumed"] == 22
+    assert analytics["token_usage"]["by_stage"]["generation"]["requests"] == 2
+    assert analytics["token_usage"]["by_stage"]["prompt_validation"]["input_tokens"] == 7
+    assert analytics["prompt_decision"] == "allow"
+    assert analytics["timings"]["generation"] >= 0
+    assert analytics["timings"]["total"] >= sum(analytics["timings"][key] for key in ("prompt_validation", "generation", "analysis"))
+
+
 @pytest.mark.parametrize("query", [
     "DELETE WHERE { ?s ?p ?o }",
     "ASK { ?s ?p ?o }",

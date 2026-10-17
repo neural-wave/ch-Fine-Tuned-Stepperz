@@ -5,6 +5,11 @@ un prompt, demo, benchmark e test vedere la [guida dei comandi](../docs/guides/c
 Il sottoprogetto [LLM_ENGINE](../LLM_ENGINE/README.md) ha una propria suite e
 un proprio ambiente, non inclusi dal `testpaths` del progetto principale.
 
+Il package [system_validation](../system_validation/README.md), fuori da `src/`,
+contiene il benchmark reale API/Virtuoso e i propri test offline. Questi ultimi
+sono inclusi nel `testpaths` e in `test.sh`; il benchmark reale si avvia solo
+esplicitamente e registra metriche informative senza soglie pass/fail.
+
 `tests/agents/test_shared_mcp.py` verifica anche il vero server SPHN di quel
 progetto, avviato temporaneamente su loopback. Per abilitarlo preparare prima
 l'ambiente con `uv sync --locked --project LLM_ENGINE --python 3.12`;

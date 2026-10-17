@@ -7,6 +7,7 @@ Partire dal [README principale](../README.md) per orientarsi e dalla
 
 | Obiettivo | Documentazione |
 |---|---|
+| Misurare classificazione, token e tempi con API e Virtuoso reali | [Package di validazione separato](../system_validation/README.md) |
 | Esporre POST /nl-to-sparql al client | [API HTTP](guides/http-api.md) |
 | Eseguire un prompt con modelli reali | [Avvio locale](guides/local-models.md), [configurazione](../config/README.md) |
 | Capire stati, fasi e componenti del workflow | [Workflow agentico](guides/agent-workflow.md) |

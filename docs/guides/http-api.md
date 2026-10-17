@@ -78,6 +78,9 @@ se il controllo del prompt non passa.
 conteggiate dal backend. L'analisi statica non consuma token. Se i contatori sono
 assenti, incompleti o stimati, l'API restituisce un errore: non inventa uno zero.
 Il dettaglio per modello e la query sono nei log in `artifacts/logs/`.
+Per il [package di validazione](../../system_validation/README.md), l'header
+`X-Include-Analytics: true` aggiunge il campo `analytics` con token per fase,
+tempi e decisione del classificatore. Senza header il JSON standard resta uguale.
 
 Policy e permessi si modificano in `config/agents/policy.txt` e
 `config/agents/permissions.txt`. Lo schema viene recuperato dal MCP configurato

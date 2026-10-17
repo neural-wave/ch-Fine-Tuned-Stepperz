@@ -28,6 +28,7 @@ class NlToSparqlResponse(BaseModel):
     tokens_consumed: int = Field(ge=0)
     is_compliant: bool
     compliance_reason: str | None = None
+    analytics: dict | None = None
 
 
 class ErrorResponse(BaseModel):
@@ -80,7 +81,10 @@ def create_app(service=None):
             async with asyncio.timeout(REQUEST_TIMEOUT):
                 # Serialize access to the shared inference backend.
                 async with request.app.state.lock:
-                    return await request.app.state.translator.run(text)
+                    result = await request.app.state.translator.run(text)
+                    if request.headers.get("x-include-analytics") != "true":
+                        result.pop("analytics", None)
+                    return result
         except TimeoutError:
             logger.exception("Translation deadline exceeded")
             raise HTTPException(504, "Translation timed out.") from None
