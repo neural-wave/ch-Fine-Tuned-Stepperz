@@ -37,13 +37,16 @@ def configure_logging(label="workflow", *, console=False) -> Path:
     with _lock:
         root = logging.getLogger()
         created = False
-        if (_handler is None or _handler.stream is None
-                or getattr(_handler, "_sparql_pid", None) != os.getpid()):
+        if (_handler is None or _handler.stream is None or _handler.stream.closed
+                or getattr(_handler, "_sparql_pid", None) != os.getpid()
+                or not Path(_handler.baseFilename).is_file()):
             resume = _handler is not None and getattr(_handler, "_sparql_pid", None) == os.getpid()
             previous_path = Path(_handler.baseFilename) if resume else None
             if _handler is not None:
                 for name in ("", "uvicorn", "uvicorn.error", "uvicorn.access"):
                     logging.getLogger(name).removeHandler(_handler)
+                if _handler.stream is not None and _handler.stream.closed:
+                    _handler.stream = None
                 _handler.close()
             directory = Path(os.getenv("SPARQL_LOG_DIR",
                 str(Path(__file__).resolve().parents[2] / "artifacts/logs")))
@@ -64,10 +67,21 @@ def configure_logging(label="workflow", *, console=False) -> Path:
         root.setLevel(min(root.level, _handler.level))
         if _handler not in root.handlers:
             root.addHandler(_handler)
+        # dictConfig disables existing named loggers by default. Restoring the
+        # root handler alone does not enable api.server/api.service again.
+        for prefix in ("api", "agent_orchestration", "sparql_analyzer"):
+            logging.getLogger(prefix)
+        for name, target in tuple(root.manager.loggerDict.items()):
+            if isinstance(target, logging.Logger) and name.split(".", 1)[0] in {
+                    "api", "agent_orchestration", "sparql_analyzer"}:
+                target.disabled = False
+                target.setLevel(logging.NOTSET)
+                target.propagate = True
         # Uvicorn intentionally stops propagation for its own console logs.
         # Attach at those boundaries only, so each event reaches the file once.
         for name in ("uvicorn", "uvicorn.error", "uvicorn.access"):
             target = logging.getLogger(name)
+            target.disabled = False
             if not target.propagate and _handler not in target.handlers:
                 target.addHandler(_handler)
             elif target.propagate and _handler in target.handlers:

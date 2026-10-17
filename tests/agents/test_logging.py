@@ -107,6 +107,32 @@ print(json.dumps({'ok': True}))
     assert json.loads(result.stdout.splitlines()[-1]) == {"ok": True}
 
 
+def test_cached_log_recovers_a_closed_stream_or_missing_target(tmp_path):
+    code = '''
+import logging
+from agent_orchestration import logging_setup
+
+first = logging_setup.configure_logging('probe')
+logging.getLogger('api.service').info('before-close-marker')
+logging_setup._handler.stream.close()
+assert logging_setup.configure_logging('probe') == first
+logging.getLogger('api.service').info('after-close-marker')
+text = first.read_text(encoding='utf-8')
+assert 'before-close-marker' in text and 'after-close-marker' in text
+# Simulate a cached open descriptor whose advertised filename no longer exists.
+missing = first.with_name('missing-target.log')
+logging_setup._handler.baseFilename = str(missing)
+assert not missing.exists()
+assert logging_setup.configure_logging('probe') == missing
+logging.getLogger('api.service').info('restored-target-marker')
+assert 'restored-target-marker' in missing.read_text(encoding='utf-8')
+'''
+    env = {**os.environ, "SPARQL_LOG_DIR": str(tmp_path), "SPARQL_LOG_LEVEL": "INFO",
+           "PYTHONPATH": str(Path(__file__).resolve().parents[2] / "src")}
+    result = subprocess.run([sys.executable, "-c", code], env=env, capture_output=True, text=True, timeout=20)
+    assert result.returncode == 0, result.stderr
+
+
 def test_workflow_logs_query_once_but_standalone_adapter_keeps_its_logs(caplog):
     import asyncio
     import logging

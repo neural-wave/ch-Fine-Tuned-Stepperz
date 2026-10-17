@@ -55,3 +55,37 @@ print('api-log-check-passed')
     assert result.returncode == 0, result.stderr
     assert 'api-log-check-passed' in result.stdout
     assert 'API logging file=' in result.stderr
+
+
+def test_endpoint_recovers_application_loggers_disabled_by_backend_config(tmp_path):
+    code = '''
+import logging, logging.config
+from fastapi.testclient import TestClient
+from api.server import create_app
+from tests.api.test_server import service
+
+app = create_app(service())
+with TestClient(app) as client:
+    path = app.state.log_path
+    # dictConfig defaults to disable_existing_loggers=True. Root handlers can
+    # be restored while api.server/api.service remain individually disabled.
+    logging.config.dictConfig({'version': 1, 'handlers': {},
+        'root': {'level': 'WARNING', 'handlers': []}})
+    assert logging.getLogger('api.service').disabled
+    logging.getLogger('api.service').setLevel(logging.CRITICAL)
+    logging.getLogger('api.service').propagate = False
+    response = client.post('/nl-to-sparql', json={'text': 'after-backend-log-config-marker'})
+    assert response.status_code == 200, response.text
+text = path.read_text(encoding='utf-8')
+assert 'after-backend-log-config-marker' in text, 'API logger remained disabled'
+assert 'API generated SPARQL' in text
+assert 'API token usage' in text
+assert 'HTTP request completed' in text
+assert text.count('API generated SPARQL') == 1
+'''
+    root = Path(__file__).resolve().parents[2]
+    env = {**os.environ, "SPARQL_LOG_DIR": str(tmp_path), "SPARQL_LOG_LEVEL": "INFO",
+           "PYTHONPATH": os.pathsep.join([str(root / "src"), str(root)])}
+    result = subprocess.run([sys.executable, "-c", code], cwd=root, env=env,
+                            capture_output=True, text=True, timeout=30)
+    assert result.returncode == 0, result.stderr

@@ -152,6 +152,11 @@ solo il contenuto della risposta HTTP.
 
 Se un'altra configurazione di logging rimuove o chiude il gestore del file,
 la richiesta successiva lo ripristina mantenendo il contenuto gia scritto.
+Il ripristino riabilita anche i logger applicativi eventualmente disattivati
+da `dictConfig` e ripristina la propagazione e il livello centralizzato.
+Se il file non esiste piu, viene ricreato sullo stesso percorso alla richiesta
+successiva. Il ripristino del solo gestore root non basta: un logger nominato
+con `disabled=True` scarta i messaggi prima che raggiungano il file.
 `SPARQL_LOG_DIR` cambia directory e `SPARQL_LOG_LEVEL` cambia livello;
 il valore predefinito `INFO` include richieste, query e token.
 Per seguire il file usare il percorso stampato all'avvio:
