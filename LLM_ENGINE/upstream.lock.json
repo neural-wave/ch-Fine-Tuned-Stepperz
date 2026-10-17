@@ -1,0 +1,10 @@
+{
+  "sparql-llm": {
+    "url": "https://github.com/sib-swiss/sparql-llm.git",
+    "revision": "86561211c6a7816b96552a38405c50488050cc4f"
+  },
+  "sparql-examples": {
+    "url": "https://github.com/sib-swiss/sparql-examples.git",
+    "revision": "45e5b53a2d59a121221cd66a8596ef868cc58021"
+  }
+}

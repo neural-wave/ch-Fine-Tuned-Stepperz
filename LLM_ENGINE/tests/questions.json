@@ -1,0 +1,50 @@
+[
+  {
+    "id": "uniprot_lct",
+    "question": "Write a SPARQL query to retrieve human proteins encoded by the LCT gene from UniProt.",
+    "classes": ["UniProt Protein", "UniProt Gene", "UniProt Taxon"],
+    "source": "User-supplied question; related SIB example: examples/UniProt/96_uniprot_encoding_gene_name.ttl"
+  },
+  {
+    "id": "uniprot_gene_names",
+    "question": "Write a UniProt SPARQL query listing proteins with their associated genes and preferred gene names. Limit the result to 20 rows.",
+    "classes": ["UniProt Protein", "UniProt Gene"],
+    "source": "examples/UniProt/96_uniprot_encoding_gene_name.ttl"
+  },
+  {
+    "id": "uniprot_review_status",
+    "question": "Write a UniProt SPARQL query listing 20 proteins and whether each is reviewed or unreviewed.",
+    "classes": ["UniProt Protein"],
+    "source": "examples/UniProt/106_uniprot_reviewed_or_not.ttl"
+  },
+  {
+    "id": "uniprot_taxonomy_optional",
+    "question": "Write a UniProt SPARQL query returning the scientific name and optional taxonomic rank for taxon 9606.",
+    "classes": ["UniProt Taxon"],
+    "source": "examples/UniProt/86_taxonomy_rank_and_scientific_name.ttl"
+  },
+  {
+    "id": "uniprot_self_interaction",
+    "question": "Write a UniProt SPARQL query finding reviewed human proteins annotated as self-interacting. Return at most 20 proteins.",
+    "classes": ["UniProt Protein", "UniProt Self Interaction"],
+    "source": "examples/UniProt/136_self_interacting_reviewed_human_proteins.ttl"
+  },
+  {
+    "id": "uniprot_glycosylation",
+    "question": "Write a UniProt SPARQL query finding glycosylation sites on reviewed human proteins, including residue position and glycosylation type. Limit to 20 rows.",
+    "classes": ["UniProt Protein", "UniProt Glycosylation Annotation"],
+    "source": "examples/UniProt/139_glycosylation_sites_on_human_proteins.ttl"
+  },
+  {
+    "id": "uniprot_reference_proteomes",
+    "question": "Write a UniProt SPARQL query finding reference proteomes for NCBI taxon 9606, retaining the taxon even when no reference proteome is found.",
+    "classes": ["UniProt Taxon", "UniProt Reference Proteome"],
+    "source": "examples/UniProt/120_for_taxon_find_reference_proteomes.ttl"
+  },
+  {
+    "id": "uniprot_count_self_interacting",
+    "question": "Write a UniProt SPARQL query counting distinct reviewed human proteins annotated as self-interacting.",
+    "classes": ["UniProt Protein", "UniProt Self Interaction"],
+    "source": "Aggregation variant of examples/UniProt/136_self_interacting_reviewed_human_proteins.ttl"
+  }
+]
