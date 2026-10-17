@@ -15,3 +15,5 @@ artifacts/
 build/
 dist/
 *.egg-info/
+
+/hackathon-virtuoso-release/ontologies/

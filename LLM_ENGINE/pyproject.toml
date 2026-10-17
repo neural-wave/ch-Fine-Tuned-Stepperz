@@ -1,0 +1,41 @@
+[project]
+name = "sib-sparql-agent"
+version = "0.1.0"
+description = "Local OpenAI-compatible Qwen client for SIB SPARQL MCP retrieval"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+  "openai>=2.0,<3",
+  "mcp>=2.2.0,<3",
+  "jsonschema>=4.23,<5",
+  "python-dotenv>=1.0,<2",
+  "rdflib>=7.6,<8",
+]
+
+[dependency-groups]
+dev = ["pytest>=9,<10", "pytest-asyncio>=1,<2", "ruff>=0.14"]
+
+[project.scripts]
+sparql-agent = "sparql_agent.cli:main"
+sparql-benchmark = "sparql_agent.benchmark:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/sparql_agent"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+markers = ["live: requires real local LLM and SIB MCP services (opt-in)"]
+
+[tool.ruff]
+target-version = "py311"
+line-length = 110
+extend-exclude = ["external"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+ignore = ["E501"]

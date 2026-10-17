@@ -1,0 +1,16 @@
+**/.git
+**/.venv
+**/__pycache__
+**/node_modules
+**/data
+**/.env
+**/.env.*
+.uv-cache
+.pytest_cache
+.ruff_cache
+results
+models
+.fastembed_cache
+external/sparql-examples
+external/sparql-llm/chat-with-context
+external/sparql-llm/notebooks

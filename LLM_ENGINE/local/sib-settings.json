@@ -1,0 +1,13 @@
+{
+  "app_org": "Local SIB UniProt prototype",
+  "app_topics": "UniProt proteins, genes, sequences and taxonomy",
+  "app_public_host": "",
+  "endpoints": [
+    {
+      "label": "UniProt",
+      "endpoint_url": "https://sparql.uniprot.org/sparql/",
+      "description": "Public UniProt protein and annotation data",
+      "void_file": "tests/void_uniprot.ttl"
+    }
+  ]
+}

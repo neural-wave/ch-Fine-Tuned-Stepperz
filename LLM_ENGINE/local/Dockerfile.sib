@@ -1,0 +1,10 @@
+FROM ghcr.io/astral-sh/uv:python3.13-trixie-slim
+WORKDIR /app
+COPY external/sparql-llm/ /app/
+# Use the inspected upstream lock and supported agent extra. Its config imports
+# pydantic-settings, currently supplied by that extra rather than base dependencies.
+RUN uv sync --frozen --extra agent --no-dev
+COPY scripts/serve_sib.py /integration/serve_sib.py
+ENV PYTHONUNBUFFERED=1
+RUN mkdir -p /app/data /tmp/fastembed_cache
+CMD ["/app/.venv/bin/python", "/integration/serve_sib.py"]

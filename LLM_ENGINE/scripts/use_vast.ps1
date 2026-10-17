@@ -1,0 +1,11 @@
+# Dot-source this file in the same PowerShell session as the CLI commands.
+$env:LLM_BASE_URL = 'http://127.0.0.1:18080/v1'
+$env:LLM_MODEL = 'Qwen/Qwen3-30B-A3B-GPTQ-Int4'
+$env:LLM_API_KEY = 'EMPTY'
+$env:LLM_TEMPERATURE = '0'
+$env:LLM_MAX_TOKENS = '2048'
+$env:LLM_REASONING_EFFORT = ''
+$env:LLM_EXTRA_BODY = '{"chat_template_kwargs":{"enable_thinking":false}}'
+$env:MCP_URL = 'https://chat.expasy.org/mcp/'
+$env:TARGET_ENDPOINT = 'https://sparql.uniprot.org/sparql/'
+$env:ENABLE_SPARQL_EXECUTION = 'false'

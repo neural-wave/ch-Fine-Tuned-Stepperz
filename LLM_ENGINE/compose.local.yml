@@ -1,0 +1,44 @@
+name: sib-sparql-prototype
+
+x-sib: &sib
+  image: sib-sparql-prototype:local
+  build:
+    context: .
+    dockerfile: local/Dockerfile.sib
+  environment:
+    SETTINGS_FILEPATH: /config/sib-settings.json
+    VECTORDB_URL: http://vectordb:6333
+    AUTO_INIT: "false"
+    FORCE_INDEX: "false"
+    DOCS_COLLECTION_NAME: sib_uniprot_prototype
+    EMBEDDING_MODEL: BAAI/bge-small-en-v1.5
+    DEFAULT_NUMBER_OF_RETRIEVED_DOCS: "5"
+    FASTEMBED_CACHE_PATH: /tmp/fastembed_cache
+    MCP_LOGS_FILEPATH: /app/data/logs/mcp_logs.jsonl
+  volumes:
+    - ./local/sib-settings.json:/config/sib-settings.json:ro
+    - ./data/sib:/app/data
+    - ./.fastembed_cache:/tmp/fastembed_cache
+  depends_on:
+    - vectordb
+
+services:
+  vectordb:
+    image: qdrant/qdrant:v1.15.1
+    ports:
+      - "127.0.0.1:6333:6333"
+      - "127.0.0.1:6334:6334"
+    volumes:
+      - ./data/qdrant:/qdrant/storage
+    environment:
+      QDRANT__TELEMETRY_DISABLED: "true"
+
+  index:
+    <<: *sib
+    profiles: [index]
+    command: ["/app/.venv/bin/python", "-m", "sparql_llm.indexing.index_resources"]
+
+  mcp:
+    <<: *sib
+    ports:
+      - "127.0.0.1:8888:8888"
