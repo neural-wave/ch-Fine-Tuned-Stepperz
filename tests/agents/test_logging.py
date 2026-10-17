@@ -71,6 +71,42 @@ def test_log_block_preserves_query_text_and_does_not_change_it(caplog):
     assert '"patients": 8' in caplog.text
 
 
+def test_file_logging_recovers_after_uvicorn_reconfiguration(tmp_path):
+    pytest.importorskip("uvicorn")
+    code = '''
+import json, logging, logging.config
+from pathlib import Path
+from uvicorn.config import LOGGING_CONFIG
+from agent_orchestration.logging_setup import configure_logging
+
+first = configure_logging('probe')
+root = logging.getLogger()
+handler = next(h for h in root.handlers if isinstance(h, logging.FileHandler))
+root.removeHandler(handler)
+assert configure_logging('probe') == first
+logging.getLogger('api.server').info('after-detach-marker')
+logging.config.dictConfig(LOGGING_CONFIG)
+second = configure_logging('probe')
+assert second == first
+assert configure_logging('probe') == second
+logging.getLogger('api.server').info('after-reconfigure-marker')
+logging.getLogger('uvicorn.error').info('uvicorn-error-marker')
+logging.getLogger('uvicorn.access').info('%s - "%s %s HTTP/%s" %d',
+    '127.0.0.1:1234', 'GET', '/uvicorn-access-marker', '1.1', 200)
+assert 'after-detach-marker' in first.read_text(encoding='utf-8')
+text = second.read_text(encoding='utf-8')
+assert text.count('after-reconfigure-marker') == 1
+assert text.count('uvicorn-error-marker') == 1
+assert text.count('/uvicorn-access-marker') == 1
+print(json.dumps({'ok': True}))
+'''
+    env = {**os.environ, "SPARQL_LOG_DIR": str(tmp_path), "SPARQL_LOG_LEVEL": "INFO",
+           "PYTHONPATH": str(Path(__file__).resolve().parents[2] / "src")}
+    result = subprocess.run([sys.executable, "-c", code], env=env, capture_output=True, text=True, timeout=20)
+    assert result.returncode == 0, result.stderr
+    assert json.loads(result.stdout.splitlines()[-1]) == {"ok": True}
+
+
 def test_workflow_logs_query_once_but_standalone_adapter_keeps_its_logs(caplog):
     import asyncio
     import logging

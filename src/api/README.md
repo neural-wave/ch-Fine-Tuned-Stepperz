@@ -142,6 +142,24 @@ per salvare metriche informative, senza soglie o assert sulle prestazioni.
 Query, conteggi dei token ed errori vengono registrati in `artifacts/logs/`.
 I log dei servizi vLLM/MCP rimangono separati da quelli dell'API.
 
+All'avvio l'API stampa `API logging file=...` con il percorso assoluto del file
+`sparql-api-<timestamp>-<PID>.log`. I messaggi del workflow sono visibili anche
+nel terminale. Ogni richiesta HTTP registra metodo, percorso, stato e durata,
+incluse `/health`, richieste non valide ed errori prima dell'inferenza.
+Il file riceve anche i messaggi e gli access log di Uvicorn. Query e token sono
+registrati indipendentemente dall'header `X-Include-Analytics`, che controlla
+solo il contenuto della risposta HTTP.
+
+Se un'altra configurazione di logging rimuove o chiude il gestore del file,
+la richiesta successiva lo ripristina mantenendo il contenuto gia scritto.
+`SPARQL_LOG_DIR` cambia directory e `SPARQL_LOG_LEVEL` cambia livello;
+il valore predefinito `INFO` include richieste, query e token.
+Per seguire il file usare il percorso stampato all'avvio:
+
+```bash
+tail -F /percorso/assoluto/stampato/dal/server.log
+```
+
 ## Errori e limiti
 
 | HTTP | Significato |
@@ -176,7 +194,7 @@ solo dal proprio processo per evitare il warning, lasciando attiva la shell orig
 ## Test senza modelli
 
 ```bash
-uv run --locked --extra agents --extra mcp pytest tests/api -q
+uv run --locked --extra api --extra agents --extra mcp pytest tests/api -q
 ```
 
 I test usano backend simulati. Per configurare lo stack reale vedere la

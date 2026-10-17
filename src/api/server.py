@@ -4,6 +4,7 @@ from contextlib import asynccontextmanager
 import logging
 import os
 from pathlib import Path
+from time import perf_counter
 
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
@@ -38,7 +39,8 @@ class ErrorResponse(BaseModel):
 def create_app(service=None):
     @asynccontextmanager
     async def lifespan(app):
-        configure_logging("sparql-api")
+        app.state.log_path = configure_logging("sparql-api", console=True)
+        logger.info("API logging file=%s", app.state.log_path)
         app.state.lock = asyncio.Lock()
         if service is not None:
             app.state.translator = service
@@ -55,6 +57,22 @@ def create_app(service=None):
                 yield
 
     app = FastAPI(title="Natural Language to SPARQL API", version="1.0.0", lifespan=lifespan)
+
+    @app.middleware("http")
+    async def request_log(request: Request, call_next):
+        # Restore our handler if a later logging configuration detached/closed it.
+        request.app.state.log_path = configure_logging("sparql-api", console=True)
+        started = perf_counter()
+        logger.info("HTTP request started method=%s path=%s", request.method, request.url.path)
+        try:
+            response = await call_next(request)
+        except Exception:
+            logger.exception("HTTP request failed method=%s path=%s elapsed_seconds=%.3f",
+                             request.method, request.url.path, perf_counter() - started)
+            raise
+        logger.info("HTTP request completed method=%s path=%s status=%s elapsed_seconds=%.3f",
+                    request.method, request.url.path, response.status_code, perf_counter() - started)
+        return response
 
     @app.exception_handler(RequestValidationError)
     async def validation_error(request, error):
