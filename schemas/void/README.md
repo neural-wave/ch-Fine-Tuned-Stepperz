@@ -9,7 +9,10 @@ o leggere i file paziente.
 
 ## Utilizzo
 
-La configurazione [`sparql-mcp.json`](../../config/agents/sparql-mcp.json) usa gia:
+Il preset principale usa questo VoID nel server SPHN di `LLM_ENGINE`, avviato
+da `bash start-mcp.sh` e collegato tramite `mcp_url` in `models.json`.
+Per il precedente backend stdio, la configurazione opzionale
+[`sparql-mcp.json`](../../config/agents/sparql-mcp.json) usa:
 
 ```json
 "void_file": "schemas/void/sphn-schema-void.ttl",

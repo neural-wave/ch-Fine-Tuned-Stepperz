@@ -7,6 +7,15 @@
 > a workflow. This prototype does not route queries through the main verified
 > RDFLib runtime. Deployment details below are session records, not live checks.
 
+The main workflow now reuses this project's SPHN VoID server over HTTP.
+From the repository root, run `bash start-mcp.sh`; in another terminal run
+`uv run --extra agents --extra mcp sparql-run --check-mcp`.
+The script starts `scripts/serve_sphn_void.py` in this project's isolated
+environment with the shared files under the root `schemas/` directory.
+The default URL is `http://127.0.0.1:18888/mcp`. Only schema/example retrieval
+is shared; the main workflow retains its prompt guard and checked execution.
+The UniProt compose and this prototype's LLM settings are not selected automatically.
+
 > **Latest session, 17 Oct 2026:** `Qwen/Qwen3-30B-A3B-GPTQ-Int4` is deployed on the new **RTX 4090 24 GB** instance. See section 9 for the current connection and commands; sections 1–8 retain the earlier 9B baseline. The larger model did not improve correctness on the three-question comparison. Only clinical example 1 ran; approval for the full clinical benchmark was rejected.
 
 A small, reproducible **natural-language → SPARQL** prototype. A Python CLI calls a Qwen model through an OpenAI-compatible endpoint, retrieves SPARQL examples/schema information through the public SIB MCP server, and saves the generated query plus timing/token metrics.

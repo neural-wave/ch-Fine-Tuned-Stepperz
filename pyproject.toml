@@ -42,6 +42,7 @@ python_files = ["test_*.py"]
 pythonpath = ["src", "."]
 addopts = "-ra"
 markers = [
+    "model_health: explicit opt-in checks using configured real inference models",
     "offline_workflow: scripted models and local workflow interactions, without inference services",
     "security_gap: regressione delle lacune storiche, verificata con il profilo hardened",
     "risk_demonstration: test che dimostra un rischio osservato, non una protezione",

@@ -46,6 +46,11 @@ La CLI e `sparql-run`: con `--dataset` esegue anche
 il runtime locale. Il benchmark e `python -m tools.evaluate_workflow`.
 I test agentici sono raggruppati in `tests/agents/`.
 
+Il preset MCP riusa via HTTP il server SPHN di `LLM_ENGINE`, avviabile con
+`bash start-mcp.sh`. `sparql-run --check-mcp` verifica i tool senza modelli.
+I client dei due progetti mantengono ambienti separati; solo il recupero
+di schemi/esempi viene condiviso, non l'esecuzione delle query.
+
 `PromptRequest` e un alias di `SparqlRequest`: guard e generatore condividono
 prompt, schema, policy e permessi. Tutti i modelli espongono `await run(request)`.
 Il generatore restituisce

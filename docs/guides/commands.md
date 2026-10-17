@@ -21,6 +21,13 @@ indicati. I comandi Bash di avvio richiedono Linux o un ambiente equivalente.
 Scegliere i modelli in [models.json](../../config/agents/models.json), poi su Linux:
 
 ```bash
+bash start-mcp.sh
+```
+
+Tenere il server SPHN di `LLM_ENGINE` attivo; in un secondo terminale:
+
+```bash
+uv run --extra agents --extra mcp sparql-run --check-mcp
 bash start-ollama.sh
 uv run --extra local sparql-run --prompt "Conta i pazienti distinti con diagnosi fatturata" --dataset tests/fixtures/synthetic/cohort.trig
 ```
@@ -91,6 +98,16 @@ strategie di risposta nella [guida ai modelli fittizi](fake-models.md).
 
 ## 4. Benchmark con oracoli
 
+Per verificare prima che i modelli reali configurati rispondano:
+
+```bash
+uv run --extra local pytest tests/health --run-model-health -v --junitxml=artifacts/tests/model-health.xml
+```
+
+Richiede una macchina adatta ai modelli e i servizi configurati attivi. Questi
+test sono saltati nelle esecuzioni normali; non eseguono la query generata.
+Comandi separati per classificatore e generatore in [tests/README.md](../../tests/README.md).
+
 ```bash
 uv run --extra agents python -m tools.evaluate_workflow --offline
 uv run --extra agents python -m tools.evaluate_workflow --offline --component generation
@@ -121,3 +138,6 @@ vedere la [guida al workflow](agent-workflow.md).
 `sparql-run` e `sparql-check` appartengono al progetto principale.
 `sparql-agent` e `sparql-benchmark` appartengono al sottoprogetto sperimentale
 `LLM_ENGINE`: configurazioni, dipendenze e risultati non sono intercambiabili.
+Il suo server MCP SPHN viene invece riutilizzato dal workflow via HTTP;
+`start-mcp.sh` lo avvia nell'ambiente separato. `--check-mcp` esegue solo
+discovery degli strumenti, senza caricare modelli o inviare query cliniche.

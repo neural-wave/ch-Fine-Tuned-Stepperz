@@ -28,7 +28,14 @@ Scegliere LLM, endpoint e checkpoint Laya in
 [models.json](config/agents/models.json). Su Linux:
 
 ```bash
+bash start-mcp.sh
+```
+
+Lasciare il server MCP SPHN attivo e, in un secondo terminale:
+
+```bash
 bash start-ollama.sh
+uv run --extra agents --extra mcp sparql-run --check-mcp
 uv run --extra local sparql-run --prompt "Conta i pazienti distinti con diagnosi fatturata" --dataset tests/fixtures/synthetic/cohort.trig
 ```
 
@@ -61,7 +68,7 @@ e [test](tests/README.md).
 | [examples/](examples/README.md) | Sole demo eseguibili |
 | [tests/](tests/README.md) | Test del progetto principale e fixture sintetiche |
 | [infra/virtuoso/](infra/virtuoso/README.md) | Gestione del database con Bash e Docker |
-| [LLM_ENGINE/](LLM_ENGINE/README.md) | Prototipo separato, con proprio ambiente e comandi |
+| [LLM_ENGINE/](LLM_ENGINE/README.md) | Server MCP SPHN condiviso e prototipo con proprio ambiente |
 | `artifacts/` | Log, cache e report generati, esclusi da Git |
 
 [Indice delle guide](docs/README.md) e [mappa del codice](docs/architecture/project-layout.md).

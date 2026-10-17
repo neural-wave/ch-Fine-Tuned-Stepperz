@@ -7,5 +7,5 @@
     "device": "cpu",
     "max_len": 8192
   },
-  "mcp_settings": "sparql-mcp.json"
+  "mcp_url": "http://127.0.0.1:18888/mcp"
 }

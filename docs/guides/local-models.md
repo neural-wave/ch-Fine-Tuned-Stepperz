@@ -1,79 +1,80 @@
-# Modelli locali: configurazione semplice
+# Modelli locali e MCP condiviso
 
-Usiamo **Ollama per gli LLM**, **Laya tramite la sua libreria Python** e
-PydanticAI per collegarli agli strumenti MCP. Il collegamento e tutto in
-`src/agent_orchestration/local_models.py`: nessun parser o backend Transformers
-personalizzato. Analizzatore, runtime e valutazione semantica restano separati.
+Il processo principale usa Laya per classificare, un LLM tramite API chat
+compatibile per generare, PydanticAI per le chiamate agli strumenti e il runtime
+RDFLib per controllare l'esecuzione. Il server MCP SPHN appartiene a
+`LLM_ENGINE` ed e condiviso via HTTP, con dipendenze in un ambiente separato.
 
 ## Avvio
 
-Dalla radice del repository Linux, con `curl` e `python3` disponibili:
+Dalla radice su Linux, con uv, curl e Python 3.12 disponibili, primo terminale:
 
 ```bash
-bash start-ollama.sh
-uv sync --locked --extra local
-uv run --extra local sparql-run --prompt "Conta i pazienti distinti con diagnosi fatturata"
+bash start-mcp.sh
 ```
 
-Lo script installa [Ollama](https://docs.ollama.com/linux) se manca (servono root
-o sudo), riusa un server gia attivo oppure lo avvia in background senza systemd,
-e scarica il modello indicato in `models.json`. Si puo rilanciare. Un argomento
-opzionale, ad esempio `bash start-ollama.sh qwen3:8b`, prepara un altro modello;
-per usarlo nel programma aggiornare anche `model` nel JSON.
-Accetta solo un `base_url` HTTP locale. Log e PID del processo avviato sono in
-`artifacts/ollama/`; i pesi del nuovo processo sono in `artifacts/ollama/models`
-oppure nella directory `OLLAMA_MODELS` se impostata. Un server gia attivo conserva
-la propria configurazione. Usare un disco persistente sull'istanza per conservarli.
+Avvia `LLM_ENGINE/scripts/serve_sphn_void.py` su `127.0.0.1:18888`, usando
+VoID e ontologia del progetto principale in `schemas/`. Non serve Docker;
+il server non legge pazienti, non interroga Virtuoso e non scarica embedding.
+Il primo avvio installa le dipendenze del sottoprogetto nel suo ambiente.
+Si arresta con Ctrl+C. `--port` cambia porta: aggiornare anche `mcp_url`.
 
-`qwen3:14b` e un esempio, da scegliere in base alla GPU. Il comando Python
-carica Laya una volta, avvia l'MCP `uvx sparql-llm`, valida il prompt, genera la
-query e applica l'analisi statica tramite `SparqlWorkflow.run(execute=False)`.
-La CLI e in `src/agent_orchestration/cli.py`. Senza dataset restituisce
-`query_ready`, senza eseguire la query.
-
-Per il workflow completo, con modelli reali ed esecuzione controllata locale:
+In un secondo terminale:
 
 ```bash
+uv run --extra agents --extra mcp sparql-run --check-mcp
+bash start-ollama.sh
 uv run --extra local sparql-run --prompt "Conta i pazienti distinti con diagnosi fatturata" --dataset tests/fixtures/synthetic/cohort.trig
 ```
 
-Se i controlli passano, lo stato e `released` e `result` contiene la risposta
-SPARQL Results JSON. Altrimenti lo stato indica il blocco o errore e non viene
-rilasciato un risultato. `--rdf-format` permette di specificare il formato RDF;
-altrimenti viene ricavato dall'estensione. TriG e N-Quads conservano i grafi
-paziente distinti richiesti da queste query.
+`--check-mcp` scopre gli strumenti senza caricare Laya o chiamare l'LLM.
+Il comando con `--dataset` usa modelli reali e dati sintetici. Senza quel flag,
+si ferma alla query analizzata. Stati e output sono nella [guida dei comandi](commands.md).
 
-Il file fornito viene caricato in memoria con RDFLib e controllato con il
-profilo predefinito. Il comando non e collegato all'endpoint Virtuoso e non e
-il percorso per caricare un database clinico da 50 GB. La fixture dell'esempio
-e sintetica; per dati reali occorrono anche policy e contesti fidati del servizio.
+Il file RDF viene caricato in memoria con RDFLib e controllato con il profilo
+predefinito. Non e l'adattatore al database Virtuoso da 50 GB. Per dati reali
+servono anche policy e contesti fidati del servizio.
 
-## Cambiare modello
+## Configurare modelli e server
 
-Modificare soltanto `config/agents/models.json`:
+Modificare [models.json](../../config/agents/models.json):
 
-```json
-"base_url": "http://localhost:11434/v1",
-"model": "qwen3:14b"
-```
+| Campo | Ruolo |
+|---|---|
+| `model`, `base_url` | LLM e indirizzo chat; Ollama nel preset |
+| `laya.model_id`, `subfolder`, `device` | Checkpoint e dispositivo del classificatore nativo |
+| `mcp_url` | MCP SPHN di LLM_ENGINE, `http://127.0.0.1:18888/mcp` nel preset |
 
-Per un altro modello Ollama: scaricarlo con `ollama pull NOME` e cambiare `model`.
-Deve supportare tool calling e output strutturato. Per usare un server diverso
-cambiare anche `base_url`; il workflow non cambia. `MODEL_API_KEY` permette di
-specificare una chiave quando il server la richiede.
+Il collegamento HTTP non importa l'SDK MCP 2 del sottoprogetto nel processo
+principale, che usa il proprio SDK MCP 1. I due ambienti restano indipendenti.
+Le variabili LLM del prototipo non vengono ereditate: modello e indirizzo
+rimangono quelli del JSON del progetto principale.
 
-Per semplicita partire da Ollama. [llama.cpp](https://github.com/ggml-org/llama.cpp)
-e un'alternativa per checkpoint GGUF; [vLLM](https://docs.vllm.ai/en/latest/serving/openai_compatible_server/)
-e un'alternativa per un servizio GPU con richieste concorrenti. Espongono API
-compatibili, ma template e tool calling vanno verificati con il modello scelto.
+Il server SPHN espone `search_sparql_examples` e `search_sparql_classes`.
+Il generatore vede solo strumenti di recupero schema/esempi; quelli di
+esecuzione sono esclusi. L'esecuzione resta nell'executor verificato.
+Il server pubblico SIB e il compose `LLM_ENGINE/compose.local.yml` sono
+configurati per UniProt e non sono il server SPHN avviato qui.
 
-Laya usa `laya.model_id`, `subfolder` e `device`. Non e un normale modello chat:
-un altro modello decisionale deve offrire lo stesso formato `load/predict`,
-oppure avere una piccola funzione adattata con `CallableSystemOneModel`.
-L'adapter rifiuta input troncati e usa `answer_confidence`, non la confidenza
-basata sull'entropia. Le sue prestazioni di sicurezza vanno misurate.
+Per un MCP gia attivo cambiare soltanto `mcp_url`. Per il vecchio avvio stdio,
+rimuovere `mcp_url` e impostare `mcp_settings: "sparql-mcp.json"`: avvia
+`uvx sparql-llm` con i tool `search_sparql_docs` e `get_classes_schema`.
+URL e settings non possono essere attivi insieme. Per disattivare MCP,
+omettere entrambi o impostarli a null e fornire `--schema-file`.
 
-## Usarlo dal programma
+## Scegliere e riusare i modelli
+
+`qwen3:14b` e un esempio da adeguare alla GPU. `start-ollama.sh` installa
+Ollama se manca (root o sudo), riusa il server attivo o lo avvia in background
+e prepara il modello del JSON. Log e PID sono in `artifacts/ollama/`;
+un nuovo processo usa `artifacts/ollama/models` oppure `OLLAMA_MODELS`.
+Un server gia attivo conserva la propria configurazione.
+
+Un LLM diverso deve supportare tool calling e output strutturato.
+Per un altro server chat compatibile cambiare `base_url` e `model`;
+`MODEL_API_KEY` specifica la chiave se richiesta.
+Laya non e un modello chat: un classificatore diverso richiede lo stesso
+formato load/predict o una funzione adattata con `CallableSystemOneModel`.
 
 ```python
 from agent_orchestration import SparqlWorkflow, StaticQueryAnalyzer
@@ -84,28 +85,20 @@ async with open_models() as (guard, generator):
     result = await workflow.run(request)
 ```
 
-Tenere il contesto aperto per riusare gli stessi modelli. Un LLM generico usa
-`Agent(chat_model(nome, indirizzo))`; il modello per SPARQL usa lo stesso client
-con output `SparqlResult` e strumenti MCP.
+Tenere il contesto aperto per riusare Laya e la connessione MCP.
+Laya rifiuta troncamento delle opzioni e usa `answer_confidence`, non la
+confidenza basata sull'entropia. L'accuratezza di sicurezza va misurata.
+Policy e permessi di esempio si sostituiscono con `--policy-file` e
+`--permissions-file`; le autorizzazioni effettive appartengono al runtime.
 
-Per preparare soltanto la query, costruire il workflow senza `executor` e usare
-`await workflow.run(request, execute=False)`. Validazione del prompt e analisi
-statica restano attive; un esito positivo ha stato `query_ready`.
-
-`mcp_settings` punta a `sparql-mcp.json`, che usa gli schemi gia convertiti.
-Solo `search_sparql_docs` e `get_classes_schema` sono esposti al generatore.
-Impostare `mcp_settings: null` per disattivare MCP e passare `--schema-file`.
-I percorsi dei metadati MCP sono relativi alla radice di questo repository.
-Aggiornare l'endpoint in `sparql-mcp.json` e sostituire policy/permessi di esempio
-con quelli fidati del servizio (`--policy-file`, `--permissions-file`).
-
-## Valutazione
+## Verifiche e valutazione
 
 ```bash
 uv run --extra local python -m tools.evaluate_workflow --models-config config/agents/models.json
 ```
 
-Esclude il gruppo `00_compliant`, gia presente negli esempi RAG. I test locali
-usano risposte HTTP controllate e un vero MCP stdio minimale, senza scaricare
-pesi. Inferenza GPU e indicizzazione del server upstream richiedono una prova
-sull'istanza. Il primo avvio puo scaricare pesi Laya, dipendenze ed embedding MCP.
+Il benchmark esegue su fixture sintetiche, escludendo il gruppo usato
+nell'esempio RAG. Il test `tests/agents/test_shared_mcp.py` avvia il vero server
+SPHN e verifica HTTP, classi, esempi ed esecuzione controllata, con inferenza
+sostituita. Inferenza GPU e indicizzazione SIB/Qdrant restano da provare
+sull'istanza. Dettagli nella [guida ai test](../../tests/README.md).

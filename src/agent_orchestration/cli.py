@@ -8,7 +8,7 @@ from pathlib import Path
 from rdflib import Dataset
 
 from . import CheckedQueryExecutor, PromptRequest, SparqlWorkflow, StaticQueryAnalyzer
-from .local_models import CONFIG, open_models
+from .local_models import CONFIG, check_mcp, open_models
 
 
 async def generate(args):
@@ -22,7 +22,7 @@ async def generate(args):
         (args.permissions_file or directory / "permissions.txt").read_text(encoding="utf-8-sig"))
     config = json.loads(args.config.read_text(encoding="utf-8-sig"))
     
-    if not config.get("mcp_settings") and not args.schema_file:
+    if not (config.get("mcp_url") or config.get("mcp_settings")) and not args.schema_file:
         raise ValueError("Without MCP provide --schema-file")
     
     executor = None
@@ -39,7 +39,8 @@ async def generate(args):
 
 def main():
     parser = argparse.ArgumentParser(prog="sparql-run", description=__doc__)
-    parser.add_argument("--prompt", required=True)
+    parser.add_argument("--prompt")
+    parser.add_argument("--check-mcp", action="store_true", help="Check MCP retrieval tools without loading models")
     parser.add_argument("--config", type=Path, default=CONFIG)
     parser.add_argument("--schema-file", type=Path)
     parser.add_argument("--policy-file", type=Path)
@@ -47,6 +48,11 @@ def main():
     parser.add_argument("--dataset", type=Path, help="Local RDF dataset to execute against (e.g. TriG with patient named graphs)")
     parser.add_argument("--rdf-format", help="RDFLib format; otherwise inferred from the dataset extension")
     args = parser.parse_args()
+    if args.check_mcp:
+        print(json.dumps(asyncio.run(check_mcp(args.config)), ensure_ascii=False, indent=2))
+        return 0
+    if not args.prompt:
+        parser.error("Specify --prompt or --check-mcp")
     result = asyncio.run(generate(args))
     print(json.dumps(result, ensure_ascii=False, indent=2))
     return 0 if result["status"] in {"query_ready", "released"} else 1
