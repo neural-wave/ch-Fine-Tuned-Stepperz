@@ -18,3 +18,4 @@ dist/
 *.egg-info/
 
 /hackathon-virtuoso-release/ontologies/
+uv.lock
