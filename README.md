@@ -24,6 +24,10 @@ input/output, stati restituiti e differenze tra questi percorsi.
 
 ## Avvio dell'applicazione
 
+Sulla VM Linux, per avviare lo stack vLLM/Qwen e MCP di `LLM_ENGINE` e poi i test
+dei modelli reali: `bash start-and-test.sh`. Setup, log e report nei
+[test](tests/README.md).
+
 Scegliere LLM, endpoint e checkpoint Laya in
 [models.json](config/agents/models.json). Su Linux:
 
@@ -45,6 +49,14 @@ contiene la risposta. Il file RDF viene caricato in memoria; il runtime usa
 il profilo predefinito. Setup e opzioni nella [guida locale](docs/guides/local-models.md).
 
 ## Prova offline
+
+Per automatizzare localmente le due suite e il collegamento MCP, senza modelli:
+
+```bash
+bash test.sh
+```
+
+Ambienti, report e health check opzionali sono descritti nei [test](tests/README.md).
 
 Senza GPU, Ollama o pesi:
 

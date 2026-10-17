@@ -63,7 +63,7 @@ done
 
 if [[ ! -d .venv ]]; then
   info "Installing project dependencies with uv sync (first run)..."
-  "$UV_BIN" sync
+  "$UV_BIN" sync --locked --python 3.12
 else
   info "Reusing existing .venv (run 'uv sync' after pulling changed dependencies)."
 fi
@@ -141,7 +141,7 @@ elif pgrep -f '[s]erve_sphn_void.py' >/dev/null || tmux has-session -t "=$MCP_SE
 else
   info "Starting SPHN VoID MCP in tmux session '$MCP_SESSION'..."
   tmux new-session -d -s "$MCP_SESSION" -c "$APP_DIR" \
-    "exec '$UV_BIN' run python scripts/serve_sphn_void.py --void-file metadata/sphn-schema-void.ttl >> '$LOG_DIR/sphn-mcp.log' 2>&1"
+    "exec '$UV_BIN' run --locked --python 3.12 python scripts/serve_sphn_void.py --void-file metadata/sphn-schema-void.ttl >> '$LOG_DIR/sphn-mcp.log' 2>&1"
 fi
 
 mcp_ready=0
@@ -155,7 +155,7 @@ if [[ "$mcp_ready" != 1 ]]; then
 fi
 
 info "Checking SPHN retrieval tools (and model) through your agent..."
-"$UV_BIN" run sparql-agent --env-file "$ENV_FILE" doctor --retrieval-backend sphn-void
+"$UV_BIN" run --locked --python 3.12 sparql-agent --env-file "$ENV_FILE" doctor --retrieval-backend sphn-void
 
 cat <<'DONE'
 

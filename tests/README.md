@@ -16,6 +16,31 @@ di inferenza. I test `model_health` richiedono invece un consenso esplicito da C
 
 ## Health check dei modelli reali (solo sulla macchina adatta)
 
+Sulla VM Linux, per preparare dipendenze, avviare i servizi e lanciare tutte le
+suite e gli health check con un comando:
+
+```bash
+bash start-and-test.sh
+```
+
+Richiama direttamente [LLM_ENGINE/start_remote.sh](../LLM_ENGINE/start_remote.sh),
+che avvia o riusa vLLM/Qwen e MCP SPHN e ne verifica il funzionamento.
+Non installa o avvia Ollama. Richiede `uv` e i prerequisiti dello script remoto:
+`tmux`, `curl`, `ss` e vLLM nell'ambiente GPU; dettagli nella
+[guida remota](../LLM_ENGINE/README_REMOTE.md).
+
+Gli health check usano modello e indirizzi letti dalla configurazione remota
+di `LLM_ENGINE`, con le impostazioni Laya di `config/agents/models.json`.
+La configurazione risultante viene scritta in `artifacts/tests/models.remote.json`,
+senza modificare il preset principale. Laya viene caricato (e scaricato se non
+in cache) dal suo health check. Errori di setup interrompono l'esecuzione.
+
+I servizi restano attivi anche dopo i test. Log dello stack in `/workspace/logs/`;
+report in `artifacts/tests/`. Non esegue i test live di `LLM_ENGINE` verso servizi
+esterni. Per riusare la stessa configurazione da Test Explorer aggiungere
+`--run-model-health` e `--model-config=artifacts/tests/models.remote.json` ai
+`python.testing.pytestArgs`.
+
 I test in [health/test_models.py](health/test_models.py) sono saltati per default,
 anche selezionandoli in Test Explorer. Solo `--run-model-health` abilita caricamento
 e inferenza reali. Leggono `config/agents/models.json`; per cambiarlo usare
@@ -43,6 +68,27 @@ Questi controlli verificano il funzionamento delle integrazioni: non misurano
 l'accuratezza del classificatore o la correttezza semantica della query.
 
 ## Esecuzione
+
+Comando locale unico per entrambi i progetti, senza GitHub Actions:
+
+```bash
+bash test.sh
+```
+
+Richiede `uv` e Bash (Git Bash su Windows). Prepara `LLM_ENGINE/.venv`, poi
+esegue le due suite nelle rispettive directory, con Python 3.12 e i lock
+esistenti (`--locked`). Include il vero MCP temporaneo con inferenza simulata;
+esclude health check reali e test live di `LLM_ENGINE`. Il primo setup puo
+scaricare Python e dipendenze, ma non pesi dei modelli.
+
+I report XML sono `artifacts/tests/main.xml` e `artifacts/tests/llm-engine.xml`.
+Un errore restituisce un codice diverso da zero. Sulla VM, con i servizi
+configurati gia attivi, `bash test.sh --with-models` aggiunge gli health check
+reali e `model-health.xml`. Lo script non avvia i servizi permanenti e aggiorna
+solo i report delle suite effettivamente eseguite.
+
+La variabile `MODEL_CONFIG` puo indicare un altro JSON per gli health check:
+`start-and-test.sh` la imposta automaticamente sul preset remoto generato.
 
 Per la suite completa, incluse le integrazioni PydanticAI e MCP:
 
