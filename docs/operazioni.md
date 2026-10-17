@@ -1,4 +1,4 @@
-# Operazioni della policy numeric-aggregates-v3
+# Operazioni della policy numeric-aggregates-v5-nested
 
 Non esiste una classificazione universale in cui ogni uso di un operatore e
 sicuro. Questa tabella descrive il sottoinsieme implementato, con controlli
@@ -24,7 +24,9 @@ sugli argomenti e sui risultati. Gli operatori non verificati restano bloccati.
 | GROUP_CONCAT, SAMPLE, MIN, MAX | Vietati esplicitamente, anche annidati |
 | SERVICE, FROM, FROM NAMED | Vietati esplicitamente |
 | ASK, CONSTRUCT, DESCRIBE, SPARQL Update | Vietati esplicitamente |
-| GROUP BY per categoria, sottoquery, VALUES, property path | Non ancora supportati dal flusso completo |
+| Sottoquery SELECT di selezione, anche annidate | Supportate con variabili locali isolate; nel percorso di sola selezione il grafo deve restare esportato |
+| Aggregazioni COUNT/SUM/AVG su piu livelli, GROUP BY interno | Supportate con provenienza per colonna e gruppo; soglia applicata al risultato finale |
+| GROUP BY per categoria nell'output esterno, VALUES, property path | Non ancora supportati dal flusso completo |
 | Hash, funzioni per URI arbitrarie, RAND/NOW e funzioni esterne | Non approvati da questa policy |
 | DEFINE, OPTION(inference) | Dialetto Virtuoso non supportato |
 

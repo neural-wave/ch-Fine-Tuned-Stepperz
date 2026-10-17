@@ -81,7 +81,9 @@ def check_payload(payload, columns, *, numeric_columns=()):
 def execute_checked(dataset, query, *, min_patients=5, max_support_rows=100_000):
     """Esegue su un Dataset locale stabile; restituisce solo JSON verificato.
 
-    COUNT/SUM/AVG globali, aritmetica numerica e un'unica variabile grafo.
+    COUNT/SUM/AVG globali e annidati, aritmetica numerica verificata.
+    I gruppi intermedi possono essere individuali: nelle query annidate la
+    provenienza viene conservata anche senza esportare la variabile grafo.
     Non adatto a dataset modificati concorrentemente durante i controlli.
     """
     if type(min_patients) is not int or min_patients < 2:
@@ -94,6 +96,11 @@ def execute_checked(dataset, query, *, min_patients=5, max_support_rows=100_000)
     algebra = prepared.algebra
     all_nodes = list(nodes(algebra))
     groups = [n for n in all_nodes if n.name == "Group"]
+    if any(n.name == "ToMultiSet" and any(child.name == "AggregateJoin" for child in nodes(n["p"]))
+           for n in all_nodes):
+        from .nested import execute_nested
+        return execute_nested(dataset, prepared, min_patients=min_patients,
+                              max_support_rows=max_support_rows)
     graphs = [n["term"] for n in all_nodes if n.name == "Graph"]
     if (len(groups) != 1 or groups[0]["expr"] or not graphs or
             any(not isinstance(g, Variable) for g in graphs) or len(set(graphs)) != 1):

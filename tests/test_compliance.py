@@ -67,9 +67,9 @@ def test_service_blocked():
     check_query("SELECT (COUNT(*) AS ?n) WHERE { SERVICE <http://example.invalid/sparql> { "
                      + PATTERN + " } }", status="non_compliant")
 
-def test_subquery_blocked():
+def test_subquery_approved():
     check_query("SELECT (COUNT(*) AS ?n) WHERE { { SELECT ?g WHERE { "
-                     + PATTERN + " } } }", status="unsupported")
+                     + PATTERN + " } } }", compliant=True)
 
 def test_average_of_authorized_measure_approved():
     check_query("SELECT (AVG(?v) AS ?n) WHERE { GRAPH ?g { ?d sphn:hasValue ?v } }", compliant=True)

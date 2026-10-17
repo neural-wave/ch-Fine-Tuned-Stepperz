@@ -1,6 +1,6 @@
 # Analizzatore SPARQL e controllo dei risultati
 
-La policy corrente e `numeric-aggregates-v3`. Parser e algebra sono in
+La policy corrente e `numeric-aggregates-v5-nested`. Parser e algebra sono in
 sparql_analyzer/parser.py, i controlli statici in compliance.py e il runtime
 locale in runtime.py. Il sistema non usa LLM per decidere la compliance.
 
@@ -98,12 +98,66 @@ unita di misura, che devono essere selezionate coerentemente dalla query.
 
 UNION, OPTIONAL, MINUS, BIND verificati e filtri deterministici supportati restano
 disponibili. Un'operazione ammessa non autorizza automaticamente i suoi argomenti.
-GROUP BY per categorie, sottoquery, VALUES, property path e funzioni non verificate
+GROUP BY per categorie nell'output esterno, VALUES, property path e funzioni non verificate
 restano bloccati. DEFINE e OPTION(inference) di Virtuoso non vengono riscritti:
 il dialetto non e supportato. Non vengono abilitate funzioni arbitrarie per URI,
 rete, numeri casuali o funzioni non deterministiche.
 
-Il runtime lavora su un Dataset RDFLib locale stabile, con una variabile grafo.
+### Sottoquery
+
+Le sottoquery SELECT di selezione sono ammesse, anche annidate, con DISTINCT,
+alias, filtri, ordinamento e limiti. Possono produrre valori individuali interni:
+solo l'output esterno deve rispettare il contratto di aggregazione. Il parser
+rinomina le variabili locali nell'algebra, preservando quelle esportate dalla
+proiezione, senza modificare la semantica della query. Un identificatore esportato
+rimane sensibile; una variabile privata omonima non cambia la classificazione
+delle variabili esterne.
+
+Esempio eseguibile sul dataset sintetico:
+
+```sparql
+PREFIX sphn: <https://biomedit.ch/rdf/sphn-schema/sphn#>
+SELECT (COUNT(DISTINCT ?g) AS ?patients)
+WHERE {
+  { SELECT DISTINCT ?g WHERE {
+      GRAPH ?g { ?dx a sphn:BilledDiagnosis }
+  } }
+}
+```
+
+Le aggregazioni COUNT/SUM/AVG su piu livelli e i raggruppamenti interni sono
+ammessi. Il valutatore locale `sparql_analyzer/nested.py` segue la provenienza
+dei valori attraverso gruppi, alias, proiezioni e join. Non impone la soglia k
+ai singoli gruppi intermedi: puo calcolare una media per paziente e aggregarla
+successivamente. La chiave grafo puo rimanere privata nella sottoquery.
+
+```sparql
+PREFIX sphn: <https://biomedit.ch/rdf/sphn-schema/sphn#>
+SELECT (AVG(?patientAverage) AS ?cohortAverage)
+WHERE {
+  { SELECT (AVG(?value) AS ?patientAverage) WHERE {
+      GRAPH ?g { ?quantity sphn:hasValue ?value }
+    } GROUP BY ?g
+  }
+}
+```
+
+Il risultato finale deve essere una sola riga numerica con una coorte sufficiente
+per ciascuna colonna e per le dipendenze di controllo tracciate (FILTER, HAVING,
+ORDER BY). Ripetere uno scalare individuale su molti grafi non ne aumenta la
+coorte di provenienza. Il confronto con l'esecuzione RDFLib originale verifica
+che il calcolo non sia stato appiattito: la media delle medie mantiene il peso
+dei pazienti. Il limite di lavoro conta cumulativamente le righe intermedie
+nel percorso annidato. SAMPLE generato internamente da RDFLib per le chiavi
+di gruppo e ammesso; SAMPLE scritto dall'utente resta vietato.
+
+Il percorso senza aggregati annidati mantiene il requisito della variabile grafo
+esportata. Il verdetto statico non sostituisce il controllo runtime e non
+certifica l'anonimato. I bypass statistici descritti sotto restano aperti.
+I test dedicati sono in `tests/test_subqueries.py` e `tests/test_nested_aggregates.py`.
+
+Il runtime lavora su un Dataset RDFLib locale stabile; il percorso annidato
+segue separatamente i grafi di origine delle diverse colonne.
 Non e collegato a Virtuoso e non e adatto a caricare 50 GB in Python. In produzione
 verifiche e risposta devono essere eseguite nel database sullo stesso snapshot.
 Mancano ACL per utente e protezioni delle sequenze di query; le sei lacune della

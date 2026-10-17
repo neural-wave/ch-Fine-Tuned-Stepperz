@@ -37,7 +37,7 @@ UPDATE_NODES = {
     "InsertClause": "INSERT", "DeleteClause": "DELETE",
 }
 ALLOWED_NODES = {
-    "SelectQuery", "AskQuery", "ConstructQuery", "DescribeQuery", "Project",
+    "SelectQuery", "AskQuery", "ConstructQuery", "DescribeQuery", "Project", "Aggregate_Sample",
     "Extend", "AggregateJoin", "Aggregate_Count", "Group", "Filter", "Graph",
     "BGP", "Join", "LeftJoin", "Union", "Minus", "Distinct", "Reduced",
     "Slice", "OrderBy", "OrderCondition", "values", "ToMultiSet",
@@ -97,6 +97,12 @@ def numeric_variables(tree):
 
     for _ in range(len(nodes)):
         for node in nodes:
+            name = node.get("node")
+            if name == "Aggregate_Count" or (
+                name in {"Aggregate_Sum", "Aggregate_Avg", "Aggregate_Sample"}
+                and numeric(node.get("vars"))
+            ):
+                result |= variables(node.get("res")) - unsafe
             if node.get("node") == "Extend" and numeric(node.get("expr")):
                 result |= variables(node.get("var")) - unsafe
     return result
@@ -138,7 +144,7 @@ def validate(query):
         return {"is_compliant": not findings, "status": status,
                 "violations": violations, "findings": findings,
                 "forbidden_operators": sorted(forbidden_operators),
-                "policy": "numeric-aggregates-v3"}
+                "policy": "numeric-aggregates-v5-nested"}
 
     def forbid(operator):
         forbidden_operators.add(operator)
@@ -175,6 +181,19 @@ def validate(query):
             forbid("FROM NAMED" if "named" in node else "FROM")
 
     nodes = list(walk(tree))
+    # I gruppi interni possono essere individuali: non vengono restituiti.
+    def outer_walk(value):
+        if isinstance(value, dict):
+            yield value
+            if value.get("node") == "ToMultiSet":
+                return
+            for key, child in value.items():
+                if key != "_vars":
+                    yield from outer_walk(child)
+        elif isinstance(value, list):
+            for child in value:
+                yield from outer_walk(child)
+    outer_nodes = {id(n) for n in outer_walk(tree)}
     if tree.get("node") != "SelectQuery":
         add("R4", "Sono consentite solo query SELECT.")
     sensitive = set()
@@ -194,8 +213,6 @@ def validate(query):
                 add("R1", "Grafo fisso di paziente o grafo non autorizzato.")
         if name == "BGP":
             triples.extend(node.get("triples", []))
-        if name == "ToMultiSet" and isinstance(node.get("p"), dict) and node["p"].get("node") != "values":
-            add("UNSUPPORTED", "Le sottoquery richiedono analisi separata degli scope.")
         iri = uri(node)
         if iri and iri.startswith(PATIENT_PREFIX):
             add("R1", "La query contiene un riferimento esplicito a un grafo paziente.")
@@ -260,7 +277,7 @@ def validate(query):
             expr = node.get("expr")
             if not variables(expr):
                 add("R1", "BIND assegna una costante a una risorsa o identificatore individuale.")
-        if name == "Group" and node.get("expr"):
+        if name == "Group" and node.get("expr") and id(node) in outer_nodes:
             if variables(node["expr"]) & sensitive:
                 add("R1", "Raggruppamento per paziente o risorsa individuale.")
                 add("R2", "Statistiche separate per individuo invece di aggregazione di coorte.")
@@ -284,7 +301,7 @@ def validate(query):
                     add("UNSUPPORTED", "SUM/AVG richiedono misure da predicati numerici autorizzati.")
         elif name.startswith("Aggregate_"):
             aggregated |= variables(node.get("res"))
-            if FORBIDDEN_QUERY_NODES.get(name) not in forbidden_operators:
+            if name != "Aggregate_Sample" and FORBIDDEN_QUERY_NODES.get(name) not in forbidden_operators:
                 add("UNSUPPORTED", f"Aggregazione non certificata dalla policy iniziale: {name}.")
     changed = True
     while changed:
