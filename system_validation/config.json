@@ -1,0 +1,17 @@
+{
+  "api_url": "http://127.0.0.1:8000",
+  "virtuoso_url": "http://127.0.0.1:8890/sparql",
+  "patients_dir": "patients",
+  "ontologies_dir": "ontologies",
+  "ontology_cache_dir": ".ontology_cache",
+  "container_name": "hackathon-virtuoso",
+  "graph_prefix": "http://example.org/graph/",
+  "rule_set": "https://biomedit.ch/rdf/sphn-resource/global",
+  "cases_file": "system_validation/data/prompts.json",
+  "receipt_file": "artifacts/system-validation/virtuoso-ready.json",
+  "out_dir": "artifacts/system-validation",
+  "repeats": 1,
+  "warmup": 1,
+  "query_repeats": 10,
+  "timeout_seconds": 180
+}

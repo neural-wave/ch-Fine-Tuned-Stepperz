@@ -333,6 +333,11 @@ The server and SSH tunnel were left running at the last successful observation. 
 
 ## 10. Local SPHN VoID retrieval backend
 
+For the main application's `prefetch`/`agentic` comparison and the new-start
+vLLM CUDA/prefix-cache options in `start_remote.sh`, see the
+[inference performance guide](../docs/guides/inference-performance.md).
+Existing processes keep their launch options until deliberately restarted.
+
 The SPHN-only backend reads `metadata/sphn-schema-void.ttl` offline. It uses SIB's `get_schema_for_endpoint()` when its optional dependencies are installed, with an RDFLib parser for the same VoID relationships otherwise. The MCP adapter indexes SPHN class/predicate descriptions and schema-derived aggregate query patterns in memory. It never reads the 15 benchmark reference queries; privacy counterexamples 11–15 are not indexed. The patterns are starting points, not validated clinical or privacy-compliant queries. No Virtuoso or other data endpoint is contacted.
 
 Start the retrieval-only adapter in one terminal:

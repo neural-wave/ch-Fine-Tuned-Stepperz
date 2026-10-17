@@ -15,7 +15,7 @@ from sparql_analyzer.governance.privacy import snapshot_digest
 
 from .models import SparqlLLM, SparqlRequest
 from .models.usage import error_usage, invoke_with_usage, summarize_usage
-from .logging_setup import configure_logging, log_block
+from .logging_setup import active_workflow, configure_logging, log_block
 from .validation import PromptRequest, PromptValidation, PromptValidator, StaticQueryAnalyzer
 
 logger = logging.getLogger(__name__)
@@ -95,6 +95,7 @@ class SparqlWorkflow:
             return WorkflowResult(status, stage, verdict, query, analysis,
                                   result, error_type, dict(timings), analytics)
 
+        log_token = active_workflow.set(run_id)
         try:
             logger.info("run=%s stage=%s started", run_id, stage)
             async with asyncio.timeout(self.model_timeout_seconds):
@@ -136,6 +137,9 @@ class SparqlWorkflow:
             log_block(logger, f"run={run_id} Full query analysis", analysis, level=logging.DEBUG)
 
             if analysis["is_compliant"] is not True:
+                if analysis.get("status") == "unsupported":
+                    logger.warning("run=%s Query not executed: unsupported capability, not a confirmed policy violation. checks=%s",
+                                   run_id, [finding.get("check") for finding in analysis.get("findings", [])])
                 return finish("blocked_query")
 
             if not execute:
@@ -165,3 +169,5 @@ class SparqlWorkflow:
             # A backend/parser crash is an error, not a successful security block.
             # Do not expose provider errors which may contain input or private data.
             return finish("error", error_type=type(error).__name__)
+        finally:
+            active_workflow.reset(log_token)

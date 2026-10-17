@@ -11,7 +11,11 @@ dependencies = [
     "rdflib==7.1.4",
     "pyparsing==3.2.1",
     "pyshacl==0.25.0",
+<<<<<<< HEAD
     "pydantic-ai>=1.107.7",
+=======
+    "fastapi>=0.143.3",
+>>>>>>> e4b7825da36a5dde70b9100c47a1ca20f69da626
 ]
 
 [project.scripts]
@@ -19,6 +23,8 @@ sparql-check = "sparql_analyzer.cli:main"
 sparql-run = "agent_orchestration.cli:main"
 
 [project.optional-dependencies]
+validation = ["httpx>=0.28,<1"]
+api = ["uvicorn>=0.30,<1"]
 agents = [
     "pydantic-ai-slim[openai]>=1.0,<2",
 ]
@@ -38,7 +44,7 @@ where = ["src"]
 dev = ["pytest==9.1.1"]
 
 [tool.pytest.ini_options]
-testpaths = ["tests"]
+testpaths = ["tests", "system_validation/tests"]
 python_files = ["test_*.py"]
 pythonpath = ["src", "."]
 addopts = "-ra"

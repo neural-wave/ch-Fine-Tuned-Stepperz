@@ -7,7 +7,7 @@ from threading import Lock
 from .mcp import CONFIG
 from .native import CallableSystemOneModel
 from ..models import Decision, ModelResponse, TokenUsage
-from ..logging_setup import configure_logging
+from ..logging_setup import backend_log_level, configure_logging
 from ..validation import SystemOnePromptValidator
 
 logger = logging.getLogger(__name__)
@@ -27,7 +27,7 @@ def laya_validator(agent, max_len=8192, *, model_id=None):
             if usage.get("truncated") or usage.get("state_tokens_dropped") or usage.get("options"):
                 raise ValueError("Laya input or decision options were truncated")
             answer = result["answers"]["decision"]
-            logger.info("Classifier response choice=%s probability=%s low_confidence=%s usage=%r",
+            logger.log(backend_log_level(), "Classifier response choice=%s probability=%s low_confidence=%s usage=%r",
                         answer.get("choice"), answer.get("answer_confidence"), answer.get("low_confidence"), tokens)
             decision = (Decision("review") if answer.get("low_confidence") else
                         Decision(answer["choice"], answer.get("answer_confidence")))

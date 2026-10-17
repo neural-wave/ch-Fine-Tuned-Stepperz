@@ -8,6 +8,11 @@ Il triplestore e indipendente dal [workflow Python](../../docs/guides/agent-work
 i test offline non richiedono Docker. Gli script `query.sh` e l'endpoint SPARQL
 eseguono query direttamente, senza passare dal controllore privacy Python.
 
+Per valutare la classificazione dei prompt e i tempi delle query su questo
+database usare il [package separato system_validation](../../system_validation/README.md).
+Il suo comando `prepare` richiama questi loader e verifica il caricamento completo
+della cartella selezionata prima del benchmark. Non modifica il workflow dell'API.
+
 ## Avvio
 
 Inserire i file paziente Turtle in `patients/`, poi eseguire:

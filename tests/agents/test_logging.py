@@ -69,3 +69,54 @@ def test_log_block_preserves_query_text_and_does_not_change_it(caplog):
     assert query == original
     assert all(f"    {line}" in caplog.text for line in query.splitlines())
     assert '"patients": 8' in caplog.text
+
+
+def test_workflow_logs_query_once_but_standalone_adapter_keeps_its_logs(caplog):
+    import asyncio
+    import logging
+    from types import SimpleNamespace
+    from unittest.mock import AsyncMock
+    from agent_orchestration import (
+        FakeClassifier, PromptRequest, PydanticAISparqlLLM, SparqlResult,
+        SparqlWorkflow, StaticQueryAnalyzer, SystemOnePromptValidator,
+    )
+    from agent_orchestration.logging_setup import active_workflow
+    from sparql_analyzer.demo import EXAMPLE_QUERY
+    agent = SimpleNamespace(run=AsyncMock(return_value=SimpleNamespace(output=SparqlResult(EXAMPLE_QUERY))))
+    generator = PydanticAISparqlLLM(agent)
+    request = PromptRequest("one-prompt-marker", "schema", "policy")
+    workflow = SparqlWorkflow(SystemOnePromptValidator(FakeClassifier("allow")),
+                              generator, StaticQueryAnalyzer())
+    async def exercise():
+        result = await workflow.run(request, execute=False)
+        assert active_workflow.get() is None
+        return result
+    with caplog.at_level(logging.INFO):
+        result = asyncio.run(exercise())
+    messages = "\n".join(record.getMessage() for record in caplog.records)
+    assert messages.count(EXAMPLE_QUERY.splitlines()[0]) == 1
+    assert messages.count("one-prompt-marker") == 1
+    assert "Generator response - SPARQL query" not in messages
+    assert result.query == EXAMPLE_QUERY
+    assert active_workflow.get() is None
+    caplog.clear()
+    with caplog.at_level(logging.INFO):
+        direct = asyncio.run(generator.run(request))
+    assert direct.query == EXAMPLE_QUERY
+    assert "Generator response - SPARQL query" in caplog.text
+
+
+def test_logging_scope_is_reset_after_failure(caplog):
+    import asyncio
+    from types import SimpleNamespace
+    from agent_orchestration import FakeClassifier, PromptRequest, SparqlWorkflow, StaticQueryAnalyzer, SystemOnePromptValidator
+    from agent_orchestration.logging_setup import active_workflow
+    async def broken(_):
+        raise RuntimeError("failure")
+    workflow = SparqlWorkflow(SystemOnePromptValidator(FakeClassifier("allow")),
+                              SimpleNamespace(run=broken), StaticQueryAnalyzer())
+    async def exercise():
+        result = await workflow.run(PromptRequest("count", "schema", "policy"), execute=False)
+        assert result.status == "error"
+        assert active_workflow.get() is None
+    asyncio.run(exercise())

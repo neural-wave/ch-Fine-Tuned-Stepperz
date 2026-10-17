@@ -768,6 +768,7 @@ nvtx = [
 ]
 
 [[package]]
+<<<<<<< HEAD
 name = "cyclopts"
 version = "5.2.0"
 source = { registry = "https://pypi.org/simple" }
@@ -953,6 +954,22 @@ server = [
     { name = "uvicorn" },
     { name = "watchfiles" },
     { name = "websockets" },
+=======
+name = "fastapi"
+version = "0.143.3"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "annotated-doc" },
+    { name = "opentelemetry-api" },
+    { name = "pydantic" },
+    { name = "starlette" },
+    { name = "typing-extensions" },
+    { name = "typing-inspection" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/38/d5/b0aeb0b303650ac87b0411de4aaf3f901b06042dcc3fb00f30b97b7ff585/fastapi-0.143.3.tar.gz", hash = "sha256:b9ab567ee57afb4454004ce04c889f8f0160ac47946b99795887cd6e88484848", size = 469834, upload-time = "2026-10-16T14:14:13.31Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/2c/1a/03d246befcf307219bb2161c97d8c5d314f84125bf7dd245730a28589828/fastapi-0.143.3-py3-none-any.whl", hash = "sha256:75e8bd68e2f52f77d29b2879749c257d64de2d85282d25270caf2bfccce5efe5", size = 144849, upload-time = "2026-10-16T14:14:11.763Z" },
+>>>>>>> e4b7825da36a5dde70b9100c47a1ca20f69da626
 ]
 
 [[package]]
@@ -3516,7 +3533,11 @@ name = "sparql-analyzer"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [
+<<<<<<< HEAD
     { name = "pydantic-ai" },
+=======
+    { name = "fastapi" },
+>>>>>>> e4b7825da36a5dde70b9100c47a1ca20f69da626
     { name = "pyparsing" },
     { name = "pyshacl" },
     { name = "rdflib" },
@@ -3526,6 +3547,9 @@ dependencies = [
 agents = [
     { name = "pydantic-ai-slim", extra = ["openai"] },
 ]
+api = [
+    { name = "uvicorn" },
+]
 local = [
     { name = "laya" },
     { name = "mcp" },
@@ -3533,6 +3557,9 @@ local = [
 ]
 mcp = [
     { name = "mcp" },
+]
+validation = [
+    { name = "httpx" },
 ]
 
 [package.dev-dependencies]
@@ -3542,6 +3569,8 @@ dev = [
 
 [package.metadata]
 requires-dist = [
+    { name = "fastapi", specifier = ">=0.143.3" },
+    { name = "httpx", marker = "extra == 'validation'", specifier = ">=0.28,<1" },
     { name = "laya", marker = "extra == 'local'", specifier = ">=0.4.9,<0.5" },
     { name = "mcp", marker = "extra == 'local'", specifier = ">=1.12,<2" },
     { name = "mcp", marker = "extra == 'mcp'", specifier = ">=1.12,<2" },
@@ -3551,8 +3580,9 @@ requires-dist = [
     { name = "pyparsing", specifier = "==3.2.1" },
     { name = "pyshacl", specifier = "==0.25.0" },
     { name = "rdflib", specifier = "==7.1.4" },
+    { name = "uvicorn", marker = "extra == 'api'", specifier = ">=0.30,<1" },
 ]
-provides-extras = ["agents", "mcp", "local"]
+provides-extras = ["validation", "api", "agents", "mcp", "local"]
 
 [package.metadata.requires-dev]
 dev = [{ name = "pytest", specifier = "==9.1.1" }]

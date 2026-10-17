@@ -1,0 +1,10 @@
+#+ endpoint: http://example.invalid/sphn/sparql
+PREFIX sphn: <https://biomedit.ch/rdf/sphn-schema/sphn#>
+SELECT ?sex (COUNT(DISTINCT ?billedDiagnosis) AS ?count) WHERE {
+  ?billedDiagnosis a sphn:BilledDiagnosis ;
+                   sphn:hasCode <https://biomedit.ch/rdf/sphn-resource/icd-10-gm/ICD-10-GM> ;
+                   sphn:hasRankCode <http://snomed.info/id/1354479004> ;
+                   sphn:hasSubjectPseudoIdentifier ?subjectPseudoIdentifier .
+  ?subjectPseudoIdentifier sphn:hasSex ?sex .
+}
+GROUP BY ?sex
