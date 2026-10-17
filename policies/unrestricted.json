@@ -75,7 +75,12 @@
     "privacy_authorization": false,
     "privacy_query_history": false,
     "privacy_temporal_history": false,
-    "privacy_normalize_errors": false
+    "privacy_normalize_errors": false,
+    "adequacy_shacl": false,
+    "adequacy_targets": false,
+    "adequacy_meta_shapes": false,
+    "adequacy_warnings": false,
+    "adequacy_infos": false
   },
   "limits": {
     "max_query_chars": 100000,

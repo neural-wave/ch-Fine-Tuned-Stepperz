@@ -8,6 +8,8 @@ locale in runtime.py. Il sistema non usa LLM per decidere la compliance.
 
 [Teoria e SHACL](non-compliance-e-shacl.md), [attacchi](attacchi-all%27anonimato.md)
 e [operazioni disponibili](operazioni.md) approfondiscono ambito e limiti.
+La [policy SHACL](adequacy-shacl.md) aggiunge controlli di adeguatezza sui dati
+RDF nei profili `adequacy` e `hardened`, con shape fidate fornite dal servizio.
 
 ## Comandi
 

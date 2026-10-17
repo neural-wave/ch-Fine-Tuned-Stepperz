@@ -1,0 +1,38 @@
+sequenceDiagram
+    participant C as Chiamante
+    participant R as runtime.py
+    participant P as privacy.py
+    participant H as ReleaseHistory
+    participant A as adequacy.py
+    participant V as validation.py
+    participant E as Valutatore
+    participant D as Dataset RDFLib
+    participant J as results.py
+    C->>R: execute_checked(dataset, query, policy, context, shacl_context)
+    R->>P: preflight: contesto, ACL e prerequisiti
+    R->>H: acquisisce il lock dello storico
+    R->>P: fingerprint iniziale del Dataset
+    R->>H: verifica lo snapshot precedente
+    R->>A: validate_adequacy: shape, target e severita
+    A->>D: copia e valida ogni grafo separatamente
+    A-->>R: dati adeguati, nessun report pubblico
+    R->>V: validate: parsing, analisi e regole
+    V-->>R: verdetto statico
+    alt Query non conforme
+        R-->>C: ResultBlocked, nessun payload
+    else Query conforme staticamente
+        R->>E: sceglie il percorso di esecuzione
+        E->>D: query di supporto o sottoalberi intermedi
+        D-->>E: righe interne
+        E->>E: provenienza, coorti e misure
+        E->>D: esegue la query originale preparata
+        D-->>E: payload del backend
+        E->>J: check_payload e controlli numerici
+        E->>E: confronto con i valori ricalcolati
+        E-->>R: payload verificato e coorti di rilascio
+        R->>P: fingerprint finale invariato
+        R->>H: verifica le sequenze e registra il rilascio
+        H-->>R: rilascio ammesso
+        R-->>C: SPARQL Results JSON
+    end
+    Note over R,H: Il lock viene rilasciato anche in caso di errore.

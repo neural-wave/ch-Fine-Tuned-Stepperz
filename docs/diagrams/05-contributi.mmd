@@ -1,0 +1,6 @@
+flowchart TB
+    query["SUM con IF<br/>sette righe da sei persone"] --> baseline["Profilo default<br/>coorte formale: sei grafi"]
+    query --> hardened["Profilo hardened<br/>segue i rami effettivi di IF"]
+    baseline --> passed["Soglia cinque superata<br/>restituisce 70"]
+    hardened --> actual["P1-P5 producono zeri artificiali<br/>solo P6 contribuisce alla misura"]
+    actual --> blocked["Coorte effettiva: una persona<br/>ResultBlocked"]

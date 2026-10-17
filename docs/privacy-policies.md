@@ -6,6 +6,10 @@ Il file [policies/hardened.json](../policies/hardened.json) o `Policy.hardened()
 le abilita tutte. Ogni opzione rimane attivabile separatamente tramite
 `with_checks` o JSON, con le dipendenze indicate nel [catalogo](policy-checks.md).
 
+Hardened abilita anche la [policy di adeguatezza SHACL](adequacy-shacl.md):
+oltre al contesto privacy occorre fornire `ShaclContext` con shape fidate.
+Adeguatezza e anonimato sono controlli distinti.
+
 ## Cosa verifica ogni opzione
 
 | Opzione | Controllo implementato |
@@ -26,7 +30,7 @@ dal prefisso del grafo e non considera automaticamente fidati gli identificatori
 contenuti nei dati RDF.
 
 ```python
-from sparql_analyzer import Policy, ExecutionContext, ReleaseHistory
+from sparql_analyzer import Policy, ExecutionContext, ReleaseHistory, ShaclContext
 from sparql_analyzer.runtime import execute_checked
 
 # Una sola istanza condivisa dal servizio, conservata tra le richieste.
@@ -45,6 +49,7 @@ result = execute_checked(
     query,
     policy=Policy.hardened(),
     context=context,
+    shacl_context=ShaclContext.from_files("shacl/shacler_shapes.ttl"),
 )
 ```
 
@@ -112,8 +117,12 @@ I test prima marcati `xfail` sono regressioni effettive del profilo hardened:
 restano nella suite per dimostrare l'effetto dei toggle. I test positivi, quelli
 sui prerequisiti e quelli di disattivazione sono in `tests/test_privacy_policies.py`.
 
+Queste regressioni privacy disattivano `adequacy_shacl`: le loro fixture sono
+minimali e non conformi alle shape SPHN complete. SHACL e la combinazione con
+hardened completo sono verificati separatamente in `tests/test_adequacy.py`.
+
 La [matrice dei profili effettivamente testati](../tests/README.md#profili-usati-nei-test)
-distingue suite predefinita, hardened e override dei toggle. I 470 test passati
-sono il totale misto, non 470 esecuzioni hardened. Nei test dei bypass complessi
+distingue suite predefinita, hardened e override dei toggle. I 503 test passati
+sono il totale misto, non 503 esecuzioni hardened. Nei test dei bypass complessi
 la normalizzazione degli errori e disattivata: un crash inatteso deve fallire il
 test, anziche essere normalizzato e contato come blocco dell'attacco.

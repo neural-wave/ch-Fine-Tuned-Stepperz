@@ -40,6 +40,6 @@ def test_complex_attack_observation(case):
 def test_complex_privacy_leak_must_be_blocked(case):
     dataset, query = prepare(case)
     # Un crash inatteso non deve essere scambiato per una protezione.
-    policy = Policy.hardened().with_checks(privacy_normalize_errors=False)
+    policy = Policy.hardened().with_checks(privacy_normalize_errors=False, adequacy_shacl=False)
     with pytest.raises(ResultBlocked):
         execute_checked(dataset, query, policy=policy, context=trusted_context(dataset))

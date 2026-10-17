@@ -316,7 +316,7 @@ def test_cli_reads_policy_and_applies_overrides(tmp_path, monkeypatch, capsys):
 
 def test_shipped_policies_and_catalog_match_registry():
     root = Path(__file__).resolve().parents[1]
-    for name, expected in (("default", DEFAULT_POLICY), ("hardened", Policy.hardened()), ("unrestricted", Policy(enabled_checks=frozenset()))):
+    for name, expected in (("default", DEFAULT_POLICY), ("adequacy", Policy.adequacy()), ("hardened", Policy.hardened()), ("unrestricted", Policy(enabled_checks=frozenset()))):
         value = json.loads((root / "policies" / (name + ".json")).read_text())
         assert Policy.from_dict(value) == expected
         assert value["checks"].keys() == CHECKS.keys()

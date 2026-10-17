@@ -10,10 +10,10 @@ def main():
     root = Path(__file__).resolve().parents[1]
     directory = root / "policies"
     directory.mkdir(exist_ok=True)
-    for name, policy in (("default", DEFAULT_POLICY), ("hardened", Policy.hardened()), ("unrestricted", Policy(enabled_checks=frozenset()))):
+    for name, policy in (("default", DEFAULT_POLICY), ("adequacy", Policy.adequacy()), ("hardened", Policy.hardened()), ("unrestricted", Policy(enabled_checks=frozenset()))):
         (directory / (name + ".json")).write_text(json.dumps(policy.to_dict(), indent=2) + "\n", encoding="utf-8")
     catalog = ["# Catalogo dei controlli\n",
-               "Generato dal registro `sparql_analyzer/policy.py`. Le nuove policy privacy sono opt-in nel profilo predefinito e attive nel profilo hardened.\n",
+               "Generato dal registro `sparql_analyzer/policy.py`. Privacy e adeguatezza SHACL sono opt-in nel profilo predefinito e attive nel profilo hardened. Il profilo adequacy abilita i controlli SHACL senza le opzioni privacy.\n",
                "| Interruttore | Effetto | Richiede | Default |", "|---|---|---|---|"]
     for name, check in CHECKS.items():
         dependencies = ", ".join(f"`{r}`" for r in check.requires)

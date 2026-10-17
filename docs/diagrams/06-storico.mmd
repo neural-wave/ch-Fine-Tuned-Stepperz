@@ -1,0 +1,7 @@
+flowchart TB
+    first["Prima query<br/>conteggio P1-P6 = 6"] --> ledger["ReleaseHistory<br/>registra digest e coorte rilasciata"]
+    second["Seconda query<br/>esclude P6: conteggio = 5"] --> threshold["Controllo della singola coorte<br/>cinque persone, soglia rispettata"]
+    threshold --> compare["Confronto con i rilasci precedenti"]
+    ledger --> compare
+    compare --> difference["Differenza delle coorti: solo P6<br/>6 meno 5 rivela un contributo"]
+    difference --> suppress["Nuovo rilascio bloccato<br/>storico precedente conservato"]

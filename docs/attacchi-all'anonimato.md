@@ -108,25 +108,70 @@ devono restare su canali protetti.
 | Controlli sulle interrogazioni ripetute | Affronta composizione e differenze | Una garanzia generale senza un modello formale |
 | SHACL | Verifica requisiti dei dati RDF | La privacy delle query o dei risultati |
 
+La [policy di adeguatezza SHACL](adequacy-shacl.md) e implementata con cinque
+toggle `adequacy_*`. Valida i grafi RDF, non il testo della query o il risultato
+numerico. E attiva in `adequacy` e `hardened`, disattiva in `default` e
+`unrestricted`; richiede shape fidate tramite `ShaclContext`. Dati conformi
+possono comunque consentire attacchi all'anonimato: i controlli privacy restano
+necessari.
+
 Una soglia di coorte è una scelta di policy, non una garanzia universale.
 Una lista di operatori vietati non sostituisce una lista esplicita delle
 strutture effettivamente supportate e controllate.
 
 ## 7. Stato del progetto e matrice di test
 
-La [suite avversaria avanzata](../tests/adversarial/README.md) associa le famiglie
-elencate a query separate, test runtime, dimostrazioni di rischio e verifiche di
-integrazione mancanti. Sei lacune sono riprodotte con test xfail strict: non
-vengono contate come protezioni riuscite.
+Le famiglie sopra sono una classificazione dei rischi, non un elenco esaustivo
+di attacchi né una lista di tecniche tutte riconosciute dal codice. La copertura
+va valutata per variante, percorso di esecuzione e configurazione effettiva.
 
-Il prototipo contiene controlli statici su alcune esposizioni dirette e una
-verifica runtime locale per COUNT globali diretti, con controllo delle colonne,
-dei tipi, dei conteggi e della coorte per valore.
+| Profilo | Protezioni attive e limiti |
+|---|---|
+| `default` | Controlli statici, provenienza runtime e contratto numerico della risposta; le sette nuove opzioni `privacy_*` sono disattivate. Le dimostrazioni dei bypass storici rimangono riproducibili. |
+| `adequacy` | Controlli predefiniti e validazione SHACL, con shape fidate. Verifica l'adeguatezza dei dati ai vincoli selezionati; non aggiunge le sette protezioni privacy. |
+| `hardened` | Abilita tutti i controlli, comprese le opzioni privacy e SHACL. Richiede contesti fidati con ACL, identità canoniche, storico e shape. Le difese privacy bloccano i 17 scenari storici riprodotti; non garantisce copertura di ogni variante delle famiglie elencate. |
+| `unrestricted` | Disattiva i controlli configurabili; non offre le protezioni di anonimato dell'analizzatore. Restano i limiti delle operazioni implementate dal motore. |
 
-Non è stata dimostrata copertura completa delle deduzioni tra query, dei canali
-laterali o dell'integrazione con Virtuoso. I test disponibili non costituiscono
-una certificazione di privacy. Sul dataset da 50 GB i controlli di supporto
-dovranno operare nel database, senza trasferire tutte le righe dei pazienti in Python.
+Il runtime supporta aggregazioni COUNT/SUM/AVG anche su più livelli e controlla
+le coorti prima del rilascio finale. I gruppi individuali intermedi possono
+essere ammessi: una sottoquery non viene rifiutata soltanto perché contiene
+valori individuali.
+
+| Famiglia | Copertura attuale con `hardened` | Limite residuo |
+|---|---|---|
+| Esposizione diretta, alias e aggregati che conservano valori | Regole statiche, provenienza e contratto finale; vari costrutti sono vietati o non supportati. | Il rifiuto di un costrutto non dimostra l'analisi semantica di ogni trasformazione equivalente. |
+| Piccoli contributi nascosti in IF/COALESCE, OPTIONAL, UNION e riscalamenti | Controllo dei contributi effettivi e delle dipendenze dei singoli aggregati; 11 bypass complessi storici sono regressioni di blocco. | Non è una prova per ogni espressione equivalente; alcune query innocue vengono rifiutate conservativamente. |
+| Duplicati della stessa persona | Soglia sulle persone canoniche, usando il mapping fidato. | La correttezza e la completezza del mapping competono al servizio. |
+| Condizioni non correlate nel default graph | Rifiuto dei pattern non vuoti fuori da GRAPH. | È una restrizione conservativa, non un supporto generale dei join tra grafi clinici e default graph. |
+| Differenze, piccoli complementi e intersezioni tra rilasci | Storico delle coorti e blocco di query diverse sulla stessa coorte. | Non copre ogni ricostruzione o inferenza adattiva; lo storico è in memoria del singolo processo. Non è implementata privacy differenziale con budget. |
+| Confronti temporali | Snapshot fissato al primo rilascio; cambiamenti successivi bloccati. | Non gestisce una pubblicazione sicura di statistiche su dataset che evolve nel tempo. |
+| Accessi fuori ACL | Verifica dell'intero Dataset locale prima della query. | ACL e Dataset già delimitato devono essere forniti dal servizio; non crea una vista autorizzata su Virtuoso. |
+| Errori del backend | Normalizzazione delle eccezioni impreviste nel percorso verificato. | Non governa log interni, report di debug o altri canali applicativi. |
+| Federazione | SERVICE vietato. | Non configura firewall, credenziali o altri strumenti con accesso alla rete. |
+| Collegamento con fonti esterne e omogeneità del gruppo | Nessuna garanzia generale implementata. | Una coorte sopra soglia può comunque consentire deduzioni individuali. |
+| Tempi di esecuzione e distinzione tra rilascio e soppressione | Nessuna protezione generale implementata. | Anche il comportamento di una richiesta bloccata può fornire informazioni. |
+| Cache, isolamento utenti e prompt injection | La validazione limita alcune conseguenze delle query generate quando attraversano il gate. | Servono controlli nel servizio e negli strumenti dell'agente; il modulo non implementa queste difese applicative. |
+| Dati incompleti o incoerenti rispetto alle shape | SHACL Core/SPARQL per grafo, con target effettivi, meta-schema e severita configurabili. | Non prova l'anonimato, la verita clinica o la copertura di ogni dato; manca l'integrazione con Virtuoso. |
+
+La [matrice dei profili dei test](../tests/README.md#profili-usati-nei-test)
+distingue le verifiche del profilo predefinito dalle regressioni hardened:
+6 scenari generali e 11 varianti complesse, senza `xfail`. Per queste ultime
+`privacy_normalize_errors` è disattivata nel test, così un crash inatteso
+non viene contato come blocco riuscito. Queste regressioni disattivano anche
+`adequacy_shacl`, per isolare la privacy su fixture minimali non conformi SPHN.
+I test SHACL e di hardened completo hanno fixture dedicate. Il totale dei
+test comprende configurazioni diverse, non solo hardened.
+
+Le protezioni runtime richiedono il passaggio da `execute_checked`: la sola
+validazione statica non applica ACL, coorti o storico dei rilasci. `query.sh`
+interroga direttamente Virtuoso e non applica questi profili. Non è stata
+verificata l'equivalenza del percorso locale RDFLib con l'esecuzione in Virtuoso.
+Sul dataset da 50 GB i controlli di supporto dovranno operare nel database,
+senza trasferire tutte le righe dei pazienti in Python.
+
+Prerequisiti e limiti operativi sono descritti nella
+[guida alle policy privacy](privacy-policies.md). I test disponibili non
+costituiscono una certificazione di privacy.
 
 Per trasformare questa classificazione in un piano di verifica, registrare per
 ogni famiglia:

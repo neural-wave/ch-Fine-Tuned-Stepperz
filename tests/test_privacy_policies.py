@@ -13,7 +13,8 @@ from tests.complex_fixture import complex_cohort
 from tests.generate_synthetic_data import SPHN, SYN
 from tests.privacy_fixture import trusted_context
 
-STRICT = Policy.hardened().with_checks(privacy_normalize_errors=False)
+# Fixture minimali per attaccare la privacy, non dati clinici conformi SPHN.
+STRICT = Policy.hardened().with_checks(privacy_normalize_errors=False, adequacy_shacl=False)
 PREFIX = "PREFIX sphn: <https://biomedit.ch/rdf/sphn-schema/sphn#>\n"
 COUNT = PREFIX + "SELECT (COUNT(DISTINCT ?g) AS ?n) WHERE { GRAPH ?g { ?dx a sphn:BilledDiagnosis } }"
 MEAN = PREFIX + """SELECT (AVG(?perPatient) AS ?n) WHERE {

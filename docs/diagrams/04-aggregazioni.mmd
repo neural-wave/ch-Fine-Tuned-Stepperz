@@ -1,0 +1,9 @@
+flowchart TB
+    p1["P1: misure 10 e 20"] --> m1["Gruppo interno P1<br/>media 15, origine P1"]
+    p2["P2: misura 30"] --> m2["Gruppo interno P2<br/>media 30, origine P2"]
+    rest["P3, P4, P5, P6<br/>misure 40, 50, 60, 70"] --> mr["Quattro gruppi interni<br/>medie 40, 50, 60, 70"]
+    m1 --> outer["AVG delle sei medie<br/>265 / 6 = 44.1666..."]
+    m2 --> outer
+    mr --> outer
+    outer --> cohort["Origini combinate: sei persone<br/>coorte finale almeno cinque"]
+    cohort --> release["Risultato ammesso<br/>nessuna media individuale esportata"]

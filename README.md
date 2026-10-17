@@ -241,6 +241,10 @@ ATTENTION:  SNOMED-CT terminology must not use or distribute the SNOMED files ou
 
 ## Analizzatore SPARQL in Python
 
+Per capire il progetto o presentarlo al gruppo: [guida illustrata con sei diagrammi](docs/architettura.md),
+[sorgenti Mermaid](docs/diagrams/README.md) e demo eseguibile con
+`uv run python -m examples.diagram_walkthrough`.
+
 Analisi e restrizioni sono configurabili tramite `Policy` o file JSON, senza
 modificare il codice. Vedi [guida ai toggle](docs/policy.md),
 [catalogo dei controlli](docs/policy-checks.md) e [configurazione predefinita](policies/default.json).
@@ -266,6 +270,9 @@ Vedi [test](tests/README.md), [documentazione](docs/sparql.md) e
 [teoria della non compliance e SHACL](docs/non-compliance-e-shacl.md).
 
 Vedi anche la [classificazione degli attacchi all'anonimato](docs/attacchi-all%27anonimato.md).
+La [policy di adeguatezza SHACL](docs/adequacy-shacl.md) valida i grafi RDF con
+shape fidate. E attiva nei profili `adequacy` e `hardened`; con hardened occorre
+fornire sia `context` privacy sia `shacl_context` a `execute_checked`.
 
 ### Ambiente Python con uv
 

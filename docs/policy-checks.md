@@ -1,6 +1,6 @@
 # Catalogo dei controlli
 
-Generato dal registro `sparql_analyzer/policy.py`. Le nuove policy privacy sono opt-in nel profilo predefinito e attive nel profilo hardened.
+Generato dal registro `sparql_analyzer/policy.py`. Privacy e adeguatezza SHACL sono opt-in nel profilo predefinito e attive nel profilo hardened. Il profilo adequacy abilita i controlli SHACL senza le opzioni privacy.
 
 | Interruttore | Effetto | Richiede | Default |
 |---|---|---|---|
@@ -80,3 +80,8 @@ Generato dal registro `sparql_analyzer/policy.py`. Le nuove policy privacy sono 
 | `privacy_query_history` | Blocca differencing, piccoli complementi e statistiche diverse sulla stessa coorte. | `privacy_distinct_persons`, `runtime_control_cohort` | false |
 | `privacy_temporal_history` | Vincola i rilasci allo stesso snapshot del dataset. | `support_analysis` | false |
 | `privacy_normalize_errors` | Sostituisce errori imprevisti con un errore pubblico privo di dati. |  | false |
+| `adequacy_shacl` | Valida separatamente i grafi RDF con SHACL Core e SHACL-SPARQL prima del rilascio. |  | false |
+| `adequacy_targets` | Richiede almeno un focus node effettivo per ogni grafo dati non vuoto. | `adequacy_shacl` | false |
+| `adequacy_meta_shapes` | Verifica le shape con il meta-schema SHACL prima di validare i dati. | `adequacy_shacl` | false |
+| `adequacy_warnings` | Considera bloccanti anche i risultati SHACL Warning. | `adequacy_shacl` | false |
+| `adequacy_infos` | Considera bloccanti anche i risultati SHACL Info. | `adequacy_shacl` | false |

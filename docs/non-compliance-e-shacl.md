@@ -20,11 +20,13 @@ I test coprono esempi finiti e non provano l'assenza di altri casi.
 | Livello | Domanda | Stato |
 |---|---|---|
 | Sintassi | Il parser comprende la query? | RDFLib, SPARQL standard |
-| Policy e autorizzazione | La richiesta e consentita per utente e dataset? | Policy statica parziale; autorizzazioni utente non implementate |
-| Modello e qualita dei dati | Classi, relazioni e valori rispettano lo schema clinico? | Shape disponibili, validazione SHACL non implementata |
-| Risultati e privacy runtime | Cosa viene davvero restituito e quanti pazienti contribuiscono? | Prototipo locale per COUNT diretti |
+| Policy e autorizzazione | La richiesta e consentita per utente e dataset? | Controlli statici e ACL locale con contesto fidato; vedi profilo hardened |
+| Modello e qualita dei dati | Classi, relazioni e valori rispettano lo schema clinico? | Policy SHACL locale implementata, opt-in nel default e attiva in adequacy/hardened |
+| Risultati e privacy runtime | Cosa viene davvero restituito e quanti pazienti contribuiscono? | COUNT/SUM/AVG anche annidati, provenienza, coorti e storico opzionale |
 
 Una risposta positiva a uno di questi livelli non sostituisce gli altri.
+Configurazione e perimetro implementato sono nella
+[policy di adeguatezza SHACL](adequacy-shacl.md) e nelle [policy privacy](privacy-policies.md).
 
 ## R1: selezione di un paziente identificabile
 
@@ -140,8 +142,8 @@ la risposta serializzata, inclusi metadati ed errori. Regex su email o identific
 sono un controllo aggiuntivo, non una prova: una data o un numero possono essere
 sensibili senza avere un formato speciale.
 
-Il runtime attuale accetta solo interi COUNT verificati e controlla la corrispondenza
-con il conteggio interno. check_payload da solo non controlla la provenienza.
+Il runtime predefinito accetta aggregati numerici verificati e controlla la
+corrispondenza con il ricalcolo interno. check_payload da solo non controlla la provenienza.
 
 ## Ulteriori rischi non coperti dalle cinque regole
 
@@ -155,20 +157,24 @@ Una soglia k non basta: due query quasi identiche, entrambe sopra soglia, posson
 differire per una sola persona. La differenza dei risultati puo rivelarne una
 caratteristica. Servono una policy delle interrogazioni ripetute e, secondo il
 modello di rischio, controlli di composizione o meccanismi di privacy differenziale
-con un budget definito. Questi controlli non sono implementati.
+con un budget definito. Lo storico opzionale implementa controlli conservativi
+su coorti e snapshot; non e implementato un meccanismo di privacy differenziale.
 
 ### Grafo, paziente e autorizzazioni
 
-Il runtime assume un grafo per paziente. Il prefisso di un URI non dimostra che
+Il runtime predefinito conta grafi paziente. Il prefisso di un URI non dimostra che
 il grafo rappresenti una persona distinta o che l'utente possa accedervi.
 Uno stesso paziente in piu grafi puo gonfiare la coorte. Occorre una mappatura
 affidabile, deduplicazione e autorizzazioni applicate prima dell'esecuzione.
+Questi controlli sono attivi nel profilo hardened con contesto fidato.
 
 ### Snapshot, errori e costi
 
 Tra il conteggio della coorte e la query finale i dati possono cambiare. In
 produzione le verifiche devono operare sullo stesso snapshot o transazione.
-La versione locale assume che il Dataset rimanga stabile.
+I controlli privacy sullo storico e la nuova policy SHACL confrontano i
+fingerprint prima e dopo l'esecuzione; questo non equivale a una transazione
+e non rileva modifiche intermedie poi annullate.
 
 Errori, log, messaggi SHACL e risultati intermedi possono contenere dati grezzi.
 Devono restare su canali protetti e non diventare risposte pubbliche. Timeout e
@@ -216,7 +222,7 @@ non l'assunzione che tutte le shape siano chiuse.
 L'ispezione del file Turtle ha rilevato 16211 triple, 621 NodeShape e 688
 collegamenti sh:sparql. Questi conteggi descrivono il file presente, non un
 risultato di validazione. Il file dichiara un regime RDFS e contiene severity
-Warning e Info oltre ai vincoli ordinari: un'integrazione dovra gestirli esplicitamente.
+Warning e Info oltre ai vincoli ordinari: la policy li gestisce con toggle distinti.
 
 Esempi di requisiti effettivamente presenti:
 
@@ -226,10 +232,10 @@ Esempi di requisiti effettivamente presenti:
 La fixture tests/data/synthetic/cohort.trig omette hasSourceSystem e hasCode
 nelle diagnosi e hasDataProvider nei soggetti. Non puo quindi essere presentata
 come fixture SPHN conforme: e intenzionalmente minimale per i test del filtro
-di privacy. Finora non e stato eseguito un motore SHACL sul dataset.
+di privacy. Queste fixture restano separate dai dati dedicati ai test SHACL.
 
-Per i test SHACL occorre un secondo insieme di fixture: una valida rispetto alle
-shape selezionate, poi varianti che violino un vincolo per volta. Non serve rendere
+I test SHACL usano un secondo insieme di fixture: una valida rispetto alle
+shape selezionate, poi varianti che violano un vincolo per volta. Non serve rendere
 silenziosamente piu permissive le shape per fare passare i dati esistenti.
 
 ## Come integrare SHACL correttamente
@@ -250,15 +256,20 @@ silenziosamente piu permissive le shape per fare passare i dati esistenti.
 6. Eseguire la validazione all'ingestione e quando cambiano dati/shape/ontologie;
    collegare l'esito a uno snapshot. Tenere separato il controllo per ogni query.
 
-Questa integrazione e ancora da implementare. Non e stata aggiunta una dipendenza
-SHACL o modificato il validatore in questa revisione documentale.
+Il percorso locale e ora implementato in `sparql_analyzer/adequacy.py` con
+pySHACL, copie immutabili delle shape, validazione separata per grafo, target
+SPARQL, RDFS e controlli configurabili su target, meta-schema e severita.
+Vedi [policy SHACL e test](adequacy-shacl.md). Restano da implementare
+validazione all'ingestione con attestazioni persistenti e integrazione con
+snapshot/transazioni Virtuoso; nessuna certificazione del dataset completo
+deriva dalle fixture sintetiche.
 
 ## Priorita consigliate
 
 1. Definire vocabolario autorizzato, predicati sensibili e mappatura grafo/paziente.
    Il controllo attuale sul prefisso SPHN non verifica l'esistenza di una proprieta
    nell'ontologia: anche un nome errato nello stesso namespace richiede controllo.
-2. Integrare SHACL sui dati e creare fixture SPHN valide e invalide dedicate.
+2. Estendere i test SHACL a dati clinici e ontologie reali; il motore locale e le fixture dedicate sono disponibili.
 3. Aggiungere controlli di coerenza dei pattern di query con schema e ontologia,
    senza chiamarli impropriamente validazione SHACL completa della query.
 4. Collegare il runtime a Virtuoso con autorizzazioni, snapshot e limiti effettivi.

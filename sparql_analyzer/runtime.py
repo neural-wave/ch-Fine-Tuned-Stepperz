@@ -8,23 +8,27 @@ from .results import ResultBlocked, UnsupportedExecution, check_payload, number,
 from .algebra import count_variables
 from .privacy import ExecutionContext, ReleaseHistory, preflight, snapshot_digest
 from contextlib import nullcontext
+from .adequacy import validate_adequacy
 
 
-def execute_checked(dataset, query, *, policy=DEFAULT_POLICY, min_patients=None, max_support_rows=None, context=None):
+def execute_checked(dataset, query, *, policy=DEFAULT_POLICY, min_patients=None, max_support_rows=None, context=None, shacl_context=None):
     """Esegue con contesto fidato opzionale e transazione sullo storico."""
     try:
         preflight(dataset, policy, context)
         use_history = policy.enabled("privacy_query_history") or policy.enabled("privacy_temporal_history")
         with context.history.locked() if use_history else nullcontext():
-            fingerprint = snapshot_digest(dataset) if use_history else None
+            check_snapshot = use_history or policy.enabled("adequacy_shacl")
+            fingerprint = snapshot_digest(dataset) if check_snapshot else None
             if policy.enabled("privacy_temporal_history"):
                 context.history.check_snapshot(context.dataset_id, fingerprint)
+            validate_adequacy(dataset, shacl_context, policy=policy)
             cohorts = []
             payload = _execute_checked(dataset, query, policy=policy, min_patients=min_patients,
                                        max_support_rows=max_support_rows, context=context, cohorts=cohorts)
-            if use_history:
+            if check_snapshot:
                 if snapshot_digest(dataset) != fingerprint:
                     raise ResultBlocked("Dataset modificato durante i controlli: risultato soppresso.")
+            if use_history:
                 context.history.record(dataset_id=context.dataset_id, fingerprint=fingerprint,
                     query=query, cohorts=cohorts, min_patients=policy.min_patients if min_patients is None else min_patients,
                     check_queries=policy.enabled("privacy_query_history"), check_temporal=policy.enabled("privacy_temporal_history"))

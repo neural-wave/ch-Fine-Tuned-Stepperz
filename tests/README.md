@@ -2,16 +2,17 @@
 
 ## Profili usati nei test
 
-L'ultima esecuzione completa ha prodotto **470 test passati, nessun xfail**.
+L'ultima esecuzione completa, con la policy SHACL, ha prodotto **503 test passati, nessun xfail**.
 Questo e il totale di una suite con configurazioni diverse: non significa
-che tutti i 470 casi siano stati eseguiti con il profilo hardened.
+che tutti i 503 casi siano stati eseguiti con il profilo hardened.
 
 | Gruppo | Configurazione effettiva | Cosa dimostra |
 |---|---|---|
 | Parsing, compliance, runtime, sottoquery e aggregazioni preesistenti | Predefinita, salvo override espliciti nel singolo test | Compatibilita e comportamento del percorso storico |
-| 6 regressioni generali in `test_adversarial_sequences.py` | `Policy.hardened()` con contesto fidato | Blocco di differencing, confronti temporali, grafi duplicati, accesso fuori ACL, condizioni non correlate ed errori del backend |
-| 11 regressioni complesse in `test_complex_attacks.py` | Hardened con `privacy_normalize_errors=False` e contesto fidato | Blocco dei bypass; un crash imprevisto non viene scambiato per un rifiuto corretto |
-| Controlli positivi complessi e aggregazioni individuali intermedie in `test_privacy_policies.py` | Hardened con `privacy_normalize_errors=False` | Le query lecite di questi casi continuano a funzionare |
+| 6 regressioni generali in `test_adversarial_sequences.py` | Hardened con `adequacy_shacl=False` e contesto fidato | Blocco dei bypass privacy su fixture minimali, senza confonderlo con un rifiuto SHACL |
+| 11 regressioni complesse in `test_complex_attacks.py` | Hardened con `privacy_normalize_errors=False`, `adequacy_shacl=False` e contesto fidato | Blocco dei bypass; un crash imprevisto non viene scambiato per un rifiuto corretto |
+| Controlli positivi complessi e aggregazioni individuali intermedie in `test_privacy_policies.py` | Hardened con `privacy_normalize_errors=False`, `adequacy_shacl=False` | Le query lecite di questi casi continuano a funzionare sulle fixture privacy |
+| `test_adequacy.py` | Profilo adequacy e override espliciti; un caso con hardened completo e i due contesti fidati | SHACL Core/SPARQL, target SPARQL, grafi separati, meta-schema, severita, errori, RDFS, stabilita dei dati e combinazione con privacy |
 | Verifica di toggle e prerequisiti in `test_policy.py` e `test_privacy_policies.py` | Configurazioni specifiche per test, anche unrestricted | Effetto reale di attivazione/disattivazione, dipendenze e mancanza di metadati |
 | Osservazioni dei bypass e test `risk_demonstration` | Predefinita | Il rischio storico esiste senza le nuove protezioni: un test verde qui non prova che l'attacco sia bloccato |
 
@@ -28,6 +29,13 @@ uv run pytest tests/test_complex_attacks.py tests/test_adversarial_sequences.py 
 
 Per i controlli positivi e i toggle privacy: `uv run pytest tests/test_privacy_policies.py -v`.
 I dettagli del contesto necessario e dei limiti sono nella [guida privacy](../docs/privacy-policies.md).
+Le fixture privacy restano intenzionalmente minimali e non conformi alle shape
+SPHN complete. La nuova suite usa [shape dedicate](shacl/shapes.ttl) e carica
+anche il file SPHN completo per verificare un'istanza Algorithm valida e una
+invalida tramite target SPARQL. Il meta-schema del file completo e verificato
+nel caso valido, non nuovamente nella variante invalida con shape identiche.
+Per eseguirla: `uv run pytest tests/test_adequacy.py -v`.
+Vedi [policy di adeguatezza e limiti](../docs/adequacy-shacl.md).
 
 Dalla radice del progetto:
 

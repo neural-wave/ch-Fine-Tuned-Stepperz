@@ -39,6 +39,13 @@ distinti sulla cardinalita finale.
 
 ## Python
 
+La [policy di adeguatezza SHACL](adequacy-shacl.md) aggiunge cinque toggle
+`adequacy_*`, disattivati nel default e attivi in hardened. Il profilo
+[adequacy](../policies/adequacy.json), disponibile come `Policy.adequacy()`,
+abilita SHACL con i controlli predefiniti. Serve `shacl_context=ShaclContext(...)`
+in `execute_checked`; la sola CLI statica non valida i dati. Hardened ora
+richiede sia `ExecutionContext` sia `ShaclContext`.
+
 ```python
 import json
 from pathlib import Path
@@ -132,6 +139,7 @@ dei due certifica l'anonimato generale.
 | `flat.py`, `nested.py` | Valutazione delle query semplici e annidate |
 | `provenance.py` | Righe interne e provenienza dei valori |
 | `privacy.py` | Contesto fidato, ACL, identita, snapshot e storico dei rilasci |
+| `adequacy.py` | Contesto SHACL fidato, validazione dei grafi, target e severita |
 | `results.py` | Contratto dei risultati, numeri ed eccezioni |
 | `vocabulary.py` | Vocabolario RDF e operatori riconosciuti |
 | `cli.py`, `compliance.py` | CLI e compatibilita dell'API precedente |

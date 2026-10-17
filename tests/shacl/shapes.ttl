@@ -1,0 +1,17 @@
+@prefix sh: <http://www.w3.org/ns/shacl#> .
+@prefix sphn: <https://biomedit.ch/rdf/sphn-schema/sphn#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix ex: <urn:shacl-test:> .
+
+# Sottoinsieme didattico esplicito, non sostituisce le shape SPHN complete.
+ex:Diagnosis a sh:NodeShape ;
+    sh:targetClass sphn:BilledDiagnosis ;
+    sh:property [ sh:path sphn:hasSourceSystem ; sh:minCount 1 ; sh:class sphn:SourceSystem ] ;
+    sh:property [ sh:path sphn:hasCode ; sh:minCount 1 ; sh:maxCount 1 ] ;
+    sh:property [ sh:path sphn:hasSubjectPseudoIdentifier ; sh:minCount 1 ;
+                  sh:maxCount 1 ; sh:class sphn:SubjectPseudoIdentifier ] .
+
+ex:Subject a sh:NodeShape ;
+    sh:targetClass sphn:SubjectPseudoIdentifier ;
+    sh:property [ sh:path sphn:hasIdentifier ; sh:minCount 1 ;
+                  sh:maxCount 1 ; sh:datatype xsd:string ] .

@@ -99,6 +99,15 @@ for name, description, requires in (
 ):
     _checks[name] = Check(description, requires, default_enabled=False)
 
+_checks["adequacy_shacl"] = Check("Valida separatamente i grafi RDF con SHACL Core e SHACL-SPARQL prima del rilascio.", default_enabled=False)
+for name, description in {
+    "adequacy_targets": "Richiede almeno un focus node effettivo per ogni grafo dati non vuoto.",
+    "adequacy_meta_shapes": "Verifica le shape con il meta-schema SHACL prima di validare i dati.",
+    "adequacy_warnings": "Considera bloccanti anche i risultati SHACL Warning.",
+    "adequacy_infos": "Considera bloccanti anche i risultati SHACL Info.",
+}.items():
+    _checks[name] = Check(description, ("adequacy_shacl",), default_enabled=False)
+
 CHECKS = MappingProxyType(_checks)
 
 
@@ -138,8 +147,13 @@ class Policy:
 
     @classmethod
     def hardened(cls):
-        """Abilita anche le nuove protezioni; richiede ExecutionContext fidato."""
+        """Abilita tutti i controlli; richiede contesti privacy e SHACL fidati."""
         return cls(enabled_checks=frozenset(CHECKS))
+
+    @classmethod
+    def adequacy(cls):
+        """Controlli predefiniti e tutte le opzioni di adeguatezza SHACL."""
+        return cls().with_checks(**{name: True for name in CHECKS if name.startswith("adequacy_")})
 
     def with_checks(self, **changes):
         if changes.keys() - CHECKS.keys():

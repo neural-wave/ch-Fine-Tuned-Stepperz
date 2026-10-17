@@ -16,6 +16,8 @@ from sparql_analyzer.policy import DEFAULT_POLICY, Policy
 from tests.privacy_fixture import trusted_context
 
 ROOT = Path(__file__).parent / "adversarial/queries"
+# Isola le regressioni privacy da SHACL: le fixture sono intenzionalmente minimali.
+PRIVACY_POLICY = Policy.hardened().with_checks(adequacy_shacl=False)
 
 
 def query(name):
@@ -41,7 +43,7 @@ def indexed_cohort():
 
 @pytest.mark.security_gap
 def test_differencing_sequence_is_suppressed(indexed_cohort):
-    context, policy = trusted_context(indexed_cohort), Policy.hardened()
+    context, policy = trusted_context(indexed_cohort), PRIVACY_POLICY
     assert count(indexed_cohort, policy=policy, context=context) == 8
     with pytest.raises(ResultBlocked):
         count(indexed_cohort, "s02_exclude_value_zero", policy=policy, context=context)
@@ -49,7 +51,7 @@ def test_differencing_sequence_is_suppressed(indexed_cohort):
 
 @pytest.mark.security_gap
 def test_temporal_difference_is_suppressed(indexed_cohort):
-    context, policy = trusted_context(indexed_cohort), Policy.hardened()
+    context, policy = trusted_context(indexed_cohort), PRIVACY_POLICY
     assert count(indexed_cohort, policy=policy, context=context) == 8
     graph = indexed_cohort.graph(URIRef("http://example.org/graph/synthetic-0000"))
     for dx in list(graph.subjects(RDF.type, SPHN.BilledDiagnosis)):
@@ -66,7 +68,7 @@ def test_duplicate_graphs_do_not_count_as_distinct_patients():
         graph.add((SYN[f"copy-diagnosis-{i}"], RDF.type, SPHN.BilledDiagnosis))
         graph.add((SYN[f"copy-diagnosis-{i}"], SPHN.hasSubjectPseudoIdentifier, SYN.one_person))
     with pytest.raises(ResultBlocked):
-        count(dataset, policy=Policy.hardened(), context=trusted_context(dataset))
+        count(dataset, policy=PRIVACY_POLICY, context=trusted_context(dataset))
 
 
 @pytest.mark.security_gap
@@ -75,14 +77,14 @@ def test_prefix_is_not_user_authorization(indexed_cohort):
     graph = indexed_cohort.graph(URIRef("http://example.org/graph/other-tenant"))
     graph.add((SYN["other-tenant-diagnosis"], RDF.type, SPHN.BilledDiagnosis))
     with pytest.raises(ResultBlocked):
-        count(indexed_cohort, policy=Policy.hardened(), context=context)
+        count(indexed_cohort, policy=PRIVACY_POLICY, context=context)
 
 
 @pytest.mark.security_gap
 def test_uncorrelated_sensitive_condition_is_suppressed(indexed_cohort):
     indexed_cohort.default_context.add((SYN["private-default-record"], RDF.type, SPHN.OncologyDiagnosis))
     with pytest.raises(ResultBlocked):
-        count(indexed_cohort, "s03_uncorrelated_default_graph", policy=Policy.hardened(), context=trusted_context(indexed_cohort))
+        count(indexed_cohort, "s03_uncorrelated_default_graph", policy=PRIVACY_POLICY, context=trusted_context(indexed_cohort))
 
 
 @pytest.mark.security_gap
@@ -92,7 +94,7 @@ def test_backend_error_does_not_escape_with_private_values(indexed_cohort, monke
         raise RuntimeError("Backend error: SYNTH-0000@example.invalid")
     monkeypatch.setattr(indexed_cohort, "query", failing_backend)
     with pytest.raises(ResultBlocked) as error:
-        count(indexed_cohort, policy=Policy.hardened(), context=context)
+        count(indexed_cohort, policy=PRIVACY_POLICY, context=context)
     assert "SYNTH-0000" not in str(error.value)
 
 
