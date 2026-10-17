@@ -28,11 +28,11 @@ bash start-api.sh
 Per usare la configurazione della VM ed esporre l'API al client:
 
 ```bash
-NL2SPARQL_CONFIG=artifacts/tests/models.remote.json bash start-api.sh --host 0.0.0.0 --port 8000
+bash start-api.sh --host 0.0.0.0 --port 8000
 ```
 
-Il file remoto viene creato da `start-and-test.sh`. In alternativa usare un proprio
-JSON con `model`, `base_url`, `laya` e `mcp_url`, come per `sparql-run`.
+API, CLI, debugger e test usano `config/agents/models.json`. Lo script remoto
+legge lo stesso file per avviare vLLM e MCP.
 Il comando equivalente senza script e:
 
 ```bash

@@ -10,20 +10,18 @@ RDFLib per controllare l'esecuzione. Il server MCP SPHN appartiene a
 Dalla radice su Linux, con uv, curl e Python 3.12 disponibili, primo terminale:
 
 ```bash
-bash start-mcp.sh
+bash LLM_ENGINE/start_remote.sh
 ```
 
-Avvia `LLM_ENGINE/scripts/serve_sphn_void.py` su `127.0.0.1:18888`, usando
-VoID e ontologia del progetto principale in `schemas/`. Non serve Docker;
-il server non legge pazienti, non interroga Virtuoso e non scarica embedding.
-Il primo avvio installa le dipendenze del sottoprogetto nel suo ambiente.
-Si arresta con Ctrl+C. `--port` cambia porta: aggiornare anche `mcp_url`.
+Avvia o riusa vLLM e MCP in sessioni tmux, leggendo modello e indirizzi da
+`config/agents/models.json`. Richiede vLLM installato, tmux, curl e ss.
+MCP recupera lo schema e non interroga i dati paziente.
+Per avviare soltanto MCP in primo piano resta disponibile `bash start-mcp.sh`.
 
 In un secondo terminale:
 
 ```bash
 uv run --extra agents --extra mcp sparql-run --check-mcp
-bash start-ollama.sh
 uv run --extra local sparql-run --prompt "Conta i pazienti distinti con diagnosi fatturata" --dataset tests/fixtures/synthetic/cohort.trig
 ```
 
@@ -41,7 +39,7 @@ Modificare [models.json](../../config/agents/models.json):
 
 | Campo | Ruolo |
 |---|---|
-| `model`, `base_url` | LLM e indirizzo chat; Ollama nel preset |
+| `model`, `base_url` | LLM e indirizzo chat; vLLM nel preset |
 | `laya.model_id`, `subfolder`, `device` | Checkpoint e dispositivo del classificatore nativo |
 | `mcp_url` | MCP SPHN di LLM_ENGINE, `http://127.0.0.1:18888/mcp` nel preset |
 | `generation_mode` | `prefetch` nel preset; `agentic` lascia gli strumenti al modello |
@@ -49,10 +47,17 @@ Modificare [models.json](../../config/agents/models.json):
 
 Il collegamento HTTP non importa l'SDK MCP 2 del sottoprogetto nel processo
 principale, che usa il proprio SDK MCP 1. I due ambienti restano indipendenti.
-Le variabili LLM del prototipo non vengono ereditate: modello e indirizzo
-rimangono quelli del JSON del progetto principale.
+Lo script remoto deriva le variabili per la propria CLI dal JSON condiviso.
+Non crea un secondo JSON e non usa `.env.remote` per scegliere i modelli.
 
 Il server SPHN espone `search_sparql_examples` e `search_sparql_classes`.
+Il retrieval normalizza i plurali inglesi regolari e collega il lessico clinico
+alle classi dichiarate: per esempio hospital/stay ad Admission e Discharge,
+births a Birth, gestation a GestationalAgeAtBirth. Non legge le risposte del benchmark.
+Se il MCP non restituisce classi, la generazione si ferma; il log riporta prompt,
+hints effettivi, numero di esempi e risposta MCP. Per vocaboli non riconosciuti
+si possono indicare nomi o IRI esatti in `retrieval_classes`. Dopo modifiche al
+retrieval occorre riavviare il processo MCP: riavviare solo l'API non basta.
 In `prefetch` il codice recupera il contesto e il generatore riceve solo i dati;
 in `agentic` il generatore vede gli strumenti di recupero schema/esempi.
 L'esecuzione resta nell'executor verificato. Configurazione vLLM e confronto
@@ -69,11 +74,12 @@ omettere entrambi o impostarli a null e fornire `--schema-file`.
 
 ## Scegliere e riusare i modelli
 
-`qwen3:14b` e un esempio da adeguare alla GPU. `start-ollama.sh` installa
-Ollama se manca (root o sudo), riusa il server attivo o lo avvia in background
-e prepara il modello del JSON. Log e PID sono in `artifacts/ollama/`;
-un nuovo processo usa `artifacts/ollama/models` oppure `OLLAMA_MODELS`.
-Un server gia attivo conserva la propria configurazione.
+Il preset usa `daniel-dona/sparql-model-era-lora-128-qwen3-8b` su vLLM.
+Per cambiare modello modificare `model` nel JSON, fermare la sessione del vecchio
+modello (`tmux kill-session -t '=sphn-qwen'`) e rilanciare lo script remoto.
+Il riavvio interrompe le richieste attive. Poi riavviare API o debugger.
+Ollama resta un'alternativa manuale: richiede un nome modello Ollama e il suo
+`base_url` nel medesimo JSON; non usare `start_remote.sh` per quel backend.
 
 Un LLM diverso deve supportare tool calling e output strutturato.
 Per un altro server chat compatibile cambiare `base_url` e `model`;

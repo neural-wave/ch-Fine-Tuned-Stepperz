@@ -77,7 +77,7 @@ misura dell'intelligenza, della sicurezza o della velocita di un modello.
 
 ## Modelli locali
 
-Il percorso consigliato, gia collegato a Ollama, Laya e MCP, e descritto nella
+Il percorso consigliato, gia collegato a vLLM, Laya e MCP, e descritto nella
 [guida ai modelli locali](local-models.md). Si configura in un solo JSON.
 I paragrafi seguenti descrivono l'iniezione manuale di backend alternativi.
 
@@ -85,7 +85,7 @@ Per un modello gia servito tramite API compatibile OpenAI, sostituire MODEL_ID
 con il suo identificativo effettivo:
 
 ```powershell
-uv run --extra agents python -m tools.evaluate_workflow --model MODEL_ID --base-url http://localhost:11434/v1
+uv run --extra agents python -m tools.evaluate_workflow --model MODEL_ID --base-url http://127.0.0.1:18000/v1
 ```
 
 `--guard-model` sceglie un guard generativo diverso sullo stesso endpoint.

@@ -29,7 +29,11 @@ class PrefetchedSparqlLLM(SparqlLLM):
             if isinstance(row, dict) and isinstance(row.get("class_iri"), str)), request.prompt]))[:6]
         schema = await self.server.direct_call_tool("search_sparql_classes", {"classes": hints})
         if not isinstance(schema, dict) or not isinstance(schema.get("classes_schemas"), list) or not schema["classes_schemas"]:
-            raise ValueError("MCP returned no usable classes_schemas; configure retrieval_classes")
+            logger.error("MCP schema retrieval failed prompt=%r hints=%r example_count=%s response=%r",
+                         request.prompt, hints, len(examples["query_examples"]), schema)
+            raise ValueError(f"MCP returned no usable classes_schemas for hints={hints!r}; "
+                             "check the MCP schema/profile and restart MCP after retrieval changes, "
+                             "or configure retrieval_classes with exact SPHN class names")
         # This server supplies both readable ShEx and the same ranges as JSON.
         # Keep one representation, including the warnings about class/value IRIs.
         schema = {**schema, "classes_schemas": [

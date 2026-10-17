@@ -26,6 +26,8 @@ pytestmark = pytest.mark.offline_workflow
     ("Count patients with BilledDiagnosis", ["BilledDiagnosis"], "BilledDiagnosis"),
     ("How many patients are in the database?", [], "SubjectPseudoIdentifier"),
     ("Quanti pazienti ci sono nel database?", [], "SubjectPseudoIdentifier"),
+    ("What is the average length of a hospital stay in days?", [], "AdministrativeCase"),
+    ("How many births are recorded?", [], "Birth"),
 ])
 def test_prefetch_actual_mcp_needs_one_model_turn(tmp_path, monkeypatch, prompt, hints, expected_class):
     calls = []
@@ -86,6 +88,24 @@ def test_prefetch_does_not_weaken_prompt_gate():
     workflow = SparqlWorkflow(Guard(), PrefetchedSparqlLLM(None, Server()), StaticQueryAnalyzer())
     result = asyncio.run(workflow.run(PromptRequest("p", "s", "policy"), execute=False))
     assert result.status == "blocked_prompt"
+
+
+def test_empty_schema_reports_the_actual_retrieval_hints(caplog):
+    class Server:
+        async def direct_call_tool(self, name, args):
+            if name == "search_sparql_examples":
+                return {"query_examples": [{"class_iri": "urn:MissingClass"}]}
+            return {"classes_schemas": []}
+
+    class Generator:
+        async def run_with_usage(self, request):
+            pytest.fail("Generation must not run without schema")
+
+    with pytest.raises(ValueError, match="urn:MissingClass"):
+        asyncio.run(PrefetchedSparqlLLM(Generator(), Server()).run(PromptRequest("unmatched question", "s", "p")))
+    assert "unmatched question" in caplog.text
+    assert "urn:MissingClass" in caplog.text
+    assert "example_count=1" in caplog.text
 
 
 @pytest.mark.parametrize("field,value", [("generation_mode", "unknown"), ("retrieval_classes", "BilledDiagnosis")])

@@ -7,6 +7,13 @@
 > a workflow. This prototype does not route queries through the main verified
 > RDFLib runtime. Deployment details below are session records, not live checks.
 
+For the integrated stack, use [README_REMOTE.md](README_REMOTE.md).
+`start_remote.sh` reads the repository's `config/agents/models.json`, shared
+with the API, debugger, CLI and health checks. It no longer selects models
+from `.env.remote` or generates a second JSON. Sections below document the
+standalone prototype and historical deployments; they are not the integrated
+startup configuration.
+
 The main workflow now reuses this project's SPHN VoID server over HTTP.
 From the repository root, run `bash start-mcp.sh`; in another terminal run
 `uv run --extra agents --extra mcp sparql-run --check-mcp`.

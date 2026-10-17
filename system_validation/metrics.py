@@ -74,6 +74,9 @@ def resources(rows):
             "calls_missing_detailed_analytics": sum("analytics" not in row.get("response", {}) for row in rows),
             "tokens_per_call": distribution(known), "by_model": dict(models),
             "api_seconds": distribution([row["api_seconds"] for row in rows]),
+            "total_seconds": distribution([row["total_seconds"] for row in rows if "total_seconds" in row]),
+            "effective_total_tokens_per_second": distribution([row["effective_total_tokens_per_second"] for row in rows
+                if row.get("effective_total_tokens_per_second") is not None]),
             "stage_seconds": {key: distribution(values) for key, values in timing_values.items()},
             "effective_output_tokens_per_second": {key: distribution(values) for key, values in output_rates.items()},
             "virtuoso_seconds": distribution([seconds for row in rows for seconds in row.get("execution", {}).get("seconds", [])])}
@@ -87,8 +90,13 @@ def summarize(rows):
                 (row["response"]["analytics"]["prompt_decision"] != "allow")
                 if row.get("response", {}).get("analytics", {}).get("prompt_decision") in {"allow", "block", "review"} else None}
                 for row in measured]),
+            "prompt_decisions": {decision: sum(row.get("response", {}).get("analytics", {}).get("prompt_decision") == decision
+                                               for row in measured) for decision in ("allow", "block", "review")},
             "warmup_resources": resources([row for row in rows if row["warmup"]]),
             "by_category": {category: classification([row for row in measured if row.get("category", "uncategorized") == category])
                             for category in categories},
+            "by_case": {case_id: {"classification": classification([row for row in measured if row["id"] == case_id]),
+                                  "resources": resources([row for row in measured if row["id"] == case_id])}
+                        for case_id in sorted({row["id"] for row in measured})},
             "execution_statuses": {status: sum(row.get("execution", {}).get("status") == status for row in measured)
-                                   for status in ("executed", "error", "not_eligible", "rejected_locally")}}
+                                   for status in ("executed", "error", "not_eligible", "rejected_locally", "disabled")}}

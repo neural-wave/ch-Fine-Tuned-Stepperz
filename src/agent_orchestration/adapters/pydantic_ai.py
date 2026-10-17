@@ -101,7 +101,7 @@ class PydanticAISparqlLLM(SparqlLLM):
         return response
 
 
-def chat_model(name, base_url="http://localhost:11434/v1"):
+def chat_model(name, base_url="http://127.0.0.1:18000/v1"):
     """Works with Ollama, llama.cpp or another compatible chat server."""
     from pydantic_ai.models.openai import OpenAIChatModel
     from pydantic_ai.providers.openai import OpenAIProvider

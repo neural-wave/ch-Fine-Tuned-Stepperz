@@ -59,7 +59,7 @@ Dalla radice, solo sulla VM con i modelli pronti:
 
 ```bash
 uv run --extra local python -m tools.benchmark_inference \
-  --config artifacts/tests/models.remote.json \
+  --config config/agents/models.json \
   --policy-file config/agents/policy.txt \
   --permissions-file config/agents/permissions.txt \
   --prompt 'Count distinct patients with BilledDiagnosis in their patient graph' \
@@ -67,18 +67,16 @@ uv run --extra local python -m tools.benchmark_inference \
   --out artifacts/benchmarks/cuda-prefix.json
 ```
 
-Il file di configurazione remoto viene creato da `start-and-test.sh`; in alternativa
-fornire un proprio JSON con gli indirizzi locali della VM. Il benchmark carica Laya
+Il benchmark usa il JSON condiviso `config/agents/models.json`, come API,
+debugger e script remoto. Carica Laya
 una volta e confronta `agentic` e `prefetch`, riaprendo il generatore per ogni
 modalita. Salva warmup, ogni query, stati di rifiuto/errore, tempi per fase e token
 (incluse richieste e cache quando riportate dal backend). Warmup e caricamento
 sono separati dalla mediana; la mediana delle sole query accettate e distinta da
 quella di tutte le richieste. Un blocco veloce non conta come query accettata.
 
-Un `models.remote.json` gia generato non eredita le modifiche del preset:
-per usare prefetch anche con `sparql-run`, aggiungere `"generation_mode": "prefetch"`
-nel JSON effettivamente passato con `--config`, oppure rigenerarlo tramite
-`start-and-test.sh`. Il benchmark sovrascrive questa scelta per ciascun confronto.
+La modalita predefinita e `generation_mode` nel JSON condiviso.
+Il benchmark sovrascrive questa scelta per ciascun confronto.
 
 Per confrontare i parametri vLLM, ripetere con server avviati separatamente e
 `--label`/`--out` diversi, conservando GPU, modello, richieste e carico uguali.

@@ -26,6 +26,16 @@ Aprire [Swagger](http://127.0.0.1:8000/docs) per provare le richieste.
 `GET /health` restituisce `{"status":"ok"}` senza fare inferenza.
 Lo schema OpenAPI e disponibile su `/openapi.json`.
 
+Per controllare anche modello e schema MCP:
+
+```bash
+uv run --locked --extra validation --extra agents --extra mcp python -m system_validation check
+```
+
+Aggiungere `--inference` per una chiamata reale attraverso l'API gia attiva.
+Impostare `api_url` in `system_validation/config.json` alla porta effettiva
+dell'API. Dettagli nella [guida dell'infrastruttura](../../system_validation/README.md).
+
 Per esporre l'API su un'istanza Linux:
 
 ```bash
@@ -49,10 +59,10 @@ Non serve un `.env`. L'unica variabile specifica dell'API, facoltativa, e
 `NL2SPARQL_CONFIG`: sceglie un JSON dei modelli diverso da quello predefinito.
 Policy e permessi restano nei file sopra; i controlli statici usano `DEFAULT_POLICY`.
 
-Esempio sulla VM, con il JSON generato da `start-and-test.sh`:
+Sulla VM, dopo `bash LLM_ENGINE/start_remote.sh`:
 
 ```bash
-NL2SPARQL_CONFIG=artifacts/tests/models.remote.json bash start-api.sh --host 0.0.0.0 --port 8000
+bash start-api.sh --host 0.0.0.0 --port 8000
 ```
 
 Per scegliere un altro JSON da PowerShell, prima del comando di avvio:
@@ -68,11 +78,11 @@ nel pannello **Run and Debug** e premere **F5**. La configurazione condivisa e
 in [.vscode/launch.json](../../.vscode/launch.json): avvia Uvicorn sulla porta
 `10100` usando `.venv`, sia su Windows sia su Linux/Remote SSH.
 Servono l'estensione Python Debugger e l'ambiente gia preparato con
-`uv sync --locked --extra local --extra api`; il debugger avvia i backend reali.
+`uv sync --locked --extra local --extra api`; il debugger carica Laya e si collega a vLLM e MCP gia attivi.
 
 Impostare i breakpoint in `server.py` o `service.py`, poi inviare una richiesta.
-Per usare un JSON dei modelli diverso aggiungere alla configurazione:
-`"env": {"NL2SPARQL_CONFIG": "${workspaceFolder}/artifacts/tests/models.remote.json"}`.
+Il debugger usa lo stesso `config/agents/models.json` di API, CLI e test.
+Non occorre un JSON remoto o una variabile per il percorso standard.
 Non e necessario avviare prima `start-api.sh`.
 
 ## Richiesta e risposta

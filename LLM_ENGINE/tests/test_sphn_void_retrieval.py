@@ -91,3 +91,21 @@ def test_unmatched_terms_still_return_empty_instead_of_invented_context():
     retrieval = SphnVoidRetrieval(ROOT / "metadata/sphn-schema-void.ttl")
     assert retrieval.search_sparql_classes(["zzzxxyy"])["classes_schemas"] == []
     assert retrieval.search_sparql_examples("zzzxxyy", [])["query_examples"] == []
+
+
+@pytest.mark.parametrize("prompt,required", [
+    ("What is the average length of a hospital stay in days?", {"AdministrativeCase", "Admission", "Discharge"}),
+    ("How many hospital admissions were there per year?", {"Admission"}),
+    ("How many births are recorded?", {"Birth"}),
+    ("How are births distributed across delivery modes?", {"Birth"}),
+    ("How many babies were born preterm, before 37 weeks of gestation?", {"GestationalAgeAtBirth", "Birth"}),
+])
+def test_clinical_wording_and_plurals_retrieve_declared_classes(prompt, required):
+    retrieval = SphnVoidRetrieval(ROOT / "metadata/sphn-schema-void.ttl")
+    direct = retrieval.search_sparql_classes([prompt])["classes_schemas"]
+    assert direct
+    examples = retrieval.search_sparql_examples(prompt, [])["query_examples"]
+    hints = [*[row["class_iri"] for row in examples], prompt]
+    classes = retrieval.search_sparql_classes(hints)["classes_schemas"]
+    assert {SPHN + name for name in required} <= {row["iri"] for row in classes}
+    assert all(row["declared_value_types"] for row in classes)

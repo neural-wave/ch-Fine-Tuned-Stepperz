@@ -20,24 +20,7 @@ uv sync --locked --python 3.12 --extra local
 uv sync --locked --python 3.12 --project "$ROOT/LLM_ENGINE"
 bash "$ROOT/LLM_ENGINE/start_remote.sh"
 
-# Match the stack's configuration, preserving the chosen Laya settings.
-# Keep models.json unchanged and never copy API keys into the generated config.
-export MODEL_CONFIG="$ROOT/artifacts/tests/models.remote.json"
-mkdir -p "$(dirname "$MODEL_CONFIG")"
-"$ROOT/LLM_ENGINE/.venv/bin/python" - "$ROOT" "$MODEL_CONFIG" <<'PY'
-import json
-from pathlib import Path
-import sys
-from sparql_agent.config import Config
-
-root = Path(sys.argv[1])
-remote = Config.from_env(root / 'LLM_ENGINE/.env.remote')
-config = json.loads((root / 'config/agents/models.json').read_text(encoding='utf-8-sig'))
-config.update(base_url=remote.llm_base_url, model=remote.llm_model, mcp_url=remote.mcp_url)
-config.pop('mcp_settings', None)
-Path(sys.argv[2]).write_text(json.dumps(config, indent=2) + '\n', encoding='utf-8')
-print(f'Health checks: {remote.llm_model} at {remote.llm_base_url}; MCP {remote.mcp_url}')
-PY
-
-.venv/bin/python -m agent_orchestration --config "$MODEL_CONFIG" --check-mcp
+# API, debugger, CLI and health checks share the tracked configuration.
+export MODEL_CONFIG="$ROOT/config/agents/models.json"
+.venv/bin/python -m agent_orchestration --check-mcp
 bash "$ROOT/test.sh" --with-models

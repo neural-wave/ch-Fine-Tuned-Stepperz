@@ -7,7 +7,12 @@
   "container_name": "hackathon-virtuoso",
   "graph_prefix": "http://example.org/graph/",
   "rule_set": "https://biomedit.ch/rdf/sphn-resource/global",
-  "cases_file": "system_validation/data/prompts.json",
+  "cases_files": [
+    "benchmark/testcases_final.jsonl",
+    "benchmark/testcases_checked.jsonl",
+    "benchmark/testcases.jsonl",
+    "system_validation/data/prompts.json"
+  ],
   "receipt_file": "artifacts/system-validation/virtuoso-ready.json",
   "out_dir": "artifacts/system-validation",
   "repeats": 1,

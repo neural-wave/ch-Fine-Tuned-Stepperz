@@ -10,6 +10,19 @@ contiene il benchmark reale API/Virtuoso e i propri test offline. Questi ultimi
 sono inclusi nel `testpaths` e in `test.sh`; il benchmark reale si avvia solo
 esplicitamente e registra metriche informative senza soglie pass/fail.
 
+Per valutare tutti i prompt etichettati in `benchmark/` e `system_validation/`,
+con API e modelli gia attivi:
+
+```bash
+uv run --extra validation python -m system_validation run --api-only --label baseline
+```
+
+Il corpus viene deduplicato. Ogni esecuzione salva giudizi attesi/ottenuti,
+token, tempi e log; produce metriche aggregate e per caso. `--limit 3` fa uno
+smoke test. Per il percorso con database omettere `--api-only` dopo `prepare`.
+I test offline del runner usano HTTP simulato: verificano il calcolo delle
+metriche e la conservazione dei risultati, senza misurare la qualita dei modelli.
+
 `tests/agents/test_shared_mcp.py` verifica anche il vero server SPHN di quel
 progetto, avviato temporaneamente su loopback. Per abilitarlo preparare prima
 l'ambiente con `uv sync --locked --project LLM_ENGINE --python 3.12`;
@@ -34,16 +47,15 @@ Non installa o avvia Ollama. Richiede `uv` e i prerequisiti dello script remoto:
 `tmux`, `curl`, `ss` e vLLM nell'ambiente GPU; dettagli nella
 [guida remota](../LLM_ENGINE/README_REMOTE.md).
 
-Gli health check usano modello e indirizzi letti dalla configurazione remota
-di `LLM_ENGINE`, con le impostazioni Laya di `config/agents/models.json`.
-La configurazione risultante viene scritta in `artifacts/tests/models.remote.json`,
-senza modificare il preset principale. Laya viene caricato (e scaricato se non
-in cache) dal suo health check. Errori di setup interrompono l'esecuzione.
+Gli health check usano direttamente `config/agents/models.json`, come API,
+debugger e comandi. Lo script remoto legge lo stesso file per avviare vLLM e
+MCP. Non viene generata una configurazione alternativa. Laya viene caricato
+(e scaricato se non in cache) dal suo health check.
 
 I servizi restano attivi anche dopo i test. Log dello stack in `/workspace/logs/`;
 report in `artifacts/tests/`. Non esegue i test live di `LLM_ENGINE` verso servizi
 esterni. Per riusare la stessa configurazione da Test Explorer aggiungere
-`--run-model-health` e `--model-config=artifacts/tests/models.remote.json` ai
+`--run-model-health` e `--model-config=config/agents/models.json` ai
 `python.testing.pytestArgs`.
 
 I test in [health/test_models.py](health/test_models.py) sono saltati per default,
@@ -79,7 +91,8 @@ l'accuratezza del classificatore o la correttezza semantica della query.
 
 L'utente ha confermato il passaggio di entrambi gli health check
 (`test_generator_health` e `test_classifier_health`) sulla VM Linux
-con `--run-model-health --model-config artifacts/tests/models.remote.json`.
+con `--run-model-health --model-config artifacts/tests/models.remote.json`
+(il vecchio preset remoto, ora sostituito dal JSON condiviso).
 Il precedente tentativo falliva nella connessione HTTP al modello; il test e
 passato usando la configurazione remota. Esito riferito dall'utente, senza
 report XML o query prodotta acquisiti in questo checkout.
@@ -119,7 +132,7 @@ reali e `model-health.xml`. Lo script non avvia i servizi permanenti e aggiorna
 solo i report delle suite effettivamente eseguite.
 
 La variabile `MODEL_CONFIG` puo indicare un altro JSON per gli health check:
-`start-and-test.sh` la imposta automaticamente sul preset remoto generato.
+per default tutti i percorsi usano `config/agents/models.json`.
 
 Per la suite completa, incluse le integrazioni PydanticAI e MCP:
 

@@ -6,14 +6,11 @@
 set -Eeuo pipefail
 
 APP_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
-MODEL="daniel-dona/sparql-model-era-lora-128-qwen3-8b"
-LLM_URL="http://127.0.0.1:18000/v1"
-MCP_URL="http://127.0.0.1:18888/mcp"
 VLLM_SESSION="sphn-qwen"
 MCP_SESSION="sphn-mcp"
 LOG_DIR="/workspace/logs"
 MODEL_DIR="/workspace/models"
-ENV_FILE="$APP_DIR/.env.remote"
+CONFIG="$APP_DIR/../config/agents/models.json"
 VOID_FILE="$APP_DIR/metadata/sphn-schema-void.ttl"
 # New starts use CUDA graphs and shared-prefix caching. Eager mode is an
 # explicit fallback for GPU/version incompatibilities; existing services stay up.
@@ -43,35 +40,42 @@ fi
 
 mkdir -p "$LOG_DIR" "$MODEL_DIR" "$APP_DIR/results"
 
-# Don't overwrite a user-customized environment on later starts.
-if [[ ! -f "$ENV_FILE" ]]; then
-  cat > "$ENV_FILE" <<'ENV'
-LLM_BASE_URL=http://127.0.0.1:18000/v1
-LLM_MODEL=daniel-dona/sparql-model-era-lora-128-qwen3-8b
-LLM_API_KEY=EMPTY
-MCP_URL=http://127.0.0.1:18888/mcp
-RETRIEVAL_BACKEND=sphn-void
-ENABLE_SPARQL_EXECUTION=false
-ENV
-  chmod 600 "$ENV_FILE"
-  info "Created .env.remote with remote loopback addresses."
-fi
-
-# Validate critical settings, so an old Windows tunnel address cannot be used accidentally.
-for required in \
-  'LLM_BASE_URL=http://127.0.0.1:18000/v1' \
-  'LLM_MODEL=daniel-dona/sparql-model-era-lora-128-qwen3-8b' \
-  'MCP_URL=http://127.0.0.1:18888/mcp' \
-  'ENABLE_SPARQL_EXECUTION=false'; do
-  grep -Fxq "$required" "$ENV_FILE" || fail ".env.remote must contain: $required"
-done
-
 if [[ ! -d .venv ]]; then
-  info "Installing project dependencies with uv sync (first run)..."
+  info "Installing MCP project dependencies..."
   "$UV_BIN" sync --locked --python 3.12
-else
-  info "Reusing existing .venv (run 'uv sync' after pulling changed dependencies)."
 fi
+
+# Read the same configuration used by the API, debugger, CLI and tests.
+# Environment values below are derived for the standalone LLM_ENGINE CLI only.
+settings="$(.venv/bin/python - "$CONFIG" <<'PY'
+import json, sys
+from urllib.parse import urlparse
+from pathlib import Path
+config = json.loads(Path(sys.argv[1]).read_text(encoding="utf-8-sig"))
+model = config["model"]
+if not isinstance(model, str) or not model.strip() or any(c in model for c in "\r\n"):
+    sys.exit("model must be a nonempty single-line identifier")
+print(model)
+for key, path in (("base_url", "/v1"), ("mcp_url", "/mcp")):
+    raw = config[key]
+    url = urlparse(raw)
+    if (url.scheme != "http" or url.hostname not in {"localhost", "127.0.0.1"}
+            or url.path.rstrip("/") != path or url.username or url.password
+            or url.query or url.fragment or any(c in raw for c in "\r\n")):
+        sys.exit(f"{key} must be a local HTTP URL ending in {path}")
+    print(raw.rstrip("/"))
+    print(url.port or 80)
+PY
+)"
+mapfile -t settings <<< "$settings"
+MODEL="${settings[0]}"
+LLM_URL="${settings[1]}"
+LLM_PORT="${settings[2]}"
+MCP_URL="${settings[3]}"
+MCP_PORT="${settings[4]}"
+export LLM_MODEL="$MODEL" LLM_BASE_URL="$LLM_URL" MCP_URL
+export LLM_API_KEY="${MODEL_API_KEY:-local}"
+export RETRIEVAL_BACKEND=sphn-void ENABLE_SPARQL_EXECUTION=false
 
 if command -v vllm >/dev/null; then
   VLLM_BIN="$(command -v vllm)"
@@ -100,15 +104,15 @@ if model_ready; then
   info "Launch options are unchanged for this running service. To apply tuning, deliberately stop its owner/session and run again."
 else
   if model_response >/dev/null; then
-    fail "Port 18000 serves a different model. Stop it deliberately before starting $MODEL."
+    fail "Port $LLM_PORT serves a different model. Stop it deliberately before starting $MODEL."
   fi
 
-  if port_listening 18000 || pgrep -f '[v]llm serve' >/dev/null || tmux has-session -t "=$VLLM_SESSION" 2>/dev/null; then
+  if port_listening "$LLM_PORT" || pgrep -f '[v]llm serve' >/dev/null || tmux has-session -t "=$VLLM_SESSION" 2>/dev/null; then
     info "A vLLM process/session already exists and may still be loading; waiting without starting another."
   else
     info "Starting Qwen in tmux session '$VLLM_SESSION' (first startup can take several minutes)..."
     vllm_args=("$VLLM_BIN" serve "$MODEL"
-      --host 127.0.0.1 --port 18000
+      --host 127.0.0.1 --port "$LLM_PORT"
       --download-dir "$MODEL_DIR"
       --dtype float16
       --max-model-len 8192
@@ -135,7 +139,7 @@ else
   for ((i=0; i<360; i++)); do
     if model_ready; then ready=1; break; fi
     if model_response >/dev/null; then
-      fail "A different model responded on port 18000."
+      fail "A different model responded on port $LLM_PORT."
     fi
     if (( i % 12 == 0 )); then info "Qwen loading... (${i} x 5 s)"; fi
     sleep 5
@@ -147,38 +151,36 @@ else
   info "Qwen API ready."
 fi
 
-if port_listening 18888; then
-  info "Port 18888 already listening — will reuse it and verify with SPHN doctor."
+if port_listening "$MCP_PORT"; then
+  info "Port $MCP_PORT already listening — will reuse it and verify with SPHN doctor."
 elif pgrep -f '[s]erve_sphn_void.py' >/dev/null || tmux has-session -t "=$MCP_SESSION" 2>/dev/null; then
   info "SPHN MCP process/session already exists; waiting for it to listen."
 else
   info "Starting SPHN VoID MCP in tmux session '$MCP_SESSION'..."
   tmux new-session -d -s "$MCP_SESSION" -c "$APP_DIR" \
-    "exec '$UV_BIN' run --locked --python 3.12 python scripts/serve_sphn_void.py --void-file metadata/sphn-schema-void.ttl >> '$LOG_DIR/sphn-mcp.log' 2>&1"
+    "exec '$UV_BIN' run --locked --python 3.12 python scripts/serve_sphn_void.py --void-file metadata/sphn-schema-void.ttl --port '$MCP_PORT' >> '$LOG_DIR/sphn-mcp.log' 2>&1"
 fi
 
 mcp_ready=0
 for ((i=0; i<36; i++)); do
-  if port_listening 18888; then mcp_ready=1; break; fi
+  if port_listening "$MCP_PORT"; then mcp_ready=1; break; fi
   sleep 5
 done
 if [[ "$mcp_ready" != 1 ]]; then
   tail -n 45 "$LOG_DIR/sphn-mcp.log" 2>/dev/null || true
-  fail "SPHN MCP did not listen on 18888; inspect $LOG_DIR/sphn-mcp.log"
+  fail "SPHN MCP did not listen on $MCP_PORT; inspect $LOG_DIR/sphn-mcp.log"
 fi
 
 info "Checking SPHN retrieval tools (and model) through your agent..."
-"$UV_BIN" run --locked --python 3.12 sparql-agent --env-file "$ENV_FILE" doctor --retrieval-backend sphn-void
+"$UV_BIN" run --locked --python 3.12 sparql-agent doctor --retrieval-backend sphn-void
 
-cat <<'DONE'
+cat <<DONE
 
 READY: Qwen + SPHN VoID MCP + local agent are on the Vast.ai machine.
 
-Run a sample query (from the LLM_ENGINE directory):
-  uv run sparql-agent --env-file .env.remote ask \
-    'How many distinct patients have an oncology diagnosis?' \
-    --mode deterministic --retrieval-backend sphn-void \
-    --classes OncologyDiagnosis SubjectPseudoIdentifier
+Run a sample query (using the shared configuration):
+  cd ..
+  uv run --extra local sparql-run --prompt 'How many patients are in the database?'
 
 Useful inspection commands:
   tmux ls

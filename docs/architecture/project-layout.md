@@ -63,8 +63,8 @@ configurano i percorsi usati nei bind mount; i dati locali restano in
 `start-and-test.sh` riusa lo stack vLLM/Qwen e MCP di `LLM_ENGINE` sulla VM;
 `start-ollama.sh` resta il percorso alternativo Ollama. I backend sono separati
 in `agent_orchestration/adapters/`; `local_models.py` li compone e mantiene gli
-import esistenti. La configurazione e in `config/agents/models.json` e, per i test
-remoti, nel preset derivato in `artifacts/tests/models.remote.json`.
+import esistenti. La configurazione e in `config/agents/models.json` ed e condivisa
+da API, debugger, CLI, test e script di avvio remoto.
 I contratti, le metriche e i modelli fittizi sono in `models/`; `fakes.py` resta
 un modulo di import compatibile. Dettagli nella [guida ai token](../guides/model-usage.md).
 

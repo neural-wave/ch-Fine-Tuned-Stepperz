@@ -16,6 +16,9 @@
                 "--port", "10100"
             ],
             "cwd": "${workspaceFolder}",
+            "env": {
+                "NL2SPARQL_CONFIG": "${workspaceFolder}/config/agents/models.json"
+            },
             "console": "integratedTerminal",
             "justMyCode": true
         }

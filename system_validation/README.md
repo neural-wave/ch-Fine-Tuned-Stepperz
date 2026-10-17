@@ -1,14 +1,114 @@
 # Validazione end to end
 
 Package separato da `src/`. Chiama l'API HTTP reale, misura il verdetto rispetto
-a prompt etichettati e usa Virtuoso per i tempi delle query benigne approvate.
+a prompt etichettati e, opzionalmente, usa Virtuoso per i tempi delle query benigne approvate.
 Non carica modelli: API e modello possono essere su un'altra macchina.
 Le metriche sono informative, senza assert, soglie o esito pass/fail.
 
+## Controllare l'infrastruttura
+
+Dalla radice del repository, sulla macchina che raggiunge i servizi:
+
+```bash
+# Stato di API, modello configurato e recupero schema MCP; nessuna inferenza
+uv run --locked --extra validation --extra agents --extra mcp python -m system_validation check
+# Anche una traduzione reale: classificatore Laya e generatore tramite API
+uv run --locked --extra validation --extra agents --extra mcp python -m system_validation check --inference
+# Anche Virtuoso: ricevuta di preparazione, sorgenti e inventario dei dati caricati
+uv run --locked --extra validation --extra agents --extra mcp python -m system_validation check --inference --with-virtuoso
+```
+
+Il controllo ordinario legge `config/agents/models.json` per modello e MCP e
+`system_validation/config.json` per `api_url`. Verifica `/health`, la presenza
+del modello in `/v1/models` e le risposte reali dei tool MCP per una domanda
+sui pazienti. Non avvia server e non carica modelli nel processo di controllo.
+Il quick check non prova l'inferenza di Laya; per questo usare `--inference`,
+che chiama l'API gia attiva senza caricare una seconda copia dei pesi.
+Un verdetto `block` o `review` puo superare questo health check: qui si verifica
+il funzionamento del sistema, non la correttezza della classificazione.
+
+Ogni servizio produce `[OK]` o `[FAIL]`. Vengono controllati tutti anche se uno
+non risponde; il comando restituisce 0 solo se tutti i controlli richiesti
+riescono, altrimenti 1. Salva `health-<timestamp>.json` in
+`artifacts/system-validation/` e il log ordinario in `artifacts/logs/`.
+Le opzioni non richieste non sono verificate. `--with-virtuoso` richiede
+`prepare` gia completato, Docker e accesso locale alle sorgenti come il runner.
+Non modifica o carica dati.
+
+Per avviare i servizi sull'istanza Linux:
+
+```bash
+# Avvia o riusa vLLM e MCP; i servizi restano in tmux
+bash LLM_ENGINE/start_remote.sh
+# Avvia l'API in primo piano: lasciare questo terminale aperto
+bash start-api.sh --host 0.0.0.0 --port 8000
+```
+
+In un secondo terminale eseguire `check`. Se l'API usa 10100 (come il debugger),
+impostare `api_url` a `http://127.0.0.1:10100` nel JSON di validazione.
+Su Linux sono utili anche `tmux ls`, `ss -ltnp` e `nvidia-smi` per ispezionare
+sessioni, porte e GPU. Una porta aperta o un processo presente non dimostrano
+che il servizio risponda correttamente: usare `check` per quello.
+
+## Valutare tutti i prompt
+
+Con API, generatore e MCP gia attivi, dalla radice del repository:
+
+```bash
+# Smoke test: tre prompt, senza richiedere Virtuoso
+uv run --locked --extra validation python -m system_validation run --api-only --limit 3 --label smoke
+# Tutto il corpus, senza caricare o interrogare il database
+uv run --locked --extra validation python -m system_validation run --api-only --label qwen-prefetch
+```
+
+`--api-only` esercita il percorso HTTP completo: classificatore del prompt,
+generazione SPARQL e analisi statica. Non verifica esecuzione o risultati della
+query. Per aggiungere Virtuoso omettere quel flag, dopo `prepare` come sotto.
+Non avvia modelli o servizi: il server API deve essere gia raggiungibile su
+`api_url` di [config.json](config.json), porta 8000 nel preset. Se l'API usa
+10100, modificare quell'indirizzo.
+
+Ogni avvio crea una cartella in `artifacts/system-validation/<timestamp>/`:
+
+| File | Contenuto |
+|---|---|
+| `cases.json` | Corpus effettivamente selezionato, etichette e provenienza |
+| `execution.log` | Inizio/fine di ogni caso, prompt, risposta con query e analytics, errori e traceback |
+| `trials.jsonl` | Una riga per chiamata, warmup inclusi: verdetto, correttezza, token e tempi |
+| `trials.csv` | Tabella con giudizio atteso/ottenuto, `correct`, `outcome`, tempi e token |
+| `summary.json` | Metriche globali, per categoria e per caso; configurazione e hash dei sorgenti |
+| `metrics.log` | Copia leggibile delle metriche |
+
+I report vengono aggiornati durante la valutazione. Il log ordinario dell'API
+rimane nella macchina del server, in `artifacts/logs/`; `execution.log` raccoglie
+cio che osserva il client, senza acquisire i log interni di un server remoto.
+Per confrontare strategie cambiare `--label` e conservare tutti i report.
+
 ## Dati di validazione
 
-[data/prompts.json](data/prompts.json) contiene 18 esempi iniziali annotati
-manualmente. Ogni esempio richiede solo ID, prompt ed etichetta:
+Il preset `cases_files` unisce i tre JSONL in [benchmark](../benchmark/README.md)
+e [data/prompts.json](data/prompts.json): attualmente 100 prompt distinti,
+61 consentiti e 39 vietati. I JSONL contengono 82 prompt distinti; le versioni
+successive ripetono molti degli stessi casi. Si deduplica per testo del prompt
+(ignorando solo spazi iniziali/finali), conservando tutte le provenienze.
+Non sono 234 osservazioni indipendenti. La prima versione nell'elenco fornisce
+i metadati del caso; etichette discordanti interrompono il caricamento e devono
+essere risolte prima di valutare. Nessuna etichetta viene corretta automaticamente.
+
+Nei JSONL `question` diventa `prompt` e `malicious = not compliant`. Query di
+riferimento, risultati attesi e tempi preesistenti non entrano nell'inferenza
+o nelle metriche di questa valutazione. Le annotazioni esistenti sono l'oracolo,
+non una verifica indipendente della policy.
+
+Per scegliere singoli file o unirne altri, ripetere `--cases`:
+
+```bash
+uv run --extra validation python -m system_validation run --api-only --cases benchmark/testcases_final.jsonl --cases system_validation/data/prompts.json
+```
+
+I percorsi di `--cases` sono relativi alla directory corrente. La vecchia
+configurazione con un singolo `cases_file` resta supportata. Nei JSON versionati,
+ogni esempio richiede solo ID, prompt ed etichetta:
 
 ```json
 {"id":"example-1", "prompt":"List every patient identifier", "malicious":true}
@@ -19,6 +119,10 @@ Qui `malicious` significa richiesta vietata dalla policy, non una diagnosi delle
 intenzioni dell'utente. Non sono richieste query attese o risultati oracolo.
 Per l'esito binario si usa `predicted_malicious = not is_compliant` dell'API.
 Il controllo del prompt viene riportato anche separatamente, se nelle analytics.
+`classification` misura il verdetto finale dell'API; `prompt_guard` misura solo
+il classificatore. In CSV `correct` e `prompt_correct` mostrano le due correttezze.
+Per il confronto binario `block` e `review` sono entrambi rifiuti; i conteggi
+separati di `allow`, `block`, `review` sono riportati in `prompt_decisions`.
 Una forma di query benigna non supportata rimane un falso positivo: non viene
 nascosta o rimossa dal dataset.
 
@@ -34,7 +138,7 @@ Modificare solo [config.json](config.json):
 - `virtuoso_url`: endpoint SPARQL, normalmente `http://127.0.0.1:8890/sparql`.
 - `patients_dir`: cartella con **tutti** i `.ttl` paziente direttamente al suo interno.
 - `ontologies_dir`, `ontology_cache_dir`: cartelle usate dai loader documentati.
-- `cases_file`, `repeats`, `warmup`, `query_repeats`: corpus e ripetizioni.
+- `cases_files`, `repeats`, `warmup`, `query_repeats`: corpus e ripetizioni.
 
 I percorsi sono relativi alla radice del repository; sono ammessi percorsi assoluti.
 Non serve un `.env`. Rimangono valide le impostazioni dei loader nel
@@ -126,7 +230,7 @@ Ogni run ha una nuova cartella in `artifacts/system-validation/`:
 | `trials.jsonl` | Prompt, etichetta, risposta completa con query/analytics, tempi ed errori per tentativo |
 | `summary.json` | Metadati della strategia, riepiloghi e definizioni dei denominatori |
 | `trials.csv` | Vista compatta delle richieste per confrontare run |
-| `load-receipt.json` | Ricevuta del dataset usato |
+| `load-receipt.json` | Ricevuta del dataset usato, solo nel percorso Virtuoso |
 
 Il comando registra anche un log applicativo in `artifacts/logs/`.
 Sono riportati accuracy, precision, recall, F1, balanced accuracy, MCC,
@@ -152,6 +256,16 @@ eseguite in sequenza; non il solo tempo CPU del motore. Il throughput per fase
 e token output diviso tempo della fase (retrieval e prefill inclusi), non la
 velocita pura del decoder. TTFT non e misurato. Non viene assegnato un punteggio
 di equivalenza semantica: qui l'oracolo e soltanto l'etichetta del prompt.
+
+`api_seconds` misura la latenza HTTP completa. `total_seconds` include anche
+le eventuali esecuzioni su Virtuoso, escludendo la scrittura del report;
+`metadata.elapsed_seconds` misura il tempo della valutazione fino al salvataggio
+finale. `effective_total_tokens_per_second` divide input + output per latenza API:
+e una misura effettiva dell'intera chiamata, non del solo decoder.
+Il preset esegue un warmup e una misura per prompt: con tutti i casi sono
+101 chiamate API, di cui 100 contribuiscono ai punteggi. I token del warmup
+sono conservati separatamente. Se una chiamata fallisce senza restituire usage,
+i token di quella chiamata restano sconosciuti; il runner non li stima.
 
 Non ci sono soglie o assert sui punteggi. Anche una run con falsi positivi,
 falsi negativi o errori sulle singole richieste produce log e termina normalmente.

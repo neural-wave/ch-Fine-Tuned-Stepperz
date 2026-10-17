@@ -31,12 +31,21 @@ ALIASES = {
     "diagnosed": {"diagnosis", "incidence"},
     "diagnosis": {"diagnosed", "incidence"},
     "radiation": {"radiotherapy"},
+    "hospital": {"admission", "discharge", "administrative", "case"},
+    "stay": {"admission", "discharge"},
+    "born": {"birth"},
+    "gestation": {"gestational", "birth"},
 }
 
 
 def words(value: str) -> set[str]:
     value = re.sub(r"([a-z])([A-Z])", r"\1 \2", value).lower()
     tokens = set(re.findall(r"[a-z]{3,}", value))
+    # Retain the original token while matching regular English plurals against
+    # singular schema names (births/Birth, admissions/Admission). Do not strip
+    # singular endings such as diagnosis or status.
+    tokens |= {token[:-1] for token in tokens if len(token) > 3 and token.endswith("s")
+               and not token.endswith(("ss", "is", "us"))}
     return (tokens - STOP) | {alias for token in tokens for alias in ALIASES.get(token, ())}
 
 

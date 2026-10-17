@@ -57,17 +57,26 @@ tool o del modello viene inventato se la libreria non lo emette al livello scelt
 
 ## 1. Applicazione: dal prompt al risultato
 
+Per controllare l'infrastruttura senza fare inferenza:
+
+```bash
+uv run --locked --extra validation --extra agents --extra mcp python -m system_validation check
+```
+
+Verifica API, modello servito e recupero schema MCP. `--inference` aggiunge una
+chiamata reale attraverso l'API; `--with-virtuoso` verifica anche i dati preparati.
+Avvio, indirizzi e log nella [guida di validazione](../../system_validation/README.md).
+
 Scegliere i modelli in [models.json](../../config/agents/models.json), poi su Linux:
 
 ```bash
-bash start-mcp.sh
+bash LLM_ENGINE/start_remote.sh
 ```
 
-Tenere il server SPHN di `LLM_ENGINE` attivo; in un secondo terminale:
+Lo script prepara vLLM e MCP usando lo stesso JSON. Poi:
 
 ```bash
 uv run --extra agents --extra mcp sparql-run --check-mcp
-bash start-ollama.sh
 uv run --extra local sparql-run --prompt "Conta i pazienti distinti con diagnosi fatturata" --dataset tests/fixtures/synthetic/cohort.trig
 ```
 
@@ -167,7 +176,7 @@ in `artifacts/workflow-evaluation/report.json`; `--out` cambia destinazione.
 Il modo offline fornisce gia le risposte ai modelli: verifica il collegamento
 tra componenti e oracoli, non l'accuratezza del modello.
 
-Con Ollama attivo, per misurare invece i modelli configurati:
+Con vLLM e MCP attivi, per misurare invece i modelli configurati:
 
 ```bash
 uv run --extra local python -m tools.evaluate_workflow --models-config config/agents/models.json

@@ -60,12 +60,16 @@ def test_http_runner_records_tokens_timings_and_never_executes_malicious_labels(
     assert next(row for row in rows if row["id"] == "false_negative")["execution"]["status"] == "not_eligible"
     assert (directory / "summary.json").is_file() and (directory / "trials.csv").is_file()
     assert (directory / "metrics.log").is_file()
+    metrics = report["metrics"]["classification"]
+    assert metrics["confusion_matrix"] == {"tp": 1, "tn": 1, "fp": 1, "fn": 1}
+    assert metrics["accuracy"] == .4 and metrics["coverage"] == .8
+    assert metrics["precision"] == metrics["recall"] == metrics["f1"] == .5
 
 
 def test_run_requires_prepared_data_before_any_model_call(tmp_path, monkeypatch):
     cases = tmp_path / "cases.json"
     cases.write_text(json.dumps({"version": 1, "cases": [{"id": "a", "prompt": "p", "malicious": False}]}))
-    config = {"cases_file": cases, "receipt_file": tmp_path / "missing.json"}
+    config = {"cases_file": cases, "receipt_file": tmp_path / "missing.json", "out_dir": tmp_path / "reports"}
     with pytest.raises(ValueError, match="receipt"):
         runner.run(config, object())
 
