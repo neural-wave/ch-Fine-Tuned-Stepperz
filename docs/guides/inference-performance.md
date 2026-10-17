@@ -18,6 +18,10 @@ esempi recuperati e il testo della richiesta. Il recupero lessicale e limitato:
 non garantisce tutti i join o i codici clinici necessari. Non lasciare suggerimenti
 specifici di una domanda in una configurazione destinata a domande diverse.
 Un errore MCP interrompe la generazione; non viene nascosto con un fallback.
+Le domande generiche sui pazienti usano gli alias italiani/inglesi verso
+`SubjectPseudoIdentifier` nel retrieval MCP. Se una domanda come "How many
+patients are in the database?" restituisce esempi e classi vuoti, verificare
+di avere aggiornato e riavviato il processo MCP, oltre all'API.
 I suggerimenti esatti selezionano solo la classe richiesta. Il prefetch elimina
 la copia ShEx quando il MCP fornisce gia gli stessi range in JSON, mantenendo
 le note sullo schema: meno testo duplicato da elaborare.

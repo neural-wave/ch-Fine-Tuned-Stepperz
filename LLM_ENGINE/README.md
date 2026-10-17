@@ -333,6 +333,12 @@ The server and SSH tunnel were left running at the last successful observation. 
 
 ## 10. Local SPHN VoID retrieval backend
 
+Generic patient questions (for example, "How many patients are in the database?")
+use the English/Italian patient aliases to retrieve the declared
+`sphn:SubjectPseudoIdentifier` anchor. This does not add a diagnosis filter or
+invent a schema when retrieval is empty. Apply code updates to the running MCP
+process and restart it: restarting only the HTTP API does not reload MCP code.
+
 For the main application's `prefetch`/`agentic` comparison and the new-start
 vLLM CUDA/prefix-cache options in `start_remote.sh`, see the
 [inference performance guide](../docs/guides/inference-performance.md).

@@ -61,6 +61,20 @@ Per scegliere un altro JSON da PowerShell, prima del comando di avvio:
 $env:NL2SPARQL_CONFIG = "percorso/models.json"
 ```
 
+## Debugger Python in VS Code
+
+Aprire la radice del repository in VS Code, scegliere **API: Python debugger**
+nel pannello **Run and Debug** e premere **F5**. La configurazione condivisa e
+in [.vscode/launch.json](../../.vscode/launch.json): avvia Uvicorn sulla porta
+`10100` usando `.venv`, sia su Windows sia su Linux/Remote SSH.
+Servono l'estensione Python Debugger e l'ambiente gia preparato con
+`uv sync --locked --extra local --extra api`; il debugger avvia i backend reali.
+
+Impostare i breakpoint in `server.py` o `service.py`, poi inviare una richiesta.
+Per usare un JSON dei modelli diverso aggiungere alla configurazione:
+`"env": {"NL2SPARQL_CONFIG": "${workspaceFolder}/artifacts/tests/models.remote.json"}`.
+Non e necessario avviare prima `start-api.sh`.
+
 ## Richiesta e risposta
 
 Il corpo contiene soltanto il testo della richiesta:
@@ -132,6 +146,22 @@ volta per processo. Il verdetto riguarda SPARQL standard e il controllo statico:
 non verifica risultati, dimensioni delle coorti o equivalenza semantica sul database.
 `DEFINE`, `OPTION(inference)` e altre estensioni specifiche dei database sono
 segnalate come non supportate, senza rimuoverle dal testo della query.
+
+Se compare `address already in use`, controllare il processo sulla porta scelta:
+
+```bash
+ss -ltnp '( sport = :8000 )'
+```
+
+Se la porta e libera, avviare con `bash start-api.sh --host 0.0.0.0 --port 8000`.
+Se e occupata, scegliere una porta interna libera e verificare la sua mappatura
+pubblica nell'istanza. Il nuovo script controlla prima le porte in ascolto quando
+`ss` e disponibile, senza caricare i modelli se trova un conflitto. Le opzioni
+esplicite prevalgono su eventuali `UVICORN_HOST`/`UVICORN_PORT` dell'immagine.
+
+L'avvio usa l'ambiente `.venv` del progetto anche se la shell ha attivo
+`/venv/main`: non occorre usare `uv --active`. Lo script rimuove `VIRTUAL_ENV`
+solo dal proprio processo per evitare il warning, lasciando attiva la shell originale.
 
 ## Test senza modelli
 

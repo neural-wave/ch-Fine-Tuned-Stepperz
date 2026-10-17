@@ -22,8 +22,14 @@ from tools import benchmark_inference
 pytestmark = pytest.mark.offline_workflow
 
 
-def test_prefetch_actual_mcp_needs_one_model_turn(tmp_path, monkeypatch):
+@pytest.mark.parametrize("prompt,hints,expected_class", [
+    ("Count patients with BilledDiagnosis", ["BilledDiagnosis"], "BilledDiagnosis"),
+    ("How many patients are in the database?", [], "SubjectPseudoIdentifier"),
+    ("Quanti pazienti ci sono nel database?", [], "SubjectPseudoIdentifier"),
+])
+def test_prefetch_actual_mcp_needs_one_model_turn(tmp_path, monkeypatch, prompt, hints, expected_class):
     calls = []
+    query = EXAMPLE_QUERY.replace("sphn:BilledDiagnosis", "sphn:" + expected_class)
     def respond(messages, info):
         calls.append(messages)
         assert info.function_tools == []
@@ -32,22 +38,22 @@ def test_prefetch_actual_mcp_needs_one_model_turn(tmp_path, monkeypatch):
         assert payload["permissions"] == "analyst"
         assert "UNTRUSTED MCP RETRIEVAL" in payload["schema"]
         assert "void_schema_aggregate_pattern" in payload["schema"]
-        assert "BilledDiagnosis" in payload["schema"]
+        assert expected_class in payload["schema"]
         assert "declared_value_types" in payload["schema"]
         assert '"shex"' not in payload["schema"]
         assert "not fixed data values" in payload["schema"]
-        return ModelResponse(parts=[ToolCallPart(info.output_tools[0].name, {"query": EXAMPLE_QUERY})])
+        return ModelResponse(parts=[ToolCallPart(info.output_tools[0].name, {"query": query})])
     monkeypatch.setattr(local_models, "chat_model", lambda *a: FunctionModel(respond))
-    request = PromptRequest("Count patients with BilledDiagnosis", "trusted schema", "trusted policy", "analyst")
+    request = PromptRequest(prompt, "trusted schema", "trusted policy", "analyst")
     with shared_server(tmp_path) as url:
         config = tmp_path / "models.json"
         config.write_text(json.dumps({"base_url": "http://unused/v1", "model": "scripted",
-            "mcp_url": url, "generation_mode": "prefetch", "retrieval_classes": ["BilledDiagnosis"]}))
+            "mcp_url": url, "generation_mode": "prefetch", "retrieval_classes": hints}))
         async def exercise():
             async with local_models.open_generator(config) as generator:
                 for _ in range(2):
                     response = await generator.run_with_usage(request)
-                    assert response.output.query == EXAMPLE_QUERY
+                    assert response.output.query == query
                     assert response.usage.requests == 1
         asyncio.run(exercise())
     assert len(calls) == 2

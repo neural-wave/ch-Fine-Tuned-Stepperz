@@ -19,6 +19,13 @@ VOID = "http://rdfs.org/ns/void#"
 VOID_EXT = "http://ldf.fi/void-ext#"
 STOP = set("the a an of in to for and or by with how what which is are do does it they we our patient patients".split())
 ALIASES = {
+    # SPHN represents the patient anchor with this technical class name.
+    # Expand before removing stop words, so generic patient questions still
+    # retrieve declared schema instead of an arbitrary clinical condition.
+    "patient": {"subject", "pseudo", "identifier"},
+    "patients": {"subject", "pseudo", "identifier"},
+    "paziente": {"subject", "pseudo", "identifier"},
+    "pazienti": {"subject", "pseudo", "identifier"},
     "cancer": {"oncology", "neoplasm"},
     "treatment": {"surgery", "radiotherapy", "procedure", "administration"},
     "diagnosed": {"diagnosis", "incidence"},
@@ -29,8 +36,8 @@ ALIASES = {
 
 def words(value: str) -> set[str]:
     value = re.sub(r"([a-z])([A-Z])", r"\1 \2", value).lower()
-    tokens = set(re.findall(r"[a-z]{3,}", value)) - STOP
-    return tokens | {alias for token in tokens for alias in ALIASES.get(token, ())}
+    tokens = set(re.findall(r"[a-z]{3,}", value))
+    return (tokens - STOP) | {alias for token in tokens for alias in ALIASES.get(token, ())}
 
 
 def rank(query: str, rows: list[dict], content) -> list[dict]:
@@ -154,6 +161,9 @@ class SphnVoidRetrieval:
     def search_sparql_examples(self, question: str, steps: list[str]) -> dict:
         prompt = question + " " + " ".join(steps)
         explicit = set(re.findall(r"[a-z]{3,}", re.sub(r"([a-z])([A-Z])", r"\1 \2", prompt).lower()))
+        for term in ("patient", "patients", "paziente", "pazienti"):
+            if term in explicit:
+                explicit.update(ALIASES[term])
         ordered_classes = rank(prompt, self.classes, lambda item: item["label"] + " " + item["iri"])
         ordered_classes.sort(key=lambda item: -(
             len(explicit & words(item["label"]))

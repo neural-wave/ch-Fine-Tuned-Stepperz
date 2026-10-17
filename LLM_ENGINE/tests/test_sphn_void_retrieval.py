@@ -1,4 +1,5 @@
 from pathlib import Path
+import pytest
 
 from sparql_agent.sphn_retrieval import SPHN, SphnVoidRetrieval
 
@@ -69,3 +70,24 @@ def test_exact_class_hints_do_not_spend_context_on_similar_classes():
     assert [row["iri"] for row in rows] == [SPHN + "BilledDiagnosis", SPHN + "SubjectPseudoIdentifier", SPHN + "AdministrativeSex"]
     examples = retrieval.search_sparql_examples("BilledDiagnosis", [])["query_examples"]
     assert all(row["class_iri"].startswith(SPHN) for row in examples)
+
+
+@pytest.mark.parametrize("prompt", [
+    "How many patients are in the database?",
+    "Count all patients without restricting to a diagnosis.",
+    "Quanti pazienti ci sono nel database?",
+])
+def test_generic_patient_requests_retrieve_the_declared_patient_anchor(prompt):
+    retrieval = SphnVoidRetrieval(ROOT / "metadata/sphn-schema-void.ttl")
+    classes = retrieval.search_sparql_classes([prompt])["classes_schemas"]
+    examples = retrieval.search_sparql_examples(prompt, [])["query_examples"]
+    assert classes[0]["iri"] == SPHN + "SubjectPseudoIdentifier"
+    assert examples[0]["class_iri"] == SPHN + "SubjectPseudoIdentifier"
+    assert "sphn:SubjectPseudoIdentifier" in examples[0]["query"]
+    assert all(row["iri"] in {item["iri"] for item in retrieval.classes} for row in classes)
+
+
+def test_unmatched_terms_still_return_empty_instead_of_invented_context():
+    retrieval = SphnVoidRetrieval(ROOT / "metadata/sphn-schema-void.ttl")
+    assert retrieval.search_sparql_classes(["zzzxxyy"])["classes_schemas"] == []
+    assert retrieval.search_sparql_examples("zzzxxyy", [])["query_examples"] == []

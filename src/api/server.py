@@ -88,8 +88,8 @@ def create_app(service=None):
         except TimeoutError:
             logger.exception("Translation deadline exceeded")
             raise HTTPException(504, "Translation timed out.") from None
-        except Exception:
-            logger.exception("Model, retrieval or assessment failed")
+        except Exception as error:
+            logger.exception("Model, retrieval or assessment failed (%s)", type(error).__name__)
             raise HTTPException(502, "Translation or assessment failed; inspect the server logs.") from None
 
     @app.get("/health")
