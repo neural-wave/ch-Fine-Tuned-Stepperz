@@ -67,7 +67,30 @@ Il tempo comprende caricamento, connessioni e inferenza, non e un benchmark.
 Questi controlli verificano il funzionamento delle integrazioni: non misurano
 l'accuratezza del classificatore o la correttezza semantica della query.
 
+### Verifica sulla VM: 17 ottobre 2026
+
+L'utente ha confermato il passaggio di entrambi gli health check
+(`test_generator_health` e `test_classifier_health`) sulla VM Linux
+con `--run-model-health --model-config artifacts/tests/models.remote.json`.
+Il precedente tentativo falliva nella connessione HTTP al modello; il test e
+passato usando la configurazione remota. Esito riferito dall'utente, senza
+report XML o query prodotta acquisiti in questo checkout.
+
+Il passaggio conferma il contratto di risposta del classificatore e una risposta
+strutturata del generatore, con query non vuota e parsing come `SELECT`.
+Non verifica accuratezza delle decisioni, esecuzione, risultati, correttezza
+semantica, sicurezza o chiamate effettive ai tool di retrieval. Questo esito
+non riguarda l'intera suite.
+
 ## Esecuzione
+
+Ogni sessione pytest del progetto principale salva automaticamente i log in
+`artifacts/logs/pytest-<data UTC>-<PID>.log`, anche da Test Explorer. Il percorso
+appare nell'intestazione di pytest. I file contengono eventi del workflow e
+dei modelli, messaggi delle librerie Python, esiti dei test e traceback degli
+errori. Non serve un wrapper. Si aggiungono ai report XML; `SPARQL_LOG_DIR` e
+`SPARQL_LOG_LEVEL` cambiano destinazione e livello. Dettagli nella
+[guida dei comandi](../docs/guides/commands.md).
 
 Comando locale unico per entrambi i progetti, senza GitHub Actions:
 

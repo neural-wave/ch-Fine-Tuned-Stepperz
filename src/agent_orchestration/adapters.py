@@ -2,10 +2,14 @@
 import json
 import asyncio
 import inspect
+import logging
 from dataclasses import asdict
 from typing import TYPE_CHECKING, Awaitable, Callable
 
 from .models import Decision, DecisionRequest, LLM, SparqlLLM, SparqlRequest, SparqlResult, SystemOneModel
+from .logging_setup import configure_logging
+
+logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
     from pydantic_ai import Agent
@@ -32,13 +36,20 @@ class PydanticAISparqlLLM(SparqlLLM):
         self.usage_limits = usage_limits
 
     async def run(self, request: SparqlRequest) -> SparqlResult:
+        configure_logging()
+        logger.info("Generator request prompt=%r", request.prompt)
         payload = json.dumps(asdict(request), ensure_ascii=False)
         kwargs = {"usage_limits": self.usage_limits} if self.usage_limits is not None else {}
-        result = await self.agent.run(payload, **kwargs)
+        try:
+            result = await self.agent.run(payload, **kwargs)
+        except Exception:
+            logger.exception("Generator request failed")
+            raise
         if not isinstance(result.output, SparqlResult):
             raise TypeError("Expected an Agent with output_type=SparqlResult")
         if not result.output.query.strip():
             raise ValueError("Generated SPARQL query is empty")
+        logger.info("Generator response query=%r", result.output.query)
         return result.output
 
 

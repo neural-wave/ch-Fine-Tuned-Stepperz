@@ -4,6 +4,31 @@ Tutti i comandi di questa pagina partono dalla radice del repository, con
 Python 3.12+ e `uv` disponibili. `uv run` prepara l'ambiente con gli extra
 indicati. I comandi Bash di avvio richiedono Linux o un ambiente equivalente.
 
+## Log automatici nel codice
+
+`sparql-run` e pytest del progetto principale scrivono automaticamente un file
+per processo in `artifacts/logs/`, anche quando i test partono da VS Code.
+Il percorso viene mostrato all'avvio. Non servono wrapper o redirezioni.
+Il nome contiene comando, data UTC e PID; i file precedenti vengono conservati.
+
+Il log contiene caricamento dei modelli, discovery MCP, richieste/risposte del
+generatore, decisioni del classificatore, fasi del workflow, query, analisi,
+risultati rilasciati, tempi e traceback degli errori. Ogni esecuzione del
+workflow ha un `run` distinto, anche nello stesso processo. Pytest registra
+gli esiti dei singoli test e il codice finale della sessione. Il JSON della CLI
+resta su stdout; i report XML restano separati.
+
+Si usa il modulo standard `logging`, con un handler comune anche per i messaggi
+delle librerie Python. `SPARQL_LOG_DIR` cambia cartella; `SPARQL_LOG_LEVEL`
+cambia livello (`INFO` predefinito, `DEBUG` per maggior dettaglio). Non si
+registra il JSON completo di configurazione o le chiavi API. I file contengono
+invece prompt, query, risultati rilasciati e dettagli delle eccezioni.
+
+Le stampe dirette di programmi esterni non passano da `logging`: vLLM e MCP
+restano nei rispettivi log di servizio in `/workspace/logs/`. I test propri di
+`LLM_ENGINE` usano la configurazione di quel sottoprogetto. Nessun trace dei
+tool o del modello viene inventato se la libreria non lo emette al livello scelto.
+
 ## Quale percorso usare
 
 | Obiettivo | Ingresso | Modelli | Dati / risultato |
