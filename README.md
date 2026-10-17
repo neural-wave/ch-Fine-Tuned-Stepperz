@@ -13,7 +13,7 @@ I comandi seguenti partono dalla radice del repository.
 | Cosa vuoi fare | Ingresso | Risultato |
 |---|---|---|
 | Valutare prompt maligni e misurare API/Virtuoso | `python -m system_validation run` | [Log delle metriche end to end](system_validation/README.md), senza soglie pass/fail |
-| Esporre traduzione e verdetto via HTTP | `bash start-api.sh` | [API HTTP](docs/guides/http-api.md): query, token totali e conformita, senza esecuzione |
+| Esporre traduzione e verdetto via HTTP | `bash start-api.sh` | [README API](src/api/README.md): query, token totali e conformita, senza esecuzione |
 | Prompt → risultato su RDF locale | `sparql-run --prompt ... --dataset ...` | Risultato JSON oppure blocco/errore |
 | Prompt → sola query | `sparql-run --prompt ...` | Query analizzata, non eseguita |
 | Controllare una query esistente | `sparql-check file.rq` | Verdetto statico |

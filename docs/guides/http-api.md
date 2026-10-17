@@ -1,5 +1,8 @@
 # API HTTP
 
+Per avvio rapido, esempi PowerShell/Bash e campi della risposta vedere il
+[README dell'API](../../src/api/README.md).
+
 `POST /nl-to-sparql` riceve `{"text": "..."}` e restituisce:
 
 ```json
