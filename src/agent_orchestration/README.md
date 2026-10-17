@@ -33,10 +33,15 @@ i componenti. [Config](../../config/README.md) raccoglie i file da modificare;
 |---|---|
 | `cli.py` | Comando applicativo `sparql-run`, anche tramite `python -m agent_orchestration` |
 | `__main__.py` | Avvio del medesimo comando tramite `python -m agent_orchestration` |
-| `models.py` | Contratti asincroni `LLM`, `SparqlLLM`, `SystemOneModel` e tipi di richiesta/risposta |
-| `adapters.py` | Collegamento a PydanticAI o a una funzione di classificazione personalizzata |
-| `local_models.py` | Endpoint chat, Laya e connessione MCP |
-| `fakes.py` | Modelli fittizi e strategie di risposta |
+| `models/contracts.py` | Contratti asincroni e tipi di richiesta/risposta |
+| `models/usage.py` | `TokenUsage`, `ModelResponse`, aggregazione e tokenizer opzionale |
+| `models/fakes.py` | Modelli fittizi e strategie di risposta |
+| `adapters/pydantic_ai.py` | LLM, generatore, client chat e usage PydanticAI |
+| `adapters/native.py` | Funzioni di classificazione native, anche Hugging Face |
+| `adapters/laya.py` | Caricamento, classificazione e usage Laya |
+| `adapters/mcp.py` | Connessione MCP e discovery degli strumenti |
+| `local_models.py` | Composizione dei backend configurati; mantiene gli import precedenti |
+| `fakes.py` | Import di compatibilita verso `models/fakes.py` |
 | `validation.py` | Validatori del prompt e adattatore dell'analizzatore statico |
 | `workflow.py` | Sequenza dei controlli ed executor RDF locale |
 | `semantic.py` | Confronto dei risultati di esecuzione |
@@ -58,3 +63,27 @@ Il generatore restituisce
 la sicurezza. `Decision.probability` è facoltativa e va fornita solo quando il
 backend espone una probabilità significativa. Gli executor applicano i controlli
 deterministici; non richiedono un modello.
+
+Per ottenere anche i token usare `run_with_usage(request)`, che restituisce
+`ModelResponse(output, usage)`. Il workflow include i contatori per fase e totali
+in `analytics.token_usage`, anche dopo blocchi/errori. Conteggi mancanti restano
+`null`; stime e consumi simulati sono distinguibili. Esempi e contratto nella
+[guida ai token](../../docs/guides/model-usage.md).
+
+La query e restituita dalle funzioni, oltre a essere mostrata nei log:
+
+```python
+generated = await generator.run(request)
+query = generated.query
+
+response = await generator.run_with_usage(request)
+query, usage = response.output.query, response.usage
+
+outcome = await workflow.run(request, execute=False)
+query = outcome.query
+```
+
+Sono tre chiamate alternative. Nel workflow `query` puo essere `None` se il
+prompt e bloccato o la generazione fallisce; la presenza di una query non implica
+che sia stata accettata. Controllare `outcome.status` prima di usarla. La CLI
+restituisce lo stesso campo `query` nel JSON.

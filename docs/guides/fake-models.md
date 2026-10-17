@@ -28,6 +28,12 @@ slow = FakeClassifier("allow", delay=2)
 custom = FakeLLM(lambda request: request.upper())
 ```
 
+Ogni modello fittizio supporta anche `run_with_usage()`. Per default riporta
+zero token reali con `source="simulated"`. Per testare le analytics, passare
+`usage=TokenUsage(100, 20, source="simulated")` al costruttore, importando
+`TokenUsage` da `agent_orchestration`. Il valore viene restituito per ogni
+chiamata, senza accumulo globale. Dettagli nella [guida ai token](model-usage.md).
+
 `sequence` solleva un errore quando esaurisce le risposte; `repeat=True` ripete
 l'intera sequenza. Anche errori possono comparire nella sequenza. Creare una
 nuova strategia per ogni test indipendente: sequenze e casualita hanno stato.

@@ -182,9 +182,9 @@ def test_runtime_block_exception_is_only_a_block_at_execution(stage):
     pipe, _, _ = pipeline(Decision("allow", 0.9))
     error = ResultBlocked("private execution message")
     if stage == "prompt_validation":
-        pipe.prompt_validator.run = AsyncMock(side_effect=error)
+        pipe.prompt_validator.run_with_usage = AsyncMock(side_effect=error)
     elif stage == "generation":
-        pipe.generator.run = AsyncMock(side_effect=error)
+        pipe.generator.run_with_usage = AsyncMock(side_effect=error)
     elif stage == "query_analysis":
         pipe.analyzer.run = Mock(side_effect=error)
     else:

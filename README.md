@@ -22,6 +22,9 @@ I comandi seguenti partono dalla radice del repository.
 **[Guida dei comandi](docs/guides/commands.md)**: istruzioni complete, dipendenze,
 input/output, stati restituiti e differenze tra questi percorsi.
 
+Il workflow restituisce anche token per modello e fase in `analytics.token_usage`;
+contratti, contatori e struttura dei backend nella [guida ai token](docs/guides/model-usage.md).
+
 ## Avvio dell'applicazione
 
 Sulla VM Linux, per avviare lo stack vLLM/Qwen e MCP di `LLM_ENGINE` e poi i test

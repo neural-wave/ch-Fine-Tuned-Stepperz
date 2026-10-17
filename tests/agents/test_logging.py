@@ -48,7 +48,24 @@ print(json.dumps({'ok': True}))
     for file in files:
         text = file.read_text(encoding="utf-8")
         assert text.count("Logging initialized") == 1
-        assert "httpx library-event" in text
+        assert "httpx | library-event" in text
         assert "status=query_ready" in text and "generated_query=" in text
         assert "status=error stage=generation" in text
         assert "Traceback" in text and "inference-unavailable" in text
+        assert "    PREFIX sphn:" in text
+        assert "\n    SELECT (COUNT(DISTINCT ?g) AS ?patients)" in text
+        assert "\n    WHERE {" in text
+        assert "generated_query='PREFIX" not in text
+
+
+def test_log_block_preserves_query_text_and_does_not_change_it(caplog):
+    import logging
+    from agent_orchestration.logging_setup import log_block
+    query = 'SELECT ?label WHERE {\n  BIND("literal \\n and {braces}" AS ?label) # keep comment\n}'
+    original = query
+    with caplog.at_level(logging.INFO):
+        log_block(logging.getLogger("query-preview"), "SPARQL", query)
+        log_block(logging.getLogger("query-preview"), "Result", {"patients": 8})
+    assert query == original
+    assert all(f"    {line}" in caplog.text for line in query.splitlines())
+    assert '"patients": 8' in caplog.text

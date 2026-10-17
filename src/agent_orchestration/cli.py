@@ -73,7 +73,8 @@ def main():
     except Exception:
         logger.exception("CLI failed before workflow completion")
         raise
-    logger.info("CLI result=%s", json.dumps(result, ensure_ascii=False))
+    logger.info("CLI finished status=%s stage=%s executed=%s",
+                result["status"], result["stage"], result["executed"])
     print(json.dumps(result, ensure_ascii=False, indent=2))
     return 0 if result["status"] in {"query_ready", "released"} else 1
 

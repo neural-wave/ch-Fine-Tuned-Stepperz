@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Mapping
 
 from .semantic import SemanticEvaluator
-from .models import SparqlLLM
+from .models import ModelResponse, SparqlLLM, TokenUsage, summarize_usage
 from .validation import PromptRequest, PromptValidation, PromptValidator, StaticQueryAnalyzer
 from .workflow import QueryExecutor, SparqlWorkflow
 
@@ -109,6 +109,9 @@ class _GenerationTestGuard(PromptValidator):
     async def run(self, request: PromptRequest) -> PromptValidation:
         return PromptValidation("allow", "Generation-only test: prompt gate not evaluated")
 
+    async def run_with_usage(self, request):
+        return ModelResponse(await self.run(request), TokenUsage(0, 0, source="simulated", requests=0))
+
 
 class GenerationEvaluator:
     """Evaluate generation independently on curated allowed prompts ONLY.
@@ -140,4 +143,12 @@ def summarize(rows: list[dict]) -> dict:
                         "accuracy": sum(eligible) / len(eligible) if eligible else None}
     summary["errors"] = sum(row["outcome"]["status"] == "error" for row in rows)
     summary["unexpected_releases"] = sum(row["outcome"]["status"] == "released" and row["expected_status"] != "released" for row in rows)
+    usages = {}
+    for index, row in enumerate(rows):
+        by_stage = row["outcome"].get("analytics", {}).get("token_usage", {}).get("by_stage")
+        if by_stage is None:
+            usages[f"{index}:unavailable"] = TokenUsage()
+        for stage, usage in (by_stage or {}).items():
+            usages[f"{index}:{stage}"] = TokenUsage(**usage)
+    summary["token_usage"] = summarize_usage(usages)
     return summary

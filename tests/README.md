@@ -64,6 +64,9 @@ e un'eventuale probabilita tra 0 e 1. Il generatore deve restituire una query
 strutturata, non vuota e analizzabile come `SELECT`; la query non viene eseguita.
 Errori di dipendenze, caricamento, connessione e inferenza fanno fallire i test.
 Il tempo comprende caricamento, connessioni e inferenza, non e un benchmark.
+Gli health check aggiungono la proprieta JSON `token_usage` al report XML:
+input, output, totale, fonte e completezza. Il workflow e i benchmark espongono
+le stesse metriche nelle [analytics dei token](../docs/guides/model-usage.md).
 Questi controlli verificano il funzionamento delle integrazioni: non misurano
 l'accuratezza del classificatore o la correttezza semantica della query.
 

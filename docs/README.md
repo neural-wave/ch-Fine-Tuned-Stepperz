@@ -9,6 +9,7 @@ Partire dal [README principale](../README.md) per orientarsi e dalla
 |---|---|
 | Eseguire un prompt con modelli reali | [Avvio locale](guides/local-models.md), [configurazione](../config/README.md) |
 | Capire stati, fasi e componenti del workflow | [Workflow agentico](guides/agent-workflow.md) |
+| Leggere token e analytics o collegare un nuovo modello | [Modelli e uso dei token](guides/model-usage.md) |
 | Provare o simulare i modelli | [Modelli fittizi](guides/fake-models.md), [demo](../examples/README.md) |
 | Eseguire test e leggere i report | [Test](../tests/README.md) |
 | Valutare il corpus o rigenerare dati/report | [Tools](../tools/README.md) |

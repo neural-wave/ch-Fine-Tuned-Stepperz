@@ -1,13 +1,27 @@
 """One native Python log file per process, shared by workflow and test events."""
 from datetime import datetime, timezone
+from dataclasses import asdict, is_dataclass
+import json
 import logging
 import os
 from pathlib import Path
 from threading import Lock
 import time
+from textwrap import indent
 
 _handler = None
 _lock = Lock()
+
+
+def log_block(logger, title, content, *, level=logging.INFO):
+    """Display text verbatim on separate lines; never reformat executable SPARQL."""
+    if not logger.isEnabledFor(level):
+        return
+    if is_dataclass(content) and not isinstance(content, type):
+        content = asdict(content)
+    body = content if isinstance(content, str) else json.dumps(content, ensure_ascii=False, indent=2, default=str)
+    divider = "-" * 72
+    logger.log(level, "%s\n%s", title, indent(f"{divider}\n{body}\n{divider}", "    "))
 
 
 def configure_logging(label="workflow") -> Path:
@@ -24,7 +38,7 @@ def configure_logging(label="workflow") -> Path:
             level = os.getenv("SPARQL_LOG_LEVEL", "INFO").upper()
             handler.setLevel(level)
             formatter = logging.Formatter(
-                "%(asctime)s.%(msecs)03dZ %(levelname)s %(name)s %(message)s",
+                "%(asctime)s.%(msecs)03dZ | %(levelname)-7s | %(name)s | %(message)s",
                 datefmt="%Y-%m-%dT%H:%M:%S")
             formatter.converter = time.gmtime
             handler.setFormatter(formatter)

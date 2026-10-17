@@ -14,7 +14,8 @@ from sparql_analyzer.runtime import execute_checked, ResultBlocked
 from sparql_analyzer.governance.privacy import snapshot_digest
 
 from .models import SparqlLLM, SparqlRequest
-from .logging_setup import configure_logging
+from .models.usage import error_usage, invoke_with_usage, summarize_usage
+from .logging_setup import configure_logging, log_block
 from .validation import PromptRequest, PromptValidation, PromptValidator, StaticQueryAnalyzer
 
 logger = logging.getLogger(__name__)
@@ -57,6 +58,7 @@ class WorkflowResult:
     result: dict | None = None
     error_type: str | None = None
     timings: dict[str, float] = field(default_factory=dict)
+    analytics: dict = field(default_factory=dict)
 
 
 class SparqlWorkflow:
@@ -79,19 +81,26 @@ class SparqlWorkflow:
         stage = "prompt_validation"
         verdict, query, analysis = None, None, None
         timings = {}
+        usage_by_stage = {}
         started = perf_counter()
 
         def finish(status, *, result=None, error_type=None):
             timings[stage] = perf_counter() - started
-            logger.info("run=%s completed status=%s stage=%s error_type=%s timings=%s result=%r",
-                        run_id, status, stage, error_type, timings, result)
+            analytics = {"token_usage": summarize_usage(usage_by_stage), "timings": dict(timings)}
+            logger.info("run=%s completed status=%s stage=%s error_type=%s",
+                        run_id, status, stage, error_type)
+            if result is not None:
+                log_block(logger, f"run={run_id} Released result", result)
+            log_block(logger, f"run={run_id} Analytics", analytics)
             return WorkflowResult(status, stage, verdict, query, analysis,
-                                  result, error_type, dict(timings))
+                                  result, error_type, dict(timings), analytics)
 
         try:
             logger.info("run=%s stage=%s started", run_id, stage)
             async with asyncio.timeout(self.model_timeout_seconds):
-                verdict = await self.prompt_validator.run(request)
+                response = await invoke_with_usage(self.prompt_validator, request)
+                usage_by_stage[stage] = response.usage
+                verdict = response.output
 
             if not isinstance(verdict, PromptValidation):
                 raise TypeError("Invalid prompt verdict")
@@ -106,10 +115,13 @@ class SparqlWorkflow:
 
             async with asyncio.timeout(self.model_timeout_seconds):
 
-                generated = await self.generator.run(SparqlRequest(request.prompt, request.schema, request.policy, request.permissions))
+                response = await invoke_with_usage(self.generator,
+                    SparqlRequest(request.prompt, request.schema, request.policy, request.permissions))
+                usage_by_stage[stage] = response.usage
+                generated = response.output
 
             query = generated.query
-            logger.info("run=%s generated_query=%r", run_id, query)
+            log_block(logger, f"run={run_id} generated_query=", query)
 
             if not isinstance(query, str) or not query.strip():
                 raise ValueError("Empty or invalid query")
@@ -118,7 +130,10 @@ class SparqlWorkflow:
             stage, started = "query_analysis", perf_counter()
             logger.info("run=%s stage=%s started", run_id, stage)
             analysis = self.analyzer.run(query)
-            logger.info("run=%s query_analysis=%r", run_id, analysis)
+            log_block(logger, f"run={run_id} Query analysis", {
+                key: analysis[key] for key in ("is_compliant", "status", "violations", "findings")
+                if key in analysis})
+            log_block(logger, f"run={run_id} Full query analysis", analysis, level=logging.DEBUG)
 
             if analysis["is_compliant"] is not True:
                 return finish("blocked_query")
@@ -137,11 +152,15 @@ class SparqlWorkflow:
 
             return finish("released", result=result)
 
-        except ResultBlocked:
+        except ResultBlocked as error:
+            if stage in {"prompt_validation", "generation"} and stage not in usage_by_stage:
+                usage_by_stage[stage] = error_usage(error)
             logger.info("run=%s stage=%s result blocked", run_id, stage)
             return finish("blocked_runtime" if stage == "execution" else "error", error_type="ResultBlocked")
 
         except Exception as error:
+            if stage in {"prompt_validation", "generation"} and stage not in usage_by_stage:
+                usage_by_stage[stage] = error_usage(error)
             logger.exception("run=%s stage=%s failed", run_id, stage)
             # A backend/parser crash is an error, not a successful security block.
             # Do not expose provider errors which may contain input or private data.

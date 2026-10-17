@@ -18,6 +18,12 @@ workflow ha un `run` distinto, anche nello stesso processo. Pytest registra
 gli esiti dei singoli test e il codice finale della sessione. Il JSON della CLI
 resta su stdout; i report XML restano separati.
 
+Le query compaiono in blocchi SPARQL con vere interruzioni di riga e separatori,
+senza il `repr` Python che mostrava `\n` e apici esterni. Risultati e analytics
+sono JSON indentato. La query restituita dalla funzione conserva il testo
+originale del generatore. Il riepilogo dell'analisi e visibile a `INFO`; il report
+completo con la configurazione dei controlli e disponibile a `DEBUG`.
+
 Si usa il modulo standard `logging`, con un handler comune anche per i messaggi
 delle librerie Python. `SPARQL_LOG_DIR` cambia cartella; `SPARQL_LOG_LEVEL`
 cambia livello (`INFO` predefinito, `DEBUG` per maggior dettaglio). Non si
@@ -80,6 +86,10 @@ uv run --extra local sparql-run --prompt "Conta i pazienti distinti con diagnosi
 La CLI stampa JSON; termina con 0 per `released` o `query_ready`, 1 per gli
 altri esiti del workflow. `--help` elenca le opzioni. L'avvio puo fallire prima
 del workflow se configurazione, file o servizi non sono disponibili.
+
+Il JSON include `analytics.token_usage` e `analytics.timings`: token per modello
+e fase, totale, conteggi parziali e tempi. Un totale `null` indica usage mancante
+o incompleto, non consumo nullo. Vedere la [guida ai token](model-usage.md).
 
 Questa CLI usa il profilo deterministico predefinito. I contesti fidati richiesti
 dai profili privacy/SHACL piu restrittivi si collegano tramite l'API Python.
