@@ -17,7 +17,7 @@ from agent_orchestration.logging_setup import configure_logging
 from .service import TranslationService
 
 logger = logging.getLogger(__name__)
-REQUEST_TIMEOUT = 120
+REQUEST_TIMEOUT = 12000
 
 
 class NlToSparqlRequest(BaseModel):
@@ -91,6 +91,7 @@ def create_app(service=None):
               response_model_exclude_none=True, operation_id="generateSparql",
               responses={"default": {"model": ErrorResponse},
                          **{code: {"model": ErrorResponse} for code in (400, 500, 502, 504)}})
+    
     async def translate(body: NlToSparqlRequest, request: Request):
         text = body.text.strip()
         if not text:

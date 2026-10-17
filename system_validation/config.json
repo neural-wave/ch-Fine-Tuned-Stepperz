@@ -1,5 +1,5 @@
 {
-  "api_url": "http://127.0.0.1:8000",
+  "api_url": "http://127.0.0.1:10100",
   "virtuoso_url": "http://127.0.0.1:8890/sparql",
   "patients_dir": "patients",
   "ontologies_dir": "ontologies",

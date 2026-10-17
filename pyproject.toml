@@ -12,6 +12,7 @@ dependencies = [
     "pyparsing==3.2.1",
     "pyshacl==0.25.0",
     "pydantic-ai>=1.107.7",
+    "fastapi>=0.143.3",
 ]
 
 [project.scripts]
