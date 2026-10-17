@@ -1,76 +1,72 @@
 # Fine-Tuned Stepperz
 
-Workflow da linguaggio naturale a SPARQL: validazione del prompt, generazione
-della query, analisi statica ed esecuzione verificata su un Dataset RDFLib locale.
-I modelli sono sostituibili; i controlli sulla query e sui risultati sono
-deterministici. Virtuoso ha un percorso di gestione separato.
+Da un prompt a una query SPARQL e al risultato controllato:
+**validazione del prompt → generazione → analisi statica → runtime RDFLib**.
 
-Servono **Python 3.12+** e [uv](https://docs.astral.sh/uv/getting-started/installation/).
-Eseguire i comandi dalla radice del repository.
+Il progetto principale espone due comandi: **`sparql-run`** per il workflow e
+**`sparql-check`** per analizzare una query gia scritta.
+Servono Python 3.12+ e [uv](https://docs.astral.sh/uv/getting-started/installation/).
+I comandi seguenti partono dalla radice del repository.
 
-## Inizia offline
+## Funzionalita disponibili
 
-Non servono GPU, Ollama o pesi. La demo usa modelli fittizi e dati sintetici:
+| Cosa vuoi fare | Ingresso | Risultato |
+|---|---|---|
+| Prompt → risultato su RDF locale | `sparql-run --prompt ... --dataset ...` | Risultato JSON oppure blocco/errore |
+| Prompt → sola query | `sparql-run --prompt ...` | Query analizzata, non eseguita |
+| Controllare una query esistente | `sparql-check file.rq` | Verdetto statico |
+| Provare il flusso senza pesi | `python -m examples.fake_workflow` | Demo con modelli fittizi e runtime reale |
+| Verificare il sistema offline | `pytest -m offline_workflow` | Test delle integrazioni |
+| Valutare il corpus con oracoli | `python -m tools.evaluate_workflow` | Report di sistema e generazione |
+
+**[Guida dei comandi](docs/guides/commands.md)**: istruzioni complete, dipendenze,
+input/output, stati restituiti e differenze tra questi percorsi.
+
+## Avvio dell'applicazione
+
+Scegliere LLM, endpoint e checkpoint Laya in
+[models.json](config/agents/models.json). Su Linux:
 
 ```bash
-uv sync --locked --extra agents --extra mcp
+bash start-ollama.sh
+uv run --extra local sparql-run --prompt "Conta i pazienti distinti con diagnosi fatturata" --dataset tests/fixtures/synthetic/cohort.trig
+```
+
+Usa modelli reali e un dataset sintetico. Omettendo `--dataset` si ferma alla
+query analizzata. Se i controlli passano, `status` e `released` e `result`
+contiene la risposta. Il file RDF viene caricato in memoria; il runtime usa
+il profilo predefinito. Setup e opzioni nella [guida locale](docs/guides/local-models.md).
+
+## Prova offline
+
+Senza GPU, Ollama o pesi:
+
+```bash
 uv run python -m examples.fake_workflow
 uv run --extra agents --extra mcp pytest -m offline_workflow -q
 ```
 
-Il gruppo di test include gli agenti PydanticAI, il client HTTP con risposte
-controllate e un MCP locale di test. Verifica collegamenti, blocchi, errori e
-oracoli; non misura l'accuratezza dei modelli reali.
-Per le strategie fittizie vedere la [guida](docs/guides/fake-models.md);
-per selezione dei test e report vedere [tests/README.md](tests/README.md).
+Le risposte controllate verificano integrazioni e oracoli, non l'accuratezza
+dei modelli. Per strategie e report: [modelli fittizi](docs/guides/fake-models.md)
+e [test](tests/README.md).
 
-## Usa i modelli reali
+## Organizzazione
 
-Scegli LLM, indirizzo del server e checkpoint Laya in
-[config/agents/models.json](config/agents/models.json).
-Su un'istanza Linux con `curl` e `python3`:
-
-```bash
-bash start-ollama.sh
-uv sync --locked --extra local
-uv run --extra local python -m agent_orchestration --prompt "Conta i pazienti distinti con diagnosi fatturata"
-```
-
-Lo script installa Ollama se manca (root o sudo), avvia il server se necessario
-e prepara il modello configurato. Laya viene caricato da Python; l'MCP fornisce
-schemi ed esempi. La CLI genera e analizza la query, **senza eseguirla**.
-Per configurazione, permessi e integrazione nel programma vedere
-[modelli locali](docs/guides/local-models.md) e [workflow](docs/guides/agent-workflow.md).
-
-## Usa solo l'analizzatore
-
-La libreria SPARQL funziona anche senza dipendenze agentiche:
-
-```bash
-uv run sparql-check tests/fixtures/cases/00_compliant.rq --policy config/policies/default.json
-```
-
-`sparql-check` e `validate` applicano i controlli statici. L'esecuzione verificata
-passa da `execute_checked`; i profili `adequacy` e `hardened` richiedono anche
-i contesti fidati documentati nelle [guide alle policy](docs/policies/configuration.md).
-
-## Dove trovare le cose
-
-| Percorso | Contenuto |
+| Percorso | Responsabilita |
 |---|---|
-| `src/sparql_analyzer/` | Parser, analisi, controlli di esecuzione, privacy e SHACL |
-| [src/agent_orchestration/](src/agent_orchestration/README.md) | Modelli, adattatori, workflow e valutazione |
-| [config/](config/README.md) | Modelli, MCP, policy e permessi di esempio |
-| [schemas/](schemas/README.md) | Schemi sorgenti, shape SHACL e VoID derivato |
-| [tests/](tests/README.md) | Suite, fixture e profili verificati |
-| [examples/](examples/README.md) | Demo del workflow e del controllore |
-| [tools/](tools/README.md) | Benchmark, generazione di fixture, export e verifiche documentali |
-| [infra/virtuoso/](infra/virtuoso/README.md) | Gestione del triplestore con Bash e Docker |
-| [docs/](docs/README.md) | Guide, architettura, sicurezza e specifiche |
+| `src/sparql_analyzer/` | Libreria deterministica e comando `sparql-check` |
+| [src/agent_orchestration/](src/agent_orchestration/README.md) | Workflow, modelli e comando `sparql-run` |
+| [config/](config/README.md) / [schemas/](schemas/README.md) | Configurazioni, schemi e metadati MCP |
+| [tools/](tools/README.md) | Benchmark, generazione fixture ed export |
+| [examples/](examples/README.md) | Sole demo eseguibili |
+| [tests/](tests/README.md) | Test del progetto principale e fixture sintetiche |
+| [infra/virtuoso/](infra/virtuoso/README.md) | Gestione del database con Bash e Docker |
+| [LLM_ENGINE/](LLM_ENGINE/README.md) | Prototipo separato, con proprio ambiente e comandi |
 | `artifacts/` | Log, cache e report generati, esclusi da Git |
 
-La [mappa del codice](docs/architecture/project-layout.md) descrive le dipendenze.
-Gli script Virtuoso interrogano direttamente il database: il collegamento al
-runtime verificato Python resta da realizzare. Inferenza reale e compatibilita
-con la GPU richiedono una prova sull'istanza; shape e test non certificano
-l'anonimato generale delle risposte.
+[Indice delle guide](docs/README.md) e [mappa del codice](docs/architecture/project-layout.md).
+
+Il runtime verificato lavora su RDFLib locale: il collegamento a Virtuoso resta
+da implementare. Gli script del database e il prototipo `LLM_ENGINE` seguono
+percorsi separati. Inferenza e GPU vanno provate sull'istanza; shape e test non
+certificano l'anonimato generale delle risposte.

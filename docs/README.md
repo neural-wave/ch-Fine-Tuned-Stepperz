@@ -1,29 +1,31 @@
 # Documentazione
 
-Per installazione e primi comandi partire dal [README principale](../README.md).
+Partire dal [README principale](../README.md) per orientarsi e dalla
+**[guida dei comandi](guides/commands.md)** per eseguire le funzionalita.
 
-## Cosa vuoi fare?
+## Percorsi d'uso
 
-| Obiettivo | Guida |
+| Obiettivo | Documentazione |
 |---|---|
-| Provare il workflow senza modelli reali | [Modelli fittizi](guides/fake-models.md), [test offline e report](../tests/README.md) |
-| Scegliere modelli e avviarli sull'istanza | [Modelli locali](guides/local-models.md), [file di configurazione](../config/README.md) |
-| Collegare classificatore, generatore e runtime | [Workflow agentico](guides/agent-workflow.md) |
-| Validare ed eseguire SPARQL | [Analizzatore e runtime](guides/sparql.md) |
-| Capire schemi, SHACL e VoID | [Mappa degli schemi](../schemas/README.md) |
-| Gestire il triplestore | [Virtuoso](../infra/virtuoso/README.md) |
-| Trovare demo o tool | [Esempi](../examples/README.md), [manutenzione](../tools/README.md) |
+| Eseguire un prompt con modelli reali | [Avvio locale](guides/local-models.md), [configurazione](../config/README.md) |
+| Capire stati, fasi e componenti del workflow | [Workflow agentico](guides/agent-workflow.md) |
+| Provare o simulare i modelli | [Modelli fittizi](guides/fake-models.md), [demo](../examples/README.md) |
+| Eseguire test e leggere i report | [Test](../tests/README.md) |
+| Valutare il corpus o rigenerare dati/report | [Tools](../tools/README.md) |
+| Analizzare una query gia disponibile | [SPARQL e runtime](guides/sparql.md) |
+| Scegliere schemi e metadati | [Schemi](../schemas/README.md) |
+| Gestire il database | [Virtuoso](../infra/virtuoso/README.md) |
+| Consultare il prototipo sperimentale separato | [LLM_ENGINE](../LLM_ENGINE/README.md) |
 
-## Approfondimenti
+## Riferimenti
 
 | Area | Documenti |
 |---|---|
 | Architettura | [Mappa del codice](architecture/project-layout.md), [flusso e diagrammi](architecture/overview.md), [sorgenti Mermaid](architecture/diagrams/README.md) |
 | Policy | [Configurazione](policies/configuration.md), [catalogo dei toggle](policies/checks.md), [operazioni](policies/operations.md), [privacy](policies/privacy.md), [adeguatezza SHACL](policies/adequacy-shacl.md) |
 | Sicurezza | [Attacchi all'anonimato](security/anonymity-attacks.md), [compliance e ruolo di SHACL](security/compliance-and-shacl.md) |
-| Dataset | [Corpus prompt-query](../tests/fixtures/system/README.md), [smoke test sintetico iniziale](system-dataset.md) |
+| Dataset | [Corpus prompt-query](../tests/fixtures/system/README.md), [smoke test iniziale](system-dataset.md) |
 | Specifiche | [API](specifications/API_specification.md), [regole applicative](specifications/Query_Compliance.md) |
 
-Le specifiche includono requisiti progettuali; guide e test descrivono il codice
-implementato. Il workflow usa il runtime RDFLib locale, mentre gli script
-Virtuoso seguono un percorso separato.
+Le specifiche includono requisiti progettuali; guide e test descrivono quanto
+implementato. Workflow RDFLib, script Virtuoso e `LLM_ENGINE` sono percorsi distinti.

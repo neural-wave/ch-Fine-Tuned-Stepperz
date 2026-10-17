@@ -1,5 +1,9 @@
 # Strumenti di sviluppo
 
+Questa cartella ospita benchmark e manutenzione. L'applicazione si avvia con
+`sparql-run`: la [guida dei comandi](../docs/guides/commands.md) distingue
+esecuzione di un prompt, valutazione del corpus, demo e test.
+
 Eseguire dalla radice del repository dopo `uv sync --locked`.
 Questi comandi generano fixture, report o documentazione e possono sostituire
 i file nella destinazione indicata.
@@ -19,9 +23,13 @@ e `--component system` isolano le due parti. Per usare i backend di `models.json
 uv run --extra local python -m tools.evaluate_workflow --models-config config/agents/models.json
 ```
 
+Questo benchmark usa sempre fixture sintetiche locali. Il comando applicativo
+`sparql-run --dataset ...` esegue invece una singola richiesta sul file fornito.
+Per conservare report diversi usare `--out`: il percorso predefinito viene riusato.
+
 L'offline verifica i collegamenti tra componenti; la misura dei modelli richiede
 i backend reali. Oracoli e limiti sono nella [guida al workflow](../docs/guides/agent-workflow.md).
-La CLI per una singola richiesta e `python -m agent_orchestration`; istruzioni
+La CLI per una singola richiesta e `sparql-run`; istruzioni
 nella [guida ai modelli locali](../docs/guides/local-models.md).
 
 ## Dataset e prompt

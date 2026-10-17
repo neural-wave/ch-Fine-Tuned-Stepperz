@@ -1,32 +1,27 @@
-# Esempi
+# Demo
 
-Eseguire i comandi dalla radice del repository.
+Questa cartella contiene esempi dimostrativi. Il comando applicativo e
+`uv run --extra local sparql-run`; il benchmark e nei [tools](../tools/README.md).
+Per scegliere il percorso vedere la [guida dei comandi](../docs/guides/commands.md).
 
-## Provare il workflow senza modelli
+Tutti i comandi partono dalla radice del repository:
 
-```bash
-uv sync --locked --extra agents --extra mcp
-uv run python -m examples.fake_workflow
-```
+| Comando | Cosa esegue | Cosa osservare |
+|---|---|---|
+| `uv run python -m examples.fake_workflow` | Workflow con classificatore e generatore fittizi, analizzatore e runtime reali | Rilascio, blocco del prompt e revisione su dati sintetici |
+| `uv run python -m examples.runtime_demo` | Query predisposte sul runtime, senza modelli | Rilascio/soppressione e report `artifacts/tests/runtime-demo.json` |
+| `uv run python -m sparql_analyzer.demo` | Parser, algebra e piccolo conteggio di verifica | Alberi RDFLib e conteggio atteso |
+| `uv run python -m examples.diagram_walkthrough` | Scenari numerici dei diagrammi | Verifica degli esempi di privacy |
 
-La demo mostra rilascio, blocco e revisione usando classificatore e generatore
-fittizi con analizzatore e runtime reali.
-Le risposte sono predisposte: questa demo verifica il collegamento tra
-componenti, non l'accuratezza di un modello.
+`runtime_demo` legge la fixture gia presente in
+`tests/fixtures/synthetic/cohort.trig`. `fake_workflow` crea i suoi dati in memoria.
+Nessuna di queste demo richiede pesi, Ollama o un database remoto.
 
-Per i test automatici vedere [tests](../tests/README.md); per cambiare strategia
-vedere i [modelli fittizi](../docs/guides/fake-models.md).
-Il benchmark del corpus e nei [tools](../tools/README.md); la CLI applicativa
-per i modelli reali e nella [guida ai modelli locali](../docs/guides/local-models.md).
-
-## Altre demo
-
-| Comando | Cosa mostra |
-|---|---|
-| `uv run python -m sparql_analyzer.demo` | Parser e algebra su un dataset locale |
-| `uv run python -m examples.diagram_walkthrough` | Verifica degli esempi numerici nei diagrammi |
-| `uv run python -m examples.runtime_demo` | Rilascio e soppressione sulla fixture sintetica; report in `artifacts/tests/runtime-demo.json` |
+Per cambiare le risposte della prima demo vedere i
+[modelli fittizi](../docs/guides/fake-models.md); per le verifiche automatiche
+vedere [tests](../tests/README.md). Le risposte predisposte dimostrano i
+collegamenti tra componenti, non la capacita di un modello.
 
 Le [query cliniche illustrative](queries/clinical-examples.md) includono scelte
-progettuali non tutte supportate dal controllore corrente. Le query operative
-Virtuoso sono in [infra/virtuoso/queries](../infra/virtuoso/queries).
+progettuali non tutte supportate. Le query operative Virtuoso sono in
+[infra/virtuoso/queries](../infra/virtuoso/queries).

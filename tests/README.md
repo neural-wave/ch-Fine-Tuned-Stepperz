@@ -1,5 +1,10 @@
 # Test
 
+Questa suite verifica il progetto principale. Per scegliere tra esecuzione di
+un prompt, demo, benchmark e test vedere la [guida dei comandi](../docs/guides/commands.md).
+Il sottoprogetto [LLM_ENGINE](../LLM_ENGINE/README.md) ha una propria suite e
+un proprio ambiente, non inclusi dal `testpaths` del progetto principale.
+
 Tutti i comandi partono dalla radice del repository. Le suite usano dati RDF
 sintetici locali; i test dei modelli usano risposte controllate, senza scaricare
 pesi o contattare servizi di inferenza.

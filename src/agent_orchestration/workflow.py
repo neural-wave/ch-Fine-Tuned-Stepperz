@@ -44,7 +44,7 @@ class CheckedQueryExecutor:
 
 @dataclass(frozen=True)
 class WorkflowResult:
-    status: Literal["released", "blocked_prompt", "review_prompt", "blocked_query", "blocked_runtime", "error"]
+    status: Literal["query_ready", "released", "blocked_prompt", "review_prompt", "blocked_query", "blocked_runtime", "error"]
     stage: str
     prompt_validation: PromptValidation | None = None
     query: str | None = None
@@ -56,8 +56,9 @@ class WorkflowResult:
 
 class SparqlWorkflow:
     def __init__(self, prompt_validator: PromptValidator, generator: SparqlLLM,
-                 analyzer: StaticQueryAnalyzer, executor: QueryExecutor,
+                 analyzer: StaticQueryAnalyzer, executor: QueryExecutor | None = None,
                  *, model_timeout_seconds: float = 60):
+
         if model_timeout_seconds <= 0:
             raise ValueError("model_timeout_seconds must be positive")
         self.prompt_validator = prompt_validator
@@ -66,7 +67,7 @@ class SparqlWorkflow:
         self.executor = executor
         self.model_timeout_seconds = model_timeout_seconds
 
-    async def run(self, request: PromptRequest) -> WorkflowResult:
+    async def run(self, request: PromptRequest, *, execute: bool = True) -> WorkflowResult:
         stage = "prompt_validation"
         verdict, query, analysis = None, None, None
         timings = {}
@@ -80,28 +81,48 @@ class SparqlWorkflow:
         try:
             async with asyncio.timeout(self.model_timeout_seconds):
                 verdict = await self.prompt_validator.run(request)
+
             if not isinstance(verdict, PromptValidation):
                 raise TypeError("Invalid prompt verdict")
+
             if verdict.decision != "allow":
                 return finish("blocked_prompt" if verdict.decision == "block" else "review_prompt")
+
             timings[stage] = perf_counter() - started
             stage, started = "generation", perf_counter()
+
             async with asyncio.timeout(self.model_timeout_seconds):
+
                 generated = await self.generator.run(SparqlRequest(request.prompt, request.schema, request.policy, request.permissions))
+
             query = generated.query
+
             if not isinstance(query, str) or not query.strip():
                 raise ValueError("Empty or invalid query")
+
             timings[stage] = perf_counter() - started
             stage, started = "query_analysis", perf_counter()
             analysis = self.analyzer.run(query)
+
             if analysis["is_compliant"] is not True:
                 return finish("blocked_query")
+
+            if not execute:
+                return finish("query_ready")
+
             timings[stage] = perf_counter() - started
             stage, started = "execution", perf_counter()
+
+            if self.executor is None:
+                raise ValueError("Execution requires a checked executor")
+
             result = await self.executor.run(query)
+
             return finish("released", result=result)
+
         except ResultBlocked:
             return finish("blocked_runtime" if stage == "execution" else "error", error_type="ResultBlocked")
+
         except Exception as error:
             # A backend/parser crash is an error, not a successful security block.
             # Do not expose provider errors which may contain input or private data.

@@ -1,5 +1,12 @@
 # SIB MCP + Qwen SPARQL Agent
 
+> **Scope:** this is a separate experimental project with its own `pyproject.toml`,
+> dependencies and configuration. Its `sparql-agent` / `sparql-benchmark` commands
+> are different from the main project's `sparql-run` / `sparql-check`.
+> Start from the [repository command guide](../docs/guides/commands.md) to choose
+> a workflow. This prototype does not route queries through the main verified
+> RDFLib runtime. Deployment details below are session records, not live checks.
+
 > **Latest session, 17 Oct 2026:** `Qwen/Qwen3-30B-A3B-GPTQ-Int4` is deployed on the new **RTX 4090 24 GB** instance. See section 9 for the current connection and commands; sections 1–8 retain the earlier 9B baseline. The larger model did not improve correctness on the three-question comparison. Only clinical example 1 ran; approval for the full clinical benchmark was rejected.
 
 A small, reproducible **natural-language → SPARQL** prototype. A Python CLI calls a Qwen model through an OpenAI-compatible endpoint, retrieves SPARQL examples/schema information through the public SIB MCP server, and saves the generated query plus timing/token metrics.

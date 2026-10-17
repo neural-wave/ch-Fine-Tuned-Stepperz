@@ -15,6 +15,7 @@ dependencies = [
 
 [project.scripts]
 sparql-check = "sparql_analyzer.cli:main"
+sparql-run = "agent_orchestration.cli:main"
 
 [project.optional-dependencies]
 agents = [

@@ -1,4 +1,4 @@
-"""Run wiring tests offline, or evaluate a configured local model.
+"""Evaluate the workflow corpus offline, or with configured local models.
 
 Offline TestModel returns supplied labels and queries: scores verify integration,
 NOT the accuracy or security of any real model. No external request is made.

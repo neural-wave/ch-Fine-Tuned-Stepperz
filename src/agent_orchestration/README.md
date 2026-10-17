@@ -1,5 +1,8 @@
 # Workflow e modelli
 
+Ingresso applicativo: `uv run --extra local sparql-run --help`.
+Per i percorsi pronti all'uso vedere la [guida dei comandi](../../docs/guides/commands.md).
+
 Il flusso è: **validazione del prompt → generazione SPARQL → analisi statica →
 esecuzione controllata**. `SparqlWorkflow` si ferma al primo blocco o errore.
 Con `run(request, execute=False)` prepara soltanto la query e restituisce
@@ -28,7 +31,8 @@ i componenti. [Config](../../config/README.md) raccoglie i file da modificare;
 
 | File | Responsabilità |
 |---|---|
-| `__main__.py` | CLI applicativa: `python -m agent_orchestration` |
+| `cli.py` | Comando applicativo `sparql-run`, anche tramite `python -m agent_orchestration` |
+| `__main__.py` | Avvio del medesimo comando tramite `python -m agent_orchestration` |
 | `models.py` | Contratti asincroni `LLM`, `SparqlLLM`, `SystemOneModel` e tipi di richiesta/risposta |
 | `adapters.py` | Collegamento a PydanticAI o a una funzione di classificazione personalizzata |
 | `local_models.py` | Endpoint chat, Laya e connessione MCP |
@@ -38,8 +42,9 @@ i componenti. [Config](../../config/README.md) raccoglie i file da modificare;
 | `semantic.py` | Confronto dei risultati di esecuzione |
 | `evaluation.py` | Valutazione separata del sistema e della generazione |
 
-Il comando del benchmark e `python -m tools.evaluate_workflow`; gli esempi in
-`examples/` sono demo. I test agentici sono raggruppati in `tests/agents/`.
+La CLI e `sparql-run`: con `--dataset` esegue anche
+il runtime locale. Il benchmark e `python -m tools.evaluate_workflow`.
+I test agentici sono raggruppati in `tests/agents/`.
 
 `PromptRequest` e un alias di `SparqlRequest`: guard e generatore condividono
 prompt, schema, policy e permessi. Tutti i modelli espongono `await run(request)`.

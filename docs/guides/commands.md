@@ -1,0 +1,123 @@
+# Funzionalita e comandi
+
+Tutti i comandi di questa pagina partono dalla radice del repository, con
+Python 3.12+ e `uv` disponibili. `uv run` prepara l'ambiente con gli extra
+indicati. I comandi Bash di avvio richiedono Linux o un ambiente equivalente.
+
+## Quale percorso usare
+
+| Obiettivo | Ingresso | Modelli | Dati / risultato |
+|---|---|---|---|
+| Prompt → query → risultato | `sparql-run --prompt ... --dataset ...` | Laya e LLM reali | RDF locale; risultato controllato o blocco |
+| Prompt → sola query | `sparql-run --prompt ...` | Laya e LLM reali | Schemi MCP o testo; query analizzata, non eseguita |
+| Verificare una query esistente | `sparql-check file.rq` | Nessuno | Analisi statica; nessuna esecuzione |
+| Vedere il flusso senza pesi | `python -m examples.fake_workflow` | Fittizi | Fixture sintetica; esempi di rilascio, blocco e revisione |
+| Verificare le integrazioni | `pytest -m offline_workflow` | Risposte controllate | Test offline, inclusi client HTTP e MCP locale di test |
+| Valutare il corpus | `python -m tools.evaluate_workflow` | Predisposti o reali | Query e risultati confrontati con oracoli su fixture sintetiche |
+| Gestire il database | Script in `infra/virtuoso/` | Nessuno | Virtuoso diretto; percorso separato dal runtime verificato |
+
+## 1. Applicazione: dal prompt al risultato
+
+Scegliere i modelli in [models.json](../../config/agents/models.json), poi su Linux:
+
+```bash
+bash start-ollama.sh
+uv run --extra local sparql-run --prompt "Conta i pazienti distinti con diagnosi fatturata" --dataset tests/fixtures/synthetic/cohort.trig
+```
+
+Percorso: Laya → LLM con recupero schema/esempi MCP → analisi statica →
+runtime RDFLib → risultato. Il file dell'esempio e sintetico; i modelli sono
+reali. `--dataset` accetta un file RDF locale, caricato in memoria; TriG e
+N-Quads mantengono i grafi paziente distinti. `--rdf-format trig` forza il formato.
+
+Omettendo `--dataset`, lo stesso comando si ferma alla query analizzata:
+
+```bash
+uv run --extra local sparql-run --prompt "Conta i pazienti distinti con diagnosi fatturata"
+```
+
+| Stato JSON | Significato |
+|---|---|
+| `released` | Esecuzione completata e risultato rilasciato nel campo `result` |
+| `query_ready` | Query generata e analizzata; nessun controllo runtime sui dati eseguito |
+| `blocked_prompt` / `review_prompt` | Generazione fermata dal validatore del prompt |
+| `blocked_query` | Query rifiutata prima dell'esecuzione |
+| `blocked_runtime` | Risultato soppresso dai controlli runtime |
+| `error` | Errore di un componente; non equivale a un blocco di sicurezza riuscito |
+
+La CLI stampa JSON; termina con 0 per `released` o `query_ready`, 1 per gli
+altri esiti del workflow. `--help` elenca le opzioni. L'avvio puo fallire prima
+del workflow se configurazione, file o servizi non sono disponibili.
+
+Questa CLI usa il profilo deterministico predefinito. I contesti fidati richiesti
+dai profili privacy/SHACL piu restrittivi si collegano tramite l'API Python.
+Il runtime non e ancora collegato a Virtuoso: `--dataset` non e un ingresso
+per un database clinico da 50 GB. Setup e opzioni nella [guida locale](local-models.md).
+
+## 2. Query gia disponibile
+
+```bash
+uv run sparql-check tests/fixtures/cases/00_compliant.rq --policy config/policies/default.json --out artifacts/query-check.json
+uv run sparql-check --list-checks
+```
+
+Legge un file `.rq`, stampa il verdetto statico e puo salvarlo con `--out`.
+Non esegue la query. Per provare anche il runtime su scenari predisposti:
+
+```bash
+uv run python -m examples.runtime_demo
+```
+
+Per un proprio dataset e una propria query, usare `execute_checked` nell'API
+Python: [guida SPARQL](sparql.md).
+
+## 3. Demo e test offline
+
+```bash
+uv run python -m examples.fake_workflow
+uv run --extra agents --extra mcp pytest -m offline_workflow -q
+```
+
+La demo usa modelli fittizi e runtime reale su dati sintetici. I test coprono
+anche errori, timeout, retry e concorrenza, senza pesi o servizi di inferenza.
+Per la suite completa e un report XML:
+
+```bash
+uv run --extra agents --extra mcp pytest -q --junitxml=artifacts/tests/all.xml
+```
+
+Selezione delle suite in [tests/README.md](../../tests/README.md);
+strategie di risposta nella [guida ai modelli fittizi](fake-models.md).
+
+## 4. Benchmark con oracoli
+
+```bash
+uv run --extra agents python -m tools.evaluate_workflow --offline
+uv run --extra agents python -m tools.evaluate_workflow --offline --component generation
+```
+
+`--component` accetta `system`, `generation` o `all` (default). Il report JSON e
+in `artifacts/workflow-evaluation/report.json`; `--out` cambia destinazione.
+Il modo offline fornisce gia le risposte ai modelli: verifica il collegamento
+tra componenti e oracoli, non l'accuratezza del modello.
+
+Con Ollama attivo, per misurare invece i modelli configurati:
+
+```bash
+uv run --extra local python -m tools.evaluate_workflow --models-config config/agents/models.json
+```
+
+Anche questa valutazione esegue sui dataset sintetici, non sul database clinico.
+Esclude il gruppo presente nell'esempio RAG. Per oracoli, split e denominatori
+vedere la [guida al workflow](agent-workflow.md).
+
+## 5. Configurazione, manutenzione e altri progetti
+
+- [Configurazione](../../config/README.md): modelli, server, metadati MCP, policy e permessi.
+- [Tools](../../tools/README.md): generazione fixture, associazioni prompt-query ed export.
+- [Virtuoso](../../infra/virtuoso/README.md): avvio, caricamento e query dirette con Docker.
+- [LLM_ENGINE](../../LLM_ENGINE/README.md): prototipo separato con proprio ambiente e comandi; non e il workflow verificato descritto sopra.
+
+`sparql-run` e `sparql-check` appartengono al progetto principale.
+`sparql-agent` e `sparql-benchmark` appartengono al sottoprogetto sperimentale
+`LLM_ENGINE`: configurazioni, dipendenze e risultati non sono intercambiabili.

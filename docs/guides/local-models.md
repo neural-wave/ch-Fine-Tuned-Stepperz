@@ -12,7 +12,7 @@ Dalla radice del repository Linux, con `curl` e `python3` disponibili:
 ```bash
 bash start-ollama.sh
 uv sync --locked --extra local
-uv run --extra local python -m agent_orchestration --prompt "Conta i pazienti distinti con diagnosi fatturata"
+uv run --extra local sparql-run --prompt "Conta i pazienti distinti con diagnosi fatturata"
 ```
 
 Lo script installa [Ollama](https://docs.ollama.com/linux) se manca (servono root
@@ -28,9 +28,25 @@ la propria configurazione. Usare un disco persistente sull'istanza per conservar
 `qwen3:14b` e un esempio, da scegliere in base alla GPU. Il comando Python
 carica Laya una volta, avvia l'MCP `uvx sparql-llm`, valida il prompt, genera la
 query e applica l'analisi statica tramite `SparqlWorkflow.run(execute=False)`.
-La CLI e in `src/agent_orchestration/__main__.py`. Non esegue query:
-`query_ready` non garantisce l'anonimizzazione dei risultati. Per l'esecuzione
-usare lo stesso workflow con l'executor verificato del servizio.
+La CLI e in `src/agent_orchestration/cli.py`. Senza dataset restituisce
+`query_ready`, senza eseguire la query.
+
+Per il workflow completo, con modelli reali ed esecuzione controllata locale:
+
+```bash
+uv run --extra local sparql-run --prompt "Conta i pazienti distinti con diagnosi fatturata" --dataset tests/fixtures/synthetic/cohort.trig
+```
+
+Se i controlli passano, lo stato e `released` e `result` contiene la risposta
+SPARQL Results JSON. Altrimenti lo stato indica il blocco o errore e non viene
+rilasciato un risultato. `--rdf-format` permette di specificare il formato RDF;
+altrimenti viene ricavato dall'estensione. TriG e N-Quads conservano i grafi
+paziente distinti richiesti da queste query.
+
+Il file fornito viene caricato in memoria con RDFLib e controllato con il
+profilo predefinito. Il comando non e collegato all'endpoint Virtuoso e non e
+il percorso per caricare un database clinico da 50 GB. La fixture dell'esempio
+e sintetica; per dati reali occorrono anche policy e contesti fidati del servizio.
 
 ## Cambiare modello
 

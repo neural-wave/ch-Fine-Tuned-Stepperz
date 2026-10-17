@@ -19,6 +19,7 @@ fuori dal codice applicativo.
 | `schemas/shacl/` | Shape operative fornite al runtime |
 | `schemas/void/` | VoID strutturale derivato dagli schemi ed esempi MCP |
 | `infra/virtuoso/` | Gestione Docker/Virtuoso e query operative |
+| `LLM_ENGINE/` | Prototipo sperimentale separato, con proprie dipendenze e CLI |
 | `tools/` | Benchmark del workflow, export e generazione di dati sintetici per sviluppo |
 | `examples/` | Demo e query di esempio |
 | `tests/fixtures/` | Query, indici e dati sintetici versionati |
@@ -61,11 +62,15 @@ configurano i percorsi usati nei bind mount; i dati locali restano in
 Laya/MCP sono in `agent_orchestration/local_models.py`. La configurazione e in
 `config/agents/models.json`. I modelli fittizi sono in `fakes.py`.
 
-`agent_orchestration/__main__.py` e la CLI applicativa, avviata con
-`python -m agent_orchestration`. Usa lo stesso `SparqlWorkflow` del programma,
+`src/agent_orchestration/cli.py` e la CLI applicativa, avviata con
+`sparql-run`. Usa lo stesso `SparqlWorkflow` del programma,
 con `execute=False` per preparare una query senza eseguirla. Il benchmark e
 `tools/evaluate_workflow.py`, avviato con `python -m tools.evaluate_workflow`;
 `examples/` contiene soltanto demo.
+
+La [guida dei comandi](../guides/commands.md) e l'ingresso per gli utilizzatori;
+questa pagina descrive dove intervenire nel codice. `LLM_ENGINE` non viene
+importato dal workflow principale e non ne condivide configurazione o runtime.
 
 L'esecuzione diretta degli script Virtuoso non passa dai controlli Python.
 Un futuro adattatore del database dovra collegarsi al percorso verificato e
