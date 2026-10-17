@@ -25,6 +25,8 @@ from rdflib.namespace import OWL, RDF, RDFS, SKOS
 from sparql_agent.agent import run_question
 from sparql_agent.benchmark import summarize
 from sparql_agent.config import Config
+from sparql_agent.sphn_retrieval import SphnVoidRetrieval
+from sparql_agent.sphn_retrieval import build_server as build_void_server
 from sparql_agent.storage import save_result
 
 SPHN = "https://biomedit.ch/rdf/sphn-schema/sphn#"
@@ -161,13 +163,18 @@ def build_server(examples, docs, active):
 async def main(args):
     examples = read_examples(args.examples)
     docs, version = schema_documents(args.schema)
+    retrieval = (SphnVoidRetrieval(args.void_file, args.schema)
+                 if args.retrieval_backend == "sphn-void" else None)
     args.output.mkdir(parents=True, exist_ok=False)
     (args.output / "references.json").write_text(json.dumps(examples, indent=2), encoding="utf-8")
     manifest = {
         "schema_version": version,
         "schema_sha256": hashlib.sha256(args.schema.read_bytes()).hexdigest(),
         "examples_sha256": hashlib.sha256(args.examples.read_bytes()).hexdigest(),
-        "retrieval": "local lexical MCP; first 10 examples; current test excluded server-side",
+        "retrieval": ("local SPHN VoID schema and derived aggregate patterns; no reference answers indexed"
+                      if retrieval else "local lexical MCP; first 10 examples; current test excluded server-side"),
+        "retrieval_backend": args.retrieval_backend,
+        "void_sha256": hashlib.sha256(args.void_file.read_bytes()).hexdigest() if retrieval else None,
         "target_endpoint_is_placeholder": True,
         "clinical_execution_enabled": False,
         "imports_loaded": False,
@@ -178,7 +185,7 @@ async def main(args):
     }
     (args.output / "manifest.json").write_text(json.dumps(manifest, indent=2), encoding="utf-8")
     active = {"id": 1}
-    mcp = build_server(examples, docs, active)
+    mcp = build_void_server(retrieval) if retrieval else build_server(examples, docs, active)
     app = mcp.streamable_http_app(json_response=True, stateless_http=True)
     server = uvicorn.Server(uvicorn.Config(app, host="127.0.0.1", port=args.port, log_level="warning"))
     task = asyncio.create_task(server.serve())
@@ -203,12 +210,16 @@ async def main(args):
         for item in examples[: args.limit]:
             active["id"] = item["id"]
             # Hints use only the natural-language question, never its gold query.
-            hints = [
-                row["label"]
-                for row in rank(item["question"], docs, lambda row: row["label"] + " " + row["definition"])[
-                    :3
+            if retrieval:
+                hints = [row["label"] for row in retrieval.search_sparql_classes(
+                    [item["question"]])["classes_schemas"][:3]]
+            else:
+                hints = [
+                    row["label"]
+                    for row in rank(item["question"], docs, lambda row: row["label"] + " " + row["definition"])[
+                        :3
+                    ]
                 ]
-            ]
             for mode in (
                 ["deterministic", "autonomous"] if item["id"] % 2 else ["autonomous", "deterministic"]
             ):
@@ -219,7 +230,7 @@ async def main(args):
                 metadata = {
                     "question_id": f"sphn_{item['id']:02}",
                     "title": item["title"],
-                    "retrieval_backend": "local_sphn_lexical_mcp",
+                    "retrieval_backend": args.retrieval_backend,
                     "held_out_id": item["id"],
                     "deterministic_class_hints": hints,
                     "schema_version": version,
@@ -240,4 +251,7 @@ if __name__ == "__main__":
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--limit", type=int, default=15)
     parser.add_argument("--port", type=int, default=18888)
+    parser.add_argument("--retrieval-backend", choices=["sphn-void", "legacy-lexical"],
+                        default="sphn-void")
+    parser.add_argument("--void-file", type=Path, default=Path("metadata/sphn-schema-void.ttl"))
     asyncio.run(main(parser.parse_args()))

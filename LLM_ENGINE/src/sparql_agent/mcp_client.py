@@ -1,15 +1,33 @@
-"""Official MCP 2.x client. Retrieval and vector search belong to the SIB server."""
+"""MCP 2.x client, endpoint filtering, and retrieval backend selection."""
 
 import json
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from urllib.parse import urlparse
 
 from mcp import Client
 from mcp.types import CallToolResult
 
 from .config import Config
+from .sphn_retrieval import TARGET as SPHN_TARGET
 
 RETRIEVAL_TOOLS = frozenset({"search_sparql_examples", "search_sparql_classes"})
+SPHN_MCP_URL = "http://127.0.0.1:18888/mcp"
+
+
+def select_retrieval_backend(config: Config, backend: str | None = None) -> Config:
+    """Resolve the selected retrieval transport and target before creating clients."""
+    backend = backend or config.retrieval_backend
+    if backend == "public":
+        return replace(config, retrieval_backend=backend)
+    if backend == "sphn-void":
+        return replace(
+            config,
+            retrieval_backend=backend,
+            mcp_url=SPHN_MCP_URL,
+            target_endpoint=SPHN_TARGET,
+            enable_sparql_execution=False,
+        )
+    raise ValueError(f"Unknown retrieval backend: {backend}")
 
 
 def same_endpoint(first: str, second: str) -> bool:

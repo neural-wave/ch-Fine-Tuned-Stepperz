@@ -5,8 +5,9 @@ import pytest
 
 from sparql_agent.agent import RunResult
 from sparql_agent.benchmark import percentile, summarize
-from sparql_agent.cli import execute_saved
+from sparql_agent.cli import execute_saved, parser
 from sparql_agent.config import Config
+from sparql_agent.mcp_client import select_retrieval_backend
 from sparql_agent.storage import save_result
 
 
@@ -33,6 +34,27 @@ def test_environment_overrides_dotenv_and_secret_not_recorded(tmp_path, monkeypa
     config = Config.from_env(env)
     assert config.llm_model == "from-shell"
     assert "secret-value" not in str(config.public_settings()) and "secret-value" not in repr(config)
+
+
+def test_ask_backend_flag_is_parsed_and_selects_retrieval_transport():
+    args = parser().parse_args([
+        "ask", "Count cancer treatments", "--mode", "deterministic",
+        "--retrieval-backend", "sphn-void",
+    ])
+    assert args.retrieval_backend == "sphn-void"
+    selected = select_retrieval_backend(
+        Config(enable_sparql_execution=True), args.retrieval_backend
+    )
+    assert selected.retrieval_backend == "sphn-void"
+    assert selected.mcp_url == "http://127.0.0.1:18888/mcp"
+    assert selected.target_endpoint == "http://example.invalid/sphn/sparql"
+    assert not selected.enable_sparql_execution
+    assert args.mode == "deterministic"
+
+
+def test_public_backend_keeps_existing_mcp_configuration():
+    config = Config(mcp_url="https://example.org/mcp", target_endpoint="https://example.org/sparql")
+    assert select_retrieval_backend(config, "public") == config
 
 
 async def test_execution_disabled_before_file_or_network_access():
