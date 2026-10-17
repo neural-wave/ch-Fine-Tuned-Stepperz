@@ -1,0 +1,4 @@
+# Commenti e prologo non devono mascherare un update.
+PREFIX sphn: <https://biomedit.ch/rdf/sphn-schema/sphn#>
+# SELECT non e una autorizzazione
+DELETE WHERE { GRAPH ?g { ?dx a sphn:BilledDiagnosis . } }

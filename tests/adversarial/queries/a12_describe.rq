@@ -1,0 +1,3 @@
+# DESCRIBE non appartiene alle forme ammesse.
+PREFIX sphn: <https://biomedit.ch/rdf/sphn-schema/sphn#>
+DESCRIBE ?person WHERE { GRAPH ?g { ?person a sphn:SubjectPseudoIdentifier ; sphn:hasIdentifier ?id . } }

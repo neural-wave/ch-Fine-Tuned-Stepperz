@@ -1,0 +1,3 @@
+# Codifica reversibile del formato di un identificatore.
+PREFIX sphn: <https://biomedit.ch/rdf/sphn-schema/sphn#>
+SELECT (ENCODE_FOR_URI(STR(?id)) AS ?value) WHERE { GRAPH ?g { ?person a sphn:SubjectPseudoIdentifier ; sphn:hasIdentifier ?id . } }

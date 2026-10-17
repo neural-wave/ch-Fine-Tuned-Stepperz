@@ -1,0 +1,3 @@
+# Condizione individuale dentro EXISTS.
+PREFIX sphn: <https://biomedit.ch/rdf/sphn-schema/sphn#>
+SELECT (COUNT(*) AS ?n) WHERE { GRAPH ?g { ?dx a sphn:BilledDiagnosis . } FILTER EXISTS { GRAPH ?g { ?person sphn:hasIdentifier "SYNTH-0000" } } }

@@ -1,0 +1,3 @@
+# Operazione di modifica, anche con SILENT.
+PREFIX sphn: <https://biomedit.ch/rdf/sphn-schema/sphn#>
+CLEAR SILENT GRAPH <urn:synthetic:private-graph>

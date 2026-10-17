@@ -1,0 +1,3 @@
+# Aggregazione che seleziona un valore individuale.
+PREFIX sphn: <https://biomedit.ch/rdf/sphn-schema/sphn#>
+SELECT (SAMPLE(?id) AS ?summary) WHERE { GRAPH ?g { ?person a sphn:SubjectPseudoIdentifier ; sphn:hasIdentifier ?id . } }

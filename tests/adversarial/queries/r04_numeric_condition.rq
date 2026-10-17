@@ -1,0 +1,3 @@
+# Argomento COUNT non diretto: il controllo runtime lo deve rifiutare.
+PREFIX sphn: <https://biomedit.ch/rdf/sphn-schema/sphn#>
+SELECT (COUNT(?id = "SYNTH-0000") AS ?signal) WHERE { GRAPH ?g { ?person a sphn:SubjectPseudoIdentifier ; sphn:hasIdentifier ?id . } }

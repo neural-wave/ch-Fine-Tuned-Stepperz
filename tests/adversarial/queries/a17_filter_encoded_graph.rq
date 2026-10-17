@@ -1,0 +1,3 @@
+# Identificatore grafo ricostruito come espressione.
+PREFIX sphn: <https://biomedit.ch/rdf/sphn-schema/sphn#>
+SELECT (COUNT(?dx) AS ?n) WHERE { GRAPH ?g { ?dx a sphn:BilledDiagnosis . } FILTER(STR(?g)=CONCAT("http://example.org/graph/", "synthetic-0000")) }

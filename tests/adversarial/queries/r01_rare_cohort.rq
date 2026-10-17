@@ -1,0 +1,3 @@
+# Solo un paziente contribuisce.
+PREFIX sphn: <https://biomedit.ch/rdf/sphn-schema/sphn#>
+SELECT (COUNT(DISTINCT ?g) AS ?n) WHERE { GRAPH ?g { ?dx a sphn:OncologyDiagnosis } }

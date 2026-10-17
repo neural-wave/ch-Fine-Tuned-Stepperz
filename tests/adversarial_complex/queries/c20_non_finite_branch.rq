@@ -1,0 +1,20 @@
+# Una misura non finita non deve arrivare all output.
+PREFIX sphn: <https://biomedit.ch/rdf/sphn-schema/sphn#>
+SELECT (AVG(?value) AS ?summary)
+WHERE {
+  GRAPH ?g {
+    ?dx a sphn:BilledDiagnosis ;
+        sphn:hasAdministrativeCase ?case ;
+        sphn:hasSubjectPseudoIdentifier ?person .
+    ?lab a sphn:LabTestEvent ;
+         sphn:hasAdministrativeCase ?case ;
+         sphn:hasSubjectPseudoIdentifier ?person ;
+         sphn:hasQuantity ?quantity .
+    ?quantity sphn:hasValue ?value .
+    ?age a sphn:Age ;
+         sphn:hasSubjectPseudoIdentifier ?person ;
+         sphn:hasQuantity ?markerQuantity .
+    ?markerQuantity sphn:hasValue ?marker .
+  }
+}
+

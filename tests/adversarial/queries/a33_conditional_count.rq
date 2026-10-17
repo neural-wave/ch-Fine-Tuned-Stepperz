@@ -1,0 +1,3 @@
+# COUNT con espressione condizionale non e un conteggio diretto approvato.
+PREFIX sphn: <https://biomedit.ch/rdf/sphn-schema/sphn#>
+SELECT (COUNT(IF(?id="SYNTH-0000",1,1/0)) AS ?signal) WHERE { GRAPH ?g { ?person a sphn:SubjectPseudoIdentifier ; sphn:hasIdentifier ?id . } }

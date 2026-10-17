@@ -7,6 +7,8 @@ from rdflib.plugins.sparql.parser import parseUpdate
 
 from sparql_analyzer.parser import analyze, to_tree
 from sparql_analyzer.compliance import validate
+from tests.export_adversarial import export as export_adversarial
+from tests.complex_attacks import export as export_complex
 
 
 def main():
@@ -51,6 +53,8 @@ def main():
         json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
     )
     print(f"\n{len(cases) - failures}/{len(cases)} casi verificati dal validatore.")
+    failures += export_adversarial()
+    failures += sum(not item["matches_observation"] for item in export_complex())
     return 1 if failures else 0
 
 

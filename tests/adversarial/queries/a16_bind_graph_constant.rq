@@ -1,0 +1,3 @@
+# Grafo individuale assegnato tramite BIND e namespace diverso.
+PREFIX sphn: <https://biomedit.ch/rdf/sphn-schema/sphn#>
+SELECT (COUNT(?dx) AS ?n) WHERE { BIND(<urn:synthetic:private-graph> AS ?g) GRAPH ?g { ?dx a sphn:BilledDiagnosis . } }

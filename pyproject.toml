@@ -16,3 +16,7 @@ testpaths = ["tests"]
 python_files = ["test_*.py"]
 pythonpath = ["."]
 addopts = "-ra"
+markers = [
+    "security_gap: requisito di sicurezza non ancora soddisfatto (xfail strict)",
+    "risk_demonstration: test che dimostra un rischio osservato, non una protezione",
+]

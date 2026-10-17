@@ -1,0 +1,3 @@
+# Il runtime restringe gli output ai conteggi diretti.
+PREFIX sphn: <https://biomedit.ch/rdf/sphn-schema/sphn#>
+SELECT ((COUNT(DISTINCT ?g) + 1000) AS ?n) WHERE { GRAPH ?g { ?dx a sphn:BilledDiagnosis . } }

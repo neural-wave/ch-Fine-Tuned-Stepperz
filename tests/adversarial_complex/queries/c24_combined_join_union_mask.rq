@@ -1,0 +1,37 @@
+# Join, alias, OPTIONAL, UNION, MINUS e HAVING non impediscono il mascheramento.
+PREFIX sphn: <https://biomedit.ch/rdf/sphn-schema/sphn#>
+SELECT (ROUND(ABS(SUM(IF(?marker = 0, ?normalized, 0)))) AS ?summary)
+WHERE {
+  {
+    GRAPH ?g {
+    ?dx a sphn:BilledDiagnosis ;
+        sphn:hasAdministrativeCase ?case ;
+        sphn:hasSubjectPseudoIdentifier ?person .
+    ?lab a sphn:LabTestEvent ;
+         sphn:hasAdministrativeCase ?case ;
+         sphn:hasSubjectPseudoIdentifier ?person ;
+         sphn:hasQuantity ?quantity .
+    ?quantity sphn:hasValue ?value .
+    ?age a sphn:Age ;
+         sphn:hasSubjectPseudoIdentifier ?person ;
+         sphn:hasQuantity ?markerQuantity .
+    ?markerQuantity sphn:hasValue ?marker .
+  }
+    BIND((?value * 1) AS ?firstAlias)
+    BIND(?firstAlias AS ?normalized)
+    OPTIONAL {
+      GRAPH ?g { ?rare a sphn:OncologyDiagnosis ; sphn:hasValue ?unusedRare . }
+    }
+    FILTER(isNumeric(?normalized) && ?marker >= 0)
+  }
+  UNION
+  {
+    GRAPH ?g { ?filler a sphn:BilledDiagnosis . }
+    BIND(0 AS ?normalized)
+    BIND(99 AS ?marker)
+  }
+  MINUS { GRAPH ?g { ?death a sphn:Death . } }
+}
+HAVING(COUNT(DISTINCT ?g) >= 5)
+ORDER BY DESC(?summary)
+LIMIT 1

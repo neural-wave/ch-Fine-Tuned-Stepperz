@@ -1,0 +1,3 @@
+# Dialetto Virtuoso non supportato: blocco esplicito, non una validazione Virtuoso.
+PREFIX sphn: <https://biomedit.ch/rdf/sphn-schema/sphn#>
+DEFINE sql:select-option "order" SELECT (COUNT(*) AS ?n) WHERE { GRAPH ?g { ?dx a sphn:BilledDiagnosis . } }

@@ -1,0 +1,3 @@
+# Tre alias mantengono la provenienza identificativa.
+PREFIX sphn: <https://biomedit.ch/rdf/sphn-schema/sphn#>
+SELECT ?metric WHERE { GRAPH ?g { ?person a sphn:SubjectPseudoIdentifier ; sphn:hasIdentifier ?id . } BIND(STR(?id) AS ?a) BIND(?a AS ?b) BIND(?b AS ?metric) }

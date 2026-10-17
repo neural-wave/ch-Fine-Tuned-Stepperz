@@ -1,0 +1,3 @@
+# Proiezione del grafo nascosta in una sottoquery.
+PREFIX sphn: <https://biomedit.ch/rdf/sphn-schema/sphn#>
+SELECT ?value WHERE { { SELECT (?g AS ?value) WHERE { GRAPH ?g { ?dx a sphn:BilledDiagnosis . } } } }

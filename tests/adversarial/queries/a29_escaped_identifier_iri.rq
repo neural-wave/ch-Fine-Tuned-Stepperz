@@ -1,0 +1,3 @@
+# Escape Unicode nell URI della proprieta identificativa.
+PREFIX sphn: <https://biomedit.ch/rdf/sphn-schema/sphn#>
+SELECT ?value WHERE { GRAPH ?g { ?person <https://biomedit.ch/rdf/sphn-schema/sphn#has\u0049dentifier> ?value } }

@@ -1,0 +1,3 @@
+# BASE risolve un riferimento relativo a un grafo paziente.
+PREFIX sphn: <https://biomedit.ch/rdf/sphn-schema/sphn#>
+BASE <http://example.org/graph/> SELECT (COUNT(?dx) AS ?n) WHERE { GRAPH <synthetic-0000> { ?dx a sphn:BilledDiagnosis } }

@@ -142,10 +142,10 @@ def test_direct_count_star_approved(cohort):
     assert int(execute_checked(cohort, query)["results"]["bindings"][0]["patients"]["value"]) > 8
 
 
-def test_unknown_arithmetic_projection_blocked(cohort):
+def test_arithmetic_projection_on_count_approved(cohort):
     query = EXAMPLE_QUERY.replace("COUNT(DISTINCT ?g)", "(COUNT(DISTINCT ?g) + 1)")
-    with pytest.raises(ResultBlocked, match="Proiezione"):
-        execute_checked(cohort, query)
+    result = execute_checked(cohort, query)
+    assert result["results"]["bindings"][0]["patients"]["value"] == "9"
 
 
 def test_errors_do_not_echo_sensitive_values(cohort):

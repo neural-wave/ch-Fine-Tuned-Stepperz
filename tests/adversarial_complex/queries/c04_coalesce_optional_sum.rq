@@ -1,0 +1,10 @@
+# COALESCE assegna zero ai non contribuenti e gonfia la coorte apparente della misura rara.
+PREFIX sphn: <https://biomedit.ch/rdf/sphn-schema/sphn#>
+SELECT (SUM(COALESCE(?rareValue, 0)) AS ?summary)
+WHERE {
+  GRAPH ?g {
+    ?dx a sphn:BilledDiagnosis ; sphn:hasAdministrativeCase ?case .
+    OPTIONAL { ?rare a sphn:OncologyDiagnosis ; sphn:hasValue ?rareValue . }
+  }
+}
+

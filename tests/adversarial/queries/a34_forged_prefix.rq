@@ -1,0 +1,3 @@
+# Nome count e prefisso safe non determinano la provenienza.
+PREFIX sphn: <https://biomedit.ch/rdf/sphn-schema/sphn#>
+PREFIX safe: <https://biomedit.ch/rdf/sphn-schema/sphn#> SELECT (?value AS ?count) WHERE { GRAPH ?g { ?s safe:hasIdentifier ?value } }

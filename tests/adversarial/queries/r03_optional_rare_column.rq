@@ -1,0 +1,3 @@
+# Una colonna opzionale ha una sola persona contribuente.
+PREFIX sphn: <https://biomedit.ch/rdf/sphn-schema/sphn#>
+SELECT (COUNT(DISTINCT ?g) AS ?n) (COUNT(?lab) AS ?labs) WHERE { GRAPH ?g { ?dx a sphn:BilledDiagnosis OPTIONAL { ?lab a sphn:LabTestEvent } } }

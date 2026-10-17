@@ -1,0 +1,3 @@
+# Il ramo clinico non restringe il ramo libero.
+PREFIX sphn: <https://biomedit.ch/rdf/sphn-schema/sphn#>
+SELECT (COUNT(*) AS ?n) WHERE { { GRAPH ?g { ?dx a sphn:BilledDiagnosis . } } UNION { GRAPH ?other { ?s ?p ?o } } }

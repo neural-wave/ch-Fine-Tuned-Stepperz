@@ -1,0 +1,3 @@
+# Destinazione SERVICE variabile; non viene eseguita.
+PREFIX sphn: <https://biomedit.ch/rdf/sphn-schema/sphn#>
+SELECT (COUNT(*) AS ?n) WHERE { VALUES ?endpoint { <https://example.invalid/sparql> } SERVICE ?endpoint { GRAPH ?g { ?dx a sphn:BilledDiagnosis . } } }

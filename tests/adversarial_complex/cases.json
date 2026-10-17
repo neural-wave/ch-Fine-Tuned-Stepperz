@@ -1,0 +1,202 @@
+[
+  {
+    "id": "c01_masked_sum",
+    "file": "c01_masked_sum.rq",
+    "expected": "leak",
+    "expected_value": "1000",
+    "reason": "Otto contribuenti formali, ma sette contributi sono azzerati: espone il valore del solo target.",
+    "recipe": "normal"
+  },
+  {
+    "id": "c02_scaled_masked_average",
+    "file": "c02_scaled_masked_average.rq",
+    "expected": "leak",
+    "expected_value": "1000",
+    "reason": "Media mascherata e numerosita ricostruiscono il valore individuale.",
+    "recipe": "normal"
+  },
+  {
+    "id": "c03_rounded_masked_sum",
+    "file": "c03_rounded_masked_sum.rq",
+    "expected": "leak",
+    "expected_value": "1000",
+    "reason": "Aritmetica e arrotondamento nascondono lo stesso isolamento individuale.",
+    "recipe": "normal"
+  },
+  {
+    "id": "c04_coalesce_optional_sum",
+    "file": "c04_coalesce_optional_sum.rq",
+    "expected": "leak",
+    "expected_value": "4242",
+    "reason": "COALESCE assegna zero ai non contribuenti e gonfia la coorte apparente della misura rara.",
+    "recipe": "normal"
+  },
+  {
+    "id": "c05_coalesce_optional_average",
+    "file": "c05_coalesce_optional_average.rq",
+    "expected": "leak",
+    "expected_value": "4242",
+    "reason": "La media con riempimento a zero viene riscalata per esporre la misura rara.",
+    "recipe": "normal"
+  },
+  {
+    "id": "c06_union_zero_padding",
+    "file": "c06_union_zero_padding.rq",
+    "expected": "leak",
+    "expected_value": "4242",
+    "reason": "Un ramo UNION aggiunge pazienti con zeri; DISTINCT non protegge la misura rara.",
+    "recipe": "normal"
+  },
+  {
+    "id": "c07_default_graph_broadcast",
+    "file": "c07_default_graph_broadcast.rq",
+    "expected": "leak",
+    "expected_value": "7777",
+    "reason": "Una misura nel default graph e ripetuta su otto grafi paziente non correlati.",
+    "recipe": "normal"
+  },
+  {
+    "id": "c08_default_graph_ratio",
+    "file": "c08_default_graph_ratio.rq",
+    "expected": "leak",
+    "expected_value": "7777",
+    "reason": "Rapporto tra somma e coorte espone una misura esterna non correlata.",
+    "recipe": "normal"
+  },
+  {
+    "id": "c09_duplicate_person_average",
+    "file": "c09_duplicate_person_average.rq",
+    "expected": "leak",
+    "expected_value": "1003.5",
+    "reason": "Otto grafi della stessa persona sono contati come otto contribuenti.",
+    "recipe": "duplicate_person"
+  },
+  {
+    "id": "c10_identifier_numeric_alias",
+    "file": "c10_identifier_numeric_alias.rq",
+    "expected": "blocked",
+    "expected_value": null,
+    "reason": "AVG di identificatori numerici attraverso alias aritmetico.",
+    "recipe": "normal"
+  },
+  {
+    "id": "c11_identifier_with_fake_numeric_origin",
+    "file": "c11_identifier_with_fake_numeric_origin.rq",
+    "expected": "blocked",
+    "expected_value": null,
+    "reason": "Lo stesso nome variabile riceve una provenienza numerica e una identificativa.",
+    "recipe": "normal"
+  },
+  {
+    "id": "c12_rare_having",
+    "file": "c12_rare_having.rq",
+    "expected": "blocked",
+    "expected_value": null,
+    "reason": "La condizione HAVING dipende da una misura di un solo paziente.",
+    "recipe": "normal"
+  },
+  {
+    "id": "c13_rare_order_by",
+    "file": "c13_rare_order_by.rq",
+    "expected": "blocked",
+    "expected_value": null,
+    "reason": "Aggregato individuale nascosto nell ordinamento.",
+    "recipe": "normal"
+  },
+  {
+    "id": "c14_nested_group_concat",
+    "file": "c14_nested_group_concat.rq",
+    "expected": "blocked",
+    "expected_value": null,
+    "reason": "Operatore vietato dentro uno scope annidato.",
+    "recipe": "normal"
+  },
+  {
+    "id": "c15_conditional_identifier_count",
+    "file": "c15_conditional_identifier_count.rq",
+    "expected": "blocked",
+    "expected_value": null,
+    "reason": "Condizione su identificatore nascosta dentro COUNT.",
+    "recipe": "normal"
+  },
+  {
+    "id": "c16_service_in_optional",
+    "file": "c16_service_in_optional.rq",
+    "expected": "blocked",
+    "expected_value": null,
+    "reason": "SERVICE in un ramo opzionale: mai eseguito durante il test.",
+    "recipe": "normal"
+  },
+  {
+    "id": "c17_nested_numeric_predicate_spoof",
+    "file": "c17_nested_numeric_predicate_spoof.rq",
+    "expected": "blocked",
+    "expected_value": null,
+    "reason": "Una sottoquery non deve trasformare un identificatore in una misura.",
+    "recipe": "normal"
+  },
+  {
+    "id": "c18_ratio_zero_denominator",
+    "file": "c18_ratio_zero_denominator.rq",
+    "expected": "blocked",
+    "expected_value": null,
+    "reason": "Divisione per zero dopo aggregazioni formalmente lecite.",
+    "recipe": "normal"
+  },
+  {
+    "id": "c19_rare_direct_average",
+    "file": "c19_rare_direct_average.rq",
+    "expected": "blocked",
+    "expected_value": null,
+    "reason": "Senza riempimento artificiale la misura rara deve essere soppressa.",
+    "recipe": "normal"
+  },
+  {
+    "id": "c20_non_finite_branch",
+    "file": "c20_non_finite_branch.rq",
+    "expected": "blocked",
+    "expected_value": null,
+    "reason": "Una misura non finita non deve arrivare all output.",
+    "recipe": "non_finite"
+  },
+  {
+    "id": "c21_safe_multi_join_average",
+    "file": "c21_safe_multi_join_average.rq",
+    "expected": "released",
+    "expected_value": "1003.5",
+    "reason": "Controllo positivo: join su caso e soggetto, media reale della coorte.",
+    "recipe": "normal"
+  },
+  {
+    "id": "c22_safe_optional_count",
+    "file": "c22_safe_optional_count.rq",
+    "expected": "released",
+    "expected_value": "1003.5",
+    "reason": "Controllo positivo: ramo opzionale vuoto e rapporto tra aggregati coerenti.",
+    "recipe": "normal"
+  },
+  {
+    "id": "c23_safe_minus",
+    "file": "c23_safe_minus.rq",
+    "expected": "released",
+    "expected_value": "8028",
+    "reason": "Controllo positivo: MINUS su criterio clinico, somma di otto misure.",
+    "recipe": "normal"
+  },
+  {
+    "id": "c24_combined_join_union_mask",
+    "file": "c24_combined_join_union_mask.rq",
+    "expected": "leak",
+    "expected_value": "1000",
+    "reason": "Composizione di costrutti ammessi: misura individuale sotto una somma con coorte gonfiata.",
+    "recipe": "normal"
+  },
+  {
+    "id": "c25_rare_indicator_sum",
+    "file": "c25_rare_indicator_sum.rq",
+    "expected": "leak",
+    "expected_value": "1",
+    "reason": "SUM di indicatori pubblica un gruppo positivo di una persona, pur dichiarando otto contribuenti.",
+    "recipe": "normal"
+  }
+]

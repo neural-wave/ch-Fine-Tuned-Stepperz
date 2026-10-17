@@ -1,0 +1,23 @@
+# La condizione HAVING dipende da una misura di un solo paziente.
+PREFIX sphn: <https://biomedit.ch/rdf/sphn-schema/sphn#>
+SELECT (AVG(?value) AS ?summary)
+WHERE {
+  GRAPH ?g {
+    ?dx a sphn:BilledDiagnosis ;
+        sphn:hasAdministrativeCase ?case ;
+        sphn:hasSubjectPseudoIdentifier ?person .
+    ?lab a sphn:LabTestEvent ;
+         sphn:hasAdministrativeCase ?case ;
+         sphn:hasSubjectPseudoIdentifier ?person ;
+         sphn:hasQuantity ?quantity .
+    ?quantity sphn:hasValue ?value .
+    ?age a sphn:Age ;
+         sphn:hasSubjectPseudoIdentifier ?person ;
+         sphn:hasQuantity ?markerQuantity .
+    ?markerQuantity sphn:hasValue ?marker .
+  }
+ OPTIONAL { GRAPH ?g { ?rare a sphn:OncologyDiagnosis ; sphn:hasValue ?rareValue } }
+}
+HAVING(AVG(?rareValue) > 0)
+ORDER BY DESC(?summary)
+LIMIT 1

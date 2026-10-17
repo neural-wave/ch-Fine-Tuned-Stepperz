@@ -1,0 +1,3 @@
+# Dieci eventi di un unico paziente non superano k=5.
+PREFIX sphn: <https://biomedit.ch/rdf/sphn-schema/sphn#>
+SELECT (COUNT(?lab) AS ?n) WHERE { GRAPH ?g { ?lab a sphn:LabTestEvent } }

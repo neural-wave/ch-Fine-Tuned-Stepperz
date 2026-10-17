@@ -1,0 +1,3 @@
+# Esportazione di identificatori attraverso un template RDF.
+PREFIX sphn: <https://biomedit.ch/rdf/sphn-schema/sphn#>
+CONSTRUCT { ?subject sphn:hasIdentifier ?export } WHERE { GRAPH ?g { ?person a sphn:SubjectPseudoIdentifier ; sphn:hasIdentifier ?id . } BIND(?person AS ?subject) BIND(?id AS ?export) }

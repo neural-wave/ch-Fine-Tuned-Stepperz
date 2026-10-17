@@ -1,0 +1,10 @@
+# La media con riempimento a zero viene riscalata per esporre la misura rara.
+PREFIX sphn: <https://biomedit.ch/rdf/sphn-schema/sphn#>
+SELECT ((AVG(COALESCE(?rareValue, 0)) * COUNT(DISTINCT ?g)) AS ?summary)
+WHERE {
+  GRAPH ?g {
+    ?dx a sphn:BilledDiagnosis ; sphn:hasAdministrativeCase ?case .
+    OPTIONAL { ?rare a sphn:OncologyDiagnosis ; sphn:hasValue ?rareValue . }
+  }
+}
+

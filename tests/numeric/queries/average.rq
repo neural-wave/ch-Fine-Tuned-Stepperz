@@ -1,0 +1,3 @@
+PREFIX sphn: <https://biomedit.ch/rdf/sphn-schema/sphn#>
+SELECT (AVG(?v) AS ?result)
+WHERE { GRAPH ?g { ?quantity sphn:hasValue ?v . } }

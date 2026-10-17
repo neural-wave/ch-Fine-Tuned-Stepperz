@@ -1,0 +1,3 @@
+# Scansione libera in un OPTIONAL.
+PREFIX sphn: <https://biomedit.ch/rdf/sphn-schema/sphn#>
+SELECT (COUNT(*) AS ?n) WHERE { GRAPH ?g { ?dx a sphn:BilledDiagnosis . } OPTIONAL { GRAPH ?h { ?s ?p ?o } } }

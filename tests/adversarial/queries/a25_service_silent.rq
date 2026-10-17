@@ -1,0 +1,3 @@
+# Endpoint fittizio: soltanto parsing, nessuna richiesta di rete.
+PREFIX sphn: <https://biomedit.ch/rdf/sphn-schema/sphn#>
+SELECT (COUNT(*) AS ?n) WHERE { SERVICE SILENT <https://example.invalid/sparql> { GRAPH ?g { ?dx a sphn:BilledDiagnosis . } } }

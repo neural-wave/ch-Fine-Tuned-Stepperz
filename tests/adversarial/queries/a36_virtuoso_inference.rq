@@ -1,0 +1,3 @@
+# OPTION inference non deve essere eliminato per rendere la query accettabile.
+PREFIX sphn: <https://biomedit.ch/rdf/sphn-schema/sphn#>
+SELECT (COUNT(*) AS ?n) WHERE { GRAPH ?g { ?dx a sphn:BilledDiagnosis OPTION (inference "https://biomedit.ch/rdf/sphn-resource/global") } }

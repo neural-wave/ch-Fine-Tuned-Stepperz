@@ -1,0 +1,3 @@
+# DISTINCT e nome summary non anonimizzano gli identificatori.
+PREFIX sphn: <https://biomedit.ch/rdf/sphn-schema/sphn#>
+SELECT (GROUP_CONCAT(DISTINCT ?renamed; separator=";") AS ?summary) WHERE { GRAPH ?g { ?person a sphn:SubjectPseudoIdentifier ; sphn:hasIdentifier ?id . } BIND(STR(?id) AS ?renamed) }

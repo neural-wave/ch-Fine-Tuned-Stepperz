@@ -1,0 +1,3 @@
+# Identificatore con URI completo e nome di colonna innocuo.
+PREFIX sphn: <https://biomedit.ch/rdf/sphn-schema/sphn#>
+SELECT ?answer WHERE { GRAPH ?g { ?person <https://biomedit.ch/rdf/sphn-schema/sphn#hasIdentifier> ?answer } }

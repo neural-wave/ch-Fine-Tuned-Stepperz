@@ -1,0 +1,14 @@
+# Un ramo UNION aggiunge pazienti con zeri; DISTINCT non protegge la misura rara.
+PREFIX sphn: <https://biomedit.ch/rdf/sphn-schema/sphn#>
+SELECT (SUM(DISTINCT ?value) AS ?summary)
+WHERE {
+  {
+    GRAPH ?g { ?rare a sphn:OncologyDiagnosis ; sphn:hasValue ?value . }
+  }
+  UNION
+  {
+    GRAPH ?g { ?dx a sphn:BilledDiagnosis . }
+    BIND(0 AS ?value)
+  }
+}
+

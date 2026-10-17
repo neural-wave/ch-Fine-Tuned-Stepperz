@@ -254,7 +254,10 @@ uv run python -m sparql_analyzer.demo
 uv run python -m tests.export_results
 ```
 
-Vedi [test](tests/README.md) e [documentazione](docs/sparql.md).
+Vedi [test](tests/README.md), [documentazione](docs/sparql.md) e
+[teoria della non compliance e SHACL](docs/non-compliance-e-shacl.md).
+
+Vedi anche la [classificazione degli attacchi all'anonimato](docs/attacchi-all%27anonimato.md).
 
 ### Ambiente Python con uv
 

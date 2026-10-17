@@ -1,0 +1,4 @@
+# Controllo positivo: la sola variazione sintattica non deve causare un blocco.
+PREFIX sphn: <https://biomedit.ch/rdf/sphn-schema/sphn#>
+# DELETE SERVICE patient_id sono solo commenti
+SELECT (COUNT(DISTINCT ?g) AS ?n) WHERE { GRAPH ?g { ?dx a sphn:BilledDiagnosis . } }

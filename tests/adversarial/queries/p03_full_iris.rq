@@ -1,0 +1,3 @@
+# Controllo positivo: la sola variazione sintattica non deve causare un blocco.
+PREFIX sphn: <https://biomedit.ch/rdf/sphn-schema/sphn#>
+SELECT (COUNT(DISTINCT ?g) AS ?n) WHERE { GRAPH ?g { ?s <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://biomedit.ch/rdf/sphn-schema/sphn#BilledDiagnosis> } }

@@ -1,0 +1,3 @@
+# Gruppi individuali dietro un nome categoriale.
+PREFIX sphn: <https://biomedit.ch/rdf/sphn-schema/sphn#>
+SELECT ?category (COUNT(?dx) AS ?n) WHERE { GRAPH ?g { ?dx a sphn:BilledDiagnosis . } BIND(STR(?g) AS ?category) } GROUP BY ?category

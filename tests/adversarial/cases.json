@@ -1,0 +1,408 @@
+[
+  {
+    "id": "a01_full_iri_identifier",
+    "family": "direct",
+    "file": "a01_full_iri_identifier.rq",
+    "kind": "query",
+    "stage": "static",
+    "expected": "blocked",
+    "reason": "Identificatore con URI completo e nome di colonna innocuo."
+  },
+  {
+    "id": "a02_alias_chain",
+    "family": "aliases",
+    "file": "a02_alias_chain.rq",
+    "kind": "query",
+    "stage": "static",
+    "expected": "blocked",
+    "reason": "Tre alias mantengono la provenienza identificativa."
+  },
+  {
+    "id": "a03_concat_distinct",
+    "family": "aggregation",
+    "file": "a03_concat_distinct.rq",
+    "kind": "query",
+    "stage": "static",
+    "expected": "blocked",
+    "reason": "DISTINCT e nome summary non anonimizzano gli identificatori."
+  },
+  {
+    "id": "a04_sample_identifier",
+    "family": "aggregation",
+    "file": "a04_sample_identifier.rq",
+    "kind": "query",
+    "stage": "static",
+    "expected": "blocked",
+    "reason": "Aggregazione che seleziona un valore individuale."
+  },
+  {
+    "id": "a05_max_identifier",
+    "family": "aggregation",
+    "file": "a05_max_identifier.rq",
+    "kind": "query",
+    "stage": "static",
+    "expected": "blocked",
+    "reason": "Aggregazione che seleziona un valore individuale."
+  },
+  {
+    "id": "a06_min_graph",
+    "family": "aggregation",
+    "file": "a06_min_graph.rq",
+    "kind": "query",
+    "stage": "static",
+    "expected": "blocked",
+    "reason": "Aggregazione che seleziona un valore individuale."
+  },
+  {
+    "id": "a07_hash_identifier",
+    "family": "encoding",
+    "file": "a07_hash_identifier.rq",
+    "kind": "query",
+    "stage": "static",
+    "expected": "blocked",
+    "reason": "Hash stabile di un identificatore rimane collegabile."
+  },
+  {
+    "id": "a08_encode_identifier",
+    "family": "encoding",
+    "file": "a08_encode_identifier.rq",
+    "kind": "query",
+    "stage": "static",
+    "expected": "blocked",
+    "reason": "Codifica reversibile del formato di un identificatore."
+  },
+  {
+    "id": "a09_fragment_prefix",
+    "family": "fragments",
+    "file": "a09_fragment_prefix.rq",
+    "kind": "query",
+    "stage": "static",
+    "expected": "blocked",
+    "reason": "Prima parte di un identificatore ricomponibile con altre richieste."
+  },
+  {
+    "id": "a10_fragment_suffix",
+    "family": "fragments",
+    "file": "a10_fragment_suffix.rq",
+    "kind": "query",
+    "stage": "static",
+    "expected": "blocked",
+    "reason": "Seconda parte da combinare con la prima."
+  },
+  {
+    "id": "a11_construct_alias",
+    "family": "graph_export",
+    "file": "a11_construct_alias.rq",
+    "kind": "query",
+    "stage": "static",
+    "expected": "blocked",
+    "reason": "Esportazione di identificatori attraverso un template RDF."
+  },
+  {
+    "id": "a12_describe",
+    "family": "graph_export",
+    "file": "a12_describe.rq",
+    "kind": "query",
+    "stage": "static",
+    "expected": "blocked",
+    "reason": "DESCRIBE non appartiene alle forme ammesse."
+  },
+  {
+    "id": "a13_page_one",
+    "family": "pagination",
+    "file": "a13_page_one.rq",
+    "kind": "query",
+    "stage": "static",
+    "expected": "blocked",
+    "reason": "La paginazione non rende anonime le righe individuali."
+  },
+  {
+    "id": "a14_page_two",
+    "family": "pagination",
+    "file": "a14_page_two.rq",
+    "kind": "query",
+    "stage": "static",
+    "expected": "blocked",
+    "reason": "La paginazione non rende anonime le righe individuali."
+  },
+  {
+    "id": "a15_constant_via_values",
+    "family": "singling_out",
+    "file": "a15_constant_via_values.rq",
+    "kind": "query",
+    "stage": "static",
+    "expected": "blocked",
+    "reason": "VALUES seleziona un paziente dentro una query aggregata."
+  },
+  {
+    "id": "a16_bind_graph_constant",
+    "family": "singling_out",
+    "file": "a16_bind_graph_constant.rq",
+    "kind": "query",
+    "stage": "static",
+    "expected": "blocked",
+    "reason": "Grafo individuale assegnato tramite BIND e namespace diverso."
+  },
+  {
+    "id": "a17_filter_encoded_graph",
+    "family": "singling_out",
+    "file": "a17_filter_encoded_graph.rq",
+    "kind": "query",
+    "stage": "static",
+    "expected": "blocked",
+    "reason": "Identificatore grafo ricostruito come espressione."
+  },
+  {
+    "id": "a18_group_alias",
+    "family": "individual_groups",
+    "file": "a18_group_alias.rq",
+    "kind": "query",
+    "stage": "static",
+    "expected": "blocked",
+    "reason": "Gruppi individuali dietro un nome categoriale."
+  },
+  {
+    "id": "a19_nested_projection",
+    "family": "subquery",
+    "file": "a19_nested_projection.rq",
+    "kind": "query",
+    "stage": "static",
+    "expected": "blocked",
+    "reason": "Identificatore propagato attraverso uno scope annidato."
+  },
+  {
+    "id": "a20_shadow_variables",
+    "family": "subquery",
+    "file": "a20_shadow_variables.rq",
+    "kind": "query",
+    "stage": "static",
+    "expected": "blocked",
+    "reason": "Proiezione del grafo nascosta in una sottoquery."
+  },
+  {
+    "id": "a21_union_free_branch",
+    "family": "unrestricted",
+    "file": "a21_union_free_branch.rq",
+    "kind": "query",
+    "stage": "static",
+    "expected": "blocked",
+    "reason": "Il ramo clinico non restringe il ramo libero."
+  },
+  {
+    "id": "a22_optional_free_branch",
+    "family": "unrestricted",
+    "file": "a22_optional_free_branch.rq",
+    "kind": "query",
+    "stage": "static",
+    "expected": "blocked",
+    "reason": "Scansione libera in un OPTIONAL."
+  },
+  {
+    "id": "a23_exists_identifier",
+    "family": "conditional",
+    "file": "a23_exists_identifier.rq",
+    "kind": "query",
+    "stage": "static",
+    "expected": "blocked",
+    "reason": "Condizione individuale dentro EXISTS."
+  },
+  {
+    "id": "a24_conditional_bit",
+    "family": "conditional",
+    "file": "a24_conditional_bit.rq",
+    "kind": "query",
+    "stage": "static",
+    "expected": "blocked",
+    "reason": "Aggregazione numerica usata come segnale di presenza."
+  },
+  {
+    "id": "a25_service_silent",
+    "family": "network",
+    "file": "a25_service_silent.rq",
+    "kind": "query",
+    "stage": "static",
+    "expected": "blocked",
+    "reason": "Endpoint fittizio: soltanto parsing, nessuna richiesta di rete."
+  },
+  {
+    "id": "a26_service_variable",
+    "family": "network",
+    "file": "a26_service_variable.rq",
+    "kind": "query",
+    "stage": "static",
+    "expected": "blocked",
+    "reason": "Destinazione SERVICE variabile; non viene eseguita."
+  },
+  {
+    "id": "a27_from_named",
+    "family": "dataset",
+    "file": "a27_from_named.rq",
+    "kind": "query",
+    "stage": "static",
+    "expected": "blocked",
+    "reason": "Dataset specificato nella query invece che dal servizio."
+  },
+  {
+    "id": "a28_base_relative_patient",
+    "family": "singling_out",
+    "file": "a28_base_relative_patient.rq",
+    "kind": "query",
+    "stage": "static",
+    "expected": "blocked",
+    "reason": "BASE risolve un riferimento relativo a un grafo paziente."
+  },
+  {
+    "id": "a29_escaped_identifier_iri",
+    "family": "encoding",
+    "file": "a29_escaped_identifier_iri.rq",
+    "kind": "query",
+    "stage": "static",
+    "expected": "blocked",
+    "reason": "Escape Unicode nell URI della proprieta identificativa."
+  },
+  {
+    "id": "a30_property_path_identifier",
+    "family": "paths",
+    "file": "a30_property_path_identifier.rq",
+    "kind": "query",
+    "stage": "static",
+    "expected": "blocked",
+    "reason": "Property path raggiunge un identificatore senza tripla hasIdentifier isolata."
+  },
+  {
+    "id": "a31_comment_update",
+    "family": "update",
+    "file": "a31_comment_update.rq",
+    "kind": "update",
+    "stage": "static",
+    "expected": "blocked",
+    "reason": "Commenti e prologo non devono mascherare un update."
+  },
+  {
+    "id": "a32_clear_graph",
+    "family": "update",
+    "file": "a32_clear_graph.rq",
+    "kind": "update",
+    "stage": "static",
+    "expected": "blocked",
+    "reason": "Operazione di modifica, anche con SILENT."
+  },
+  {
+    "id": "a33_conditional_count",
+    "family": "conditional",
+    "file": "a33_conditional_count.rq",
+    "kind": "query",
+    "stage": "static",
+    "expected": "blocked",
+    "reason": "COUNT con espressione condizionale non e un conteggio diretto approvato."
+  },
+  {
+    "id": "a34_forged_prefix",
+    "family": "parser",
+    "file": "a34_forged_prefix.rq",
+    "kind": "query",
+    "stage": "static",
+    "expected": "blocked",
+    "reason": "Nome count e prefisso safe non determinano la provenienza."
+  },
+  {
+    "id": "a35_virtuoso_define",
+    "family": "dialect",
+    "file": "a35_virtuoso_define.rq",
+    "kind": "dialect",
+    "stage": "static",
+    "expected": "blocked",
+    "reason": "Dialetto Virtuoso non supportato: blocco esplicito, non una validazione Virtuoso."
+  },
+  {
+    "id": "a36_virtuoso_inference",
+    "family": "dialect",
+    "file": "a36_virtuoso_inference.rq",
+    "kind": "dialect",
+    "stage": "static",
+    "expected": "blocked",
+    "reason": "OPTION inference non deve essere eliminato per rendere la query accettabile."
+  },
+  {
+    "id": "r01_rare_cohort",
+    "family": "small_cohort",
+    "file": "r01_rare_cohort.rq",
+    "kind": "query",
+    "stage": "runtime",
+    "expected": "blocked",
+    "reason": "Solo un paziente contribuisce."
+  },
+  {
+    "id": "r02_many_events_one_patient",
+    "family": "patient_inflation",
+    "file": "r02_many_events_one_patient.rq",
+    "kind": "query",
+    "stage": "runtime",
+    "expected": "blocked",
+    "reason": "Dieci eventi di un unico paziente non superano k=5."
+  },
+  {
+    "id": "r03_optional_rare_column",
+    "family": "per_value_cohort",
+    "file": "r03_optional_rare_column.rq",
+    "kind": "query",
+    "stage": "runtime",
+    "expected": "blocked",
+    "reason": "Una colonna opzionale ha una sola persona contribuente."
+  },
+  {
+    "id": "r04_numeric_condition",
+    "family": "conditional",
+    "file": "r04_numeric_condition.rq",
+    "kind": "query",
+    "stage": "static",
+    "expected": "blocked",
+    "reason": "La policy v3 blocca gia nell AST COUNT con espressioni su identificatori."
+  },
+  {
+    "id": "r05_arithmetic_count",
+    "family": "conditional",
+    "file": "r05_arithmetic_count.rq",
+    "kind": "query",
+    "stage": "runtime",
+    "expected": "released",
+    "reason": "La policy v3 permette aritmetica su conteggi verificati; risultato atteso 1008.",
+    "expected_value": "1008"
+  },
+  {
+    "id": "p01_changed_variable",
+    "family": "positive_control",
+    "file": "p01_changed_variable.rq",
+    "kind": "query",
+    "stage": "runtime",
+    "expected": "released",
+    "reason": "Controllo positivo: la sola variazione sintattica non deve causare un blocco."
+  },
+  {
+    "id": "p02_comment_keywords",
+    "family": "positive_control",
+    "file": "p02_comment_keywords.rq",
+    "kind": "query",
+    "stage": "runtime",
+    "expected": "released",
+    "reason": "Controllo positivo: la sola variazione sintattica non deve causare un blocco."
+  },
+  {
+    "id": "p03_full_iris",
+    "family": "positive_control",
+    "file": "p03_full_iris.rq",
+    "kind": "query",
+    "stage": "runtime",
+    "expected": "released",
+    "reason": "Controllo positivo: la sola variazione sintattica non deve causare un blocco."
+  },
+  {
+    "id": "p04_prefix_alias",
+    "family": "positive_control",
+    "file": "p04_prefix_alias.rq",
+    "kind": "query",
+    "stage": "runtime",
+    "expected": "released",
+    "reason": "Controllo positivo: la sola variazione sintattica non deve causare un blocco."
+  }
+]

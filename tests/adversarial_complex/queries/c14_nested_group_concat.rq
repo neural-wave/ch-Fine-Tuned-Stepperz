@@ -1,0 +1,20 @@
+# Operatore vietato dentro uno scope annidato.
+PREFIX sphn: <https://biomedit.ch/rdf/sphn-schema/sphn#>
+SELECT (COUNT(*) AS ?summary)
+WHERE {
+  { SELECT (GROUP_CONCAT(DISTINCT STR(?person); separator="|") AS ?hidden) WHERE { GRAPH ?g {
+    ?dx a sphn:BilledDiagnosis ;
+        sphn:hasAdministrativeCase ?case ;
+        sphn:hasSubjectPseudoIdentifier ?person .
+    ?lab a sphn:LabTestEvent ;
+         sphn:hasAdministrativeCase ?case ;
+         sphn:hasSubjectPseudoIdentifier ?person ;
+         sphn:hasQuantity ?quantity .
+    ?quantity sphn:hasValue ?value .
+    ?age a sphn:Age ;
+         sphn:hasSubjectPseudoIdentifier ?person ;
+         sphn:hasQuantity ?markerQuantity .
+    ?markerQuantity sphn:hasValue ?marker .
+  } } }
+}
+

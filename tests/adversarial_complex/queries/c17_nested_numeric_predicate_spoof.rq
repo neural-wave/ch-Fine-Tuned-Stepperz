@@ -1,0 +1,7 @@
+# Una sottoquery non deve trasformare un identificatore in una misura.
+PREFIX sphn: <https://biomedit.ch/rdf/sphn-schema/sphn#>
+SELECT (AVG(?value) AS ?summary)
+WHERE {
+  { SELECT ?g ?value WHERE { GRAPH ?g { ?p sphn:hasIdentifier ?value } } }
+}
+

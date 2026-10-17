@@ -1,0 +1,3 @@
+# Identificatore propagato attraverso uno scope annidato.
+PREFIX sphn: <https://biomedit.ch/rdf/sphn-schema/sphn#>
+SELECT ?export WHERE { { SELECT (?id AS ?renamed) WHERE { GRAPH ?g { ?person a sphn:SubjectPseudoIdentifier ; sphn:hasIdentifier ?id . } } } BIND(?renamed AS ?export) }

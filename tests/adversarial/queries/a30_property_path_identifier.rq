@@ -1,0 +1,3 @@
+# Property path raggiunge un identificatore senza tripla hasIdentifier isolata.
+PREFIX sphn: <https://biomedit.ch/rdf/sphn-schema/sphn#>
+SELECT ?id WHERE { GRAPH ?g { ?dx sphn:hasSubjectPseudoIdentifier/sphn:hasIdentifier ?id } }

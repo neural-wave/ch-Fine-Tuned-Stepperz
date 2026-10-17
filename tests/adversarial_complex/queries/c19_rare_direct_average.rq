@@ -1,0 +1,10 @@
+# Senza riempimento artificiale la misura rara deve essere soppressa.
+PREFIX sphn: <https://biomedit.ch/rdf/sphn-schema/sphn#>
+SELECT (AVG(?rareValue) AS ?summary)
+WHERE {
+  GRAPH ?g {
+    ?dx a sphn:BilledDiagnosis ; sphn:hasAdministrativeCase ?case .
+    OPTIONAL { ?rare a sphn:OncologyDiagnosis ; sphn:hasValue ?rareValue . }
+  }
+}
+

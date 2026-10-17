@@ -1,0 +1,3 @@
+# Dataset specificato nella query invece che dal servizio.
+PREFIX sphn: <https://biomedit.ch/rdf/sphn-schema/sphn#>
+SELECT (COUNT(*) AS ?n) FROM NAMED <urn:synthetic:unauthorized> WHERE { GRAPH ?g { ?dx a sphn:BilledDiagnosis . } }

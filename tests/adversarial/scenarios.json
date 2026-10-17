@@ -1,0 +1,119 @@
+[
+  {
+    "id": "differencing",
+    "family": "difference/adaptive",
+    "queries": [
+      "s01_baseline.rq",
+      "s02_exclude_value_zero.rq"
+    ],
+    "status": "known_gap",
+    "test": "test_differencing_sequence_is_suppressed",
+    "reason": "8 e 7 pazienti: entrambe le risposte superano k=5 ma la differenza isola una persona."
+  },
+  {
+    "id": "temporal",
+    "family": "temporal",
+    "queries": [
+      "s01_baseline.rq"
+    ],
+    "status": "known_gap",
+    "test": "test_temporal_difference_is_suppressed",
+    "reason": "La stessa query restituisce 8 e poi 7 dopo una modifica nota."
+  },
+  {
+    "id": "duplicate_patient_graphs",
+    "family": "patient_inflation",
+    "queries": [
+      "s01_baseline.rq"
+    ],
+    "status": "known_gap",
+    "test": "test_duplicate_graphs_do_not_count_as_distinct_patients",
+    "reason": "Cinque grafi della stessa persona superano la soglia basata soltanto sui grafi."
+  },
+  {
+    "id": "unauthorized_prefixed_graph",
+    "family": "authorization",
+    "queries": [
+      "s01_baseline.rq"
+    ],
+    "status": "known_gap",
+    "test": "test_prefix_is_not_user_authorization",
+    "reason": "Un grafo con prefisso pazienti corretto non prova l autorizzazione dell utente."
+  },
+  {
+    "id": "uncorrelated_condition",
+    "family": "conditional/provenance",
+    "queries": [
+      "s03_uncorrelated_default_graph.rq"
+    ],
+    "status": "known_gap",
+    "test": "test_uncorrelated_sensitive_condition_is_suppressed",
+    "reason": "Una condizione nel grafo di default riguarda una risorsa non correlata alla coorte."
+  },
+  {
+    "id": "backend_error",
+    "family": "errors",
+    "queries": [
+      "s01_baseline.rq"
+    ],
+    "status": "known_gap",
+    "test": "test_backend_error_does_not_escape_with_private_values",
+    "reason": "L errore del backend deve diventare un blocco senza valori grezzi."
+  },
+  {
+    "id": "homogeneity",
+    "family": "homogeneity",
+    "queries": [
+      "s01_baseline.rq",
+      "s04_population.rq"
+    ],
+    "status": "risk_demonstration",
+    "test": "test_homogeneity_is_not_hidden_by_threshold",
+    "reason": "Una popolazione di 8 persone con la stessa diagnosi produce due conteggi uguali."
+  },
+  {
+    "id": "intersection",
+    "family": "intersection",
+    "queries": [
+      "s01_baseline.rq",
+      "s02_exclude_value_zero.rq",
+      "s05_lower_overlap.rq"
+    ],
+    "status": "risk_demonstration",
+    "test": "test_overlapping_cohorts_are_individually_released",
+    "reason": "Tre popolazioni sovrapposte restituiscono 8,7,7 senza composizione dello storico."
+  },
+  {
+    "id": "complement",
+    "family": "suppression_complement",
+    "queries": [
+      "s01_baseline.rq",
+      "s02_exclude_value_zero.rq"
+    ],
+    "status": "risk_demonstration",
+    "test": "test_suppressed_complement_is_recoverable",
+    "reason": "Il gruppo di una persona viene soppresso, ma si ricava da 8 meno 7."
+  },
+  {
+    "id": "reconstruction",
+    "family": "reconstruction/linkage/adaptive",
+    "queries": [
+      "s01_baseline.rq",
+      "s07_reconstruction_exclude_00.rq",
+      "s07_reconstruction_exclude_01.rq",
+      "s07_reconstruction_exclude_02.rq",
+      "s07_reconstruction_exclude_03.rq",
+      "s07_reconstruction_exclude_04.rq",
+      "s07_reconstruction_exclude_05.rq",
+      "s07_reconstruction_exclude_06.rq",
+      "s07_reconstruction_exclude_07.rq",
+      "s07_reconstruction_exclude_08.rq",
+      "s07_reconstruction_exclude_09.rq",
+      "s07_reconstruction_exclude_10.rq",
+      "s07_reconstruction_exclude_11.rq"
+    ],
+    "status": "risk_demonstration",
+    "test": "test_multiple_exact_counts_reconstruct_synthetic_membership",
+    "reason": "Conteggio iniziale e 12 esclusioni ricostruiscono gli 8 appartenenti alla coorte su 12 persone note, con ogni risposta sopra k."
+  }
+]

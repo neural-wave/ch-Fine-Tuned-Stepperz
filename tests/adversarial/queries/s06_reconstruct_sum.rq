@@ -1,0 +1,2 @@
+PREFIX sphn: <https://biomedit.ch/rdf/sphn-schema/sphn#>
+SELECT (SUM(?v) AS ?signal) WHERE { GRAPH ?g { ?dx a sphn:BilledDiagnosis ; sphn:hasValue ?v } }

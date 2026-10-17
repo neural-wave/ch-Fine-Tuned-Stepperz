@@ -1,0 +1,3 @@
+# Seconda parte da combinare con la prima.
+PREFIX sphn: <https://biomedit.ch/rdf/sphn-schema/sphn#>
+SELECT (SUBSTR(STR(?id),5) AS ?fragment) WHERE { GRAPH ?g { ?person a sphn:SubjectPseudoIdentifier ; sphn:hasIdentifier ?id . } }
