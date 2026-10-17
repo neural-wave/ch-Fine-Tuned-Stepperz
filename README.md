@@ -12,6 +12,7 @@ I comandi seguenti partono dalla radice del repository.
 
 | Cosa vuoi fare | Ingresso | Risultato |
 |---|---|---|
+| Esporre traduzione e verdetto via HTTP | `bash start-api.sh` | [API HTTP](docs/guides/http-api.md): query, token totali e conformita, senza esecuzione |
 | Prompt → risultato su RDF locale | `sparql-run --prompt ... --dataset ...` | Risultato JSON oppure blocco/errore |
 | Prompt → sola query | `sparql-run --prompt ...` | Query analizzata, non eseguita |
 | Controllare una query esistente | `sparql-check file.rq` | Verdetto statico |

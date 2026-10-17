@@ -45,6 +45,7 @@ tool o del modello viene inventato se la libreria non lo emette al livello scelt
 
 | Obiettivo | Ingresso | Modelli | Dati / risultato |
 |---|---|---|---|
+| API per il client | `bash start-api.sh` | Laya e LLM reali | [Query, token e verdetto HTTP](http-api.md), nessuna esecuzione |
 | Prompt → query → risultato | `sparql-run --prompt ... --dataset ...` | Laya e LLM reali | RDF locale; risultato controllato o blocco |
 | Prompt → sola query | `sparql-run --prompt ...` | Laya e LLM reali | Schemi MCP o testo; query analizzata, non eseguita |
 | Verificare una query esistente | `sparql-check file.rq` | Nessuno | Analisi statica; nessuna esecuzione |

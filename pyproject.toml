@@ -11,6 +11,7 @@ dependencies = [
     "rdflib==7.1.4",
     "pyparsing==3.2.1",
     "pyshacl==0.25.0",
+    "fastapi>=0.143.3",
 ]
 
 [project.scripts]
@@ -18,6 +19,7 @@ sparql-check = "sparql_analyzer.cli:main"
 sparql-run = "agent_orchestration.cli:main"
 
 [project.optional-dependencies]
+api = ["uvicorn>=0.30,<1"]
 agents = [
     "pydantic-ai-slim[openai]>=1.0,<2",
 ]
