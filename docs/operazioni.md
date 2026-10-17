@@ -1,4 +1,7 @@
-# Operazioni della policy numeric-aggregates-v5-nested
+# Operazioni della policy configurable-v6
+
+La tabella descrive la configurazione predefinita. Ogni restrizione e analisi ha
+un interruttore: vedi [configurazione](policy.md) e [catalogo](policy-checks.md).
 
 Non esiste una classificazione universale in cui ogni uso di un operatore e
 sicuro. Questa tabella descrive il sottoinsieme implementato, con controlli

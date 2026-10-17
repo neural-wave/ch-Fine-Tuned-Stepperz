@@ -1,0 +1,25 @@
+"""Rigenera gli esempi JSON e il catalogo dal registro dei controlli."""
+
+import json
+from pathlib import Path
+
+from .policy import CHECKS, DEFAULT_POLICY, Policy
+
+
+def main():
+    root = Path(__file__).resolve().parents[1]
+    directory = root / "policies"
+    directory.mkdir(exist_ok=True)
+    for name, policy in (("default", DEFAULT_POLICY), ("hardened", Policy.hardened()), ("unrestricted", Policy(enabled_checks=frozenset()))):
+        (directory / (name + ".json")).write_text(json.dumps(policy.to_dict(), indent=2) + "\n", encoding="utf-8")
+    catalog = ["# Catalogo dei controlli\n",
+               "Generato dal registro `sparql_analyzer/policy.py`. Le nuove policy privacy sono opt-in nel profilo predefinito e attive nel profilo hardened.\n",
+               "| Interruttore | Effetto | Richiede | Default |", "|---|---|---|---|"]
+    for name, check in CHECKS.items():
+        dependencies = ", ".join(f"`{r}`" for r in check.requires)
+        catalog.append(f"| `{name}` | {check.description} | {dependencies} | {str(check.default_enabled).lower()} |")
+    (root / "docs" / "policy-checks.md").write_text("\n".join(catalog) + "\n", encoding="utf-8")
+
+
+if __name__ == "__main__":
+    main()

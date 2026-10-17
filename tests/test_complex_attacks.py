@@ -1,7 +1,7 @@
 """Sonde mirate a ottenere dati non anonimi con operatori ammessi.
 
-Le osservazioni dei bypass sono dimostrazioni di rischio; i requisiti di blocco
-sono test separati xfail strict. Nessun database remoto viene interrogato.
+Le osservazioni dei bypass usano il profilo storico predefinito; i test di
+blocco usano il profilo hardened. Nessun database remoto viene interrogato.
 """
 
 from decimal import Decimal
@@ -11,6 +11,8 @@ from rdflib.plugins.sparql.parser import parseQuery
 
 from sparql_analyzer.runtime import ResultBlocked, execute_checked
 from tests.complex_attacks import CASES, observe, prepare
+from sparql_analyzer.policy import Policy
+from tests.privacy_fixture import trusted_context
 
 
 PARAMETERS = [pytest.param(case, id=case["id"],
@@ -34,16 +36,10 @@ def test_complex_attack_observation(case):
 
 
 @pytest.mark.security_gap
-@pytest.mark.parametrize("case", [
-    pytest.param(case, id=case["id"], marks=pytest.mark.xfail(
-        strict=True, raises=pytest.fail.Exception,
-        reason="BYPASS-COMPLEX: " + case["reason"],
-    ))
-    for case in CASES if case["expected"] == "leak"
-])
+@pytest.mark.parametrize("case", [pytest.param(case, id=case["id"]) for case in CASES if case["expected"] == "leak"])
 def test_complex_privacy_leak_must_be_blocked(case):
     dataset, query = prepare(case)
-    # Un crash inatteso non soddisfa il requisito e non diventa xfail.
-    # Un blocco introdotto in futuro genera XPASS strict: aggiornare il corpus.
+    # Un crash inatteso non deve essere scambiato per una protezione.
+    policy = Policy.hardened().with_checks(privacy_normalize_errors=False)
     with pytest.raises(ResultBlocked):
-        execute_checked(dataset, query)
+        execute_checked(dataset, query, policy=policy, context=trusted_context(dataset))

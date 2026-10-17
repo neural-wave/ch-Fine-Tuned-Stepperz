@@ -5,6 +5,8 @@ from rdflib.plugins.sparql.algebra import translateQuery
 from rdflib.plugins.sparql.parser import parseQuery
 from rdflib.plugins.sparql.parserutils import CompValue
 from rdflib.term import Identifier, Variable
+from rdflib.paths import Path
+from .policy import DEFAULT_POLICY
 
 
 def isolate_subquery_scopes(algebra):
@@ -69,6 +71,8 @@ def to_tree(value):
     """Converte i nodi RDFLib in un albero JSON, senza perdere i tipi RDF."""
     if isinstance(value, Identifier):
         return {"type": type(value).__name__, "value": value.n3()}
+    if isinstance(value, Path):
+        return {"type": "Path", "value": value.n3()}
     if isinstance(value, CompValue):
         return {"node": value.name, **{k: to_tree(v) for k, v in value.items()}}
     if isinstance(value, dict):
@@ -82,12 +86,14 @@ def to_tree(value):
     raise TypeError(f"Tipo di nodo non supportato: {type(value).__name__}")
 
 
-def analyze(query):
+def analyze(query, *, policy=DEFAULT_POLICY):
     parsed = parseQuery(query)
     # La traduzione modifica il parse tree: salvarlo prima di tradurlo.
-    syntax_tree = to_tree(parsed)
+    syntax_tree = to_tree(parsed) if policy.enabled("syntax_analysis") else {}
     prepared = translateQuery(parsed)
-    isolate_subquery_scopes(prepared.algebra)
-    return syntax_tree, to_tree(prepared.algebra), prepared
+    if policy.enabled("scope_analysis"):
+        isolate_subquery_scopes(prepared.algebra)
+    tree = to_tree(prepared.algebra) if policy.enabled("algebra_analysis") else {}
+    return syntax_tree, tree, prepared
 
 

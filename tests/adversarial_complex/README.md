@@ -25,6 +25,11 @@ collegamenti in modo che tutti i grafi facciano riferimento alla stessa persona.
 
 ## Esito riprodotto
 
+Gli esiti BYPASS riportati sotto si riferiscono al profilo storico predefinito.
+Gli stessi 11 casi sono ora bloccati nei test del profilo hardened, con
+contesto fidato e nuove [policy privacy](../../docs/privacy-policies.md).
+Le 3 query positive continuano a funzionare anche con quel profilo.
+
 - 25 query separate, ciascuna sintatticamente valida.
 - 11 varianti espongono un valore o sottogruppo individuale nel modello di minaccia.
 - 11 vengono bloccate, di cui 6 staticamente e 5 al runtime.

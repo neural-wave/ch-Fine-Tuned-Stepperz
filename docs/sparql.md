@@ -1,6 +1,8 @@
 # Analizzatore SPARQL e controllo dei risultati
 
-La policy corrente e `numeric-aggregates-v5-nested`. Parser e algebra sono in
+La policy corrente e `configurable-v6`. Analisi, restrizioni statiche e controlli
+runtime sono configurabili per richiesta: vedi [configurazione e toggle](policy.md).
+I paragrafi seguenti descrivono la configurazione predefinita. Parser e algebra sono in
 sparql_analyzer/parser.py, i controlli statici in compliance.py e il runtime
 locale in runtime.py. Il sistema non usa LLM per decidere la compliance.
 
@@ -153,16 +155,18 @@ di gruppo e ammesso; SAMPLE scritto dall'utente resta vietato.
 
 Il percorso senza aggregati annidati mantiene il requisito della variabile grafo
 esportata. Il verdetto statico non sostituisce il controllo runtime e non
-certifica l'anonimato. I bypass statistici descritti sotto restano aperti.
+certifica l'anonimato. I bypass storici sono ora coperti dalle
+[policy privacy opt-in](privacy-policies.md), attive nel profilo hardened.
 I test dedicati sono in `tests/test_subqueries.py` e `tests/test_nested_aggregates.py`.
 
 Il runtime lavora su un Dataset RDFLib locale stabile; il percorso annidato
 segue separatamente i grafi di origine delle diverse colonne.
 Non e collegato a Virtuoso e non e adatto a caricare 50 GB in Python. In produzione
 verifiche e risposta devono essere eseguite nel database sullo stesso snapshot.
-Mancano ACL per utente e protezioni delle sequenze di query; le sei lacune della
-suite avversaria restano aperte. Le soglie non risolvono inferenze, omogeneita,
-differenze e ricostruzioni. Nessuna di queste verifiche certifica l'anonimato.
+Il profilo hardened richiede un contesto fidato per ACL, identita canoniche e
+storico delle query, con guardia sullo snapshot. Il profilo predefinito mantiene
+il comportamento storico. Le sole soglie non risolvono inferenze e omogeneita;
+nessuna di queste verifiche certifica l'anonimato.
 
 ## Test e fixture
 
@@ -174,12 +178,13 @@ separati sono in tests/numeric/queries/. Queste fixture non sono validate SHACL.
 Il generatore originale produce 12 pazienti fittizi: 8 con diagnosi fatturate,
 1 con diagnosi oncologica e 10 esami dello stesso paziente. Non usa dati reali.
 I risultati rigenerabili sono in tests/results/; export_results include il corpus
-avversario. I test risk_demonstration dimostrano rischi osservati; gli xfail strict
-registrano requisiti non soddisfatti e non sono protezioni riuscite.
+avversario. I test risk_demonstration dimostrano rischi nel profilo predefinito;
+i 17 test prima xfail verificano ora il blocco nel profilo hardened.
 
 ## Esito delle nuove sonde complesse
 
-Il controllo attuale e aggirabile in alcune composizioni di operatori ammessi:
+Il profilo predefinito e aggirabile in alcune composizioni di operatori ammessi:
 mascheramento con IF, riempimento con COALESCE/UNION e provenienza non correlata
 possono produrre valori individuali pur contando almeno k grafi. Non interpretare
-la coorte formale come prova di anonimato. Vedi [bypass riprodotti e test](../tests/adversarial_complex/README.md).
+la coorte formale come prova di anonimato. Il profilo hardened controlla questi
+scenari: vedi [policy privacy](privacy-policies.md) e [bypass storici e test](../tests/adversarial_complex/README.md).

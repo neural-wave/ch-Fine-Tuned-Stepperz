@@ -241,6 +241,14 @@ ATTENTION:  SNOMED-CT terminology must not use or distribute the SNOMED files ou
 
 ## Analizzatore SPARQL in Python
 
+Analisi e restrizioni sono configurabili tramite `Policy` o file JSON, senza
+modificare il codice. Vedi [guida ai toggle](docs/policy.md),
+[catalogo dei controlli](docs/policy-checks.md) e [configurazione predefinita](policies/default.json).
+
+Il [profilo hardened](policies/hardened.json) aggiunge controlli sui bypass noti:
+contributi effettivi, persone distinte, ACL, storico e snapshot. Richiede il
+[contesto fidato documentato qui](docs/privacy-policies.md).
+
 Il codice Python aggiunto e organizzato in:
 
 - `sparql_analyzer/`: parser, validatore deterministico e demo locale.
