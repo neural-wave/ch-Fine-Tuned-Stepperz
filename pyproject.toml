@@ -10,12 +10,7 @@ requires-python = ">=3.12"
 dependencies = [
     "rdflib==7.1.4",
     "pyparsing==3.2.1",
-    "pyshacl==0.25.0",
-<<<<<<< HEAD
-    "pydantic-ai>=1.107.7",
-=======
-    "fastapi>=0.143.3",
->>>>>>> e4b7825da36a5dde70b9100c47a1ca20f69da626
+    "pyshacl==0.25.0"
 ]
 
 [project.scripts]
