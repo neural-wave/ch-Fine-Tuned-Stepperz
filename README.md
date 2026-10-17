@@ -12,6 +12,8 @@ I comandi seguenti partono dalla radice del repository.
 
 | Cosa vuoi fare | Ingresso | Risultato |
 |---|---|---|
+| Valutare prompt maligni e misurare API/Virtuoso | `python -m system_validation run` | [Log delle metriche end to end](system_validation/README.md), senza soglie pass/fail |
+| Esporre traduzione e verdetto via HTTP | `bash start-api.sh` | [README API](src/api/README.md): query, token totali e conformita, senza esecuzione |
 | Prompt → risultato su RDF locale | `sparql-run --prompt ... --dataset ...` | Risultato JSON oppure blocco/errore |
 | Prompt → sola query | `sparql-run --prompt ...` | Query analizzata, non eseguita |
 | Controllare una query esistente | `sparql-check file.rq` | Verdetto statico |
@@ -21,6 +23,9 @@ I comandi seguenti partono dalla radice del repository.
 
 **[Guida dei comandi](docs/guides/commands.md)**: istruzioni complete, dipendenze,
 input/output, stati restituiti e differenze tra questi percorsi.
+
+Il workflow restituisce anche token per modello e fase in `analytics.token_usage`;
+contratti, contatori e struttura dei backend nella [guida ai token](docs/guides/model-usage.md).
 
 ## Avvio dell'applicazione
 
@@ -74,6 +79,7 @@ e [test](tests/README.md).
 | Percorso | Responsabilita |
 |---|---|
 | `src/sparql_analyzer/` | Libreria deterministica e comando `sparql-check` |
+| [system_validation/](system_validation/README.md) | Package separato per corpus etichettato, preparazione Virtuoso e log delle metriche HTTP end to end |
 | [src/agent_orchestration/](src/agent_orchestration/README.md) | Workflow, modelli e comando `sparql-run` |
 | [config/](config/README.md) / [schemas/](schemas/README.md) | Configurazioni, schemi e metadati MCP |
 | [tools/](tools/README.md) | Benchmark, generazione fixture ed export |

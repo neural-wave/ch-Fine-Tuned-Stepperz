@@ -27,7 +27,7 @@ status=0
 extras=(--extra agents --extra mcp)
 if "$WITH_MODELS"; then extras+=(--extra local); fi
 echo "Main suite and MCP integration (simulated inference)..."
-uv run --locked --python 3.12 "${extras[@]}" python -m pytest tests \
+uv run --locked --python 3.12 "${extras[@]}" --extra validation python -m pytest tests system_validation/tests \
   -m "not model_health" -q --junitxml=artifacts/tests/main.xml || status=1
 
 echo "LLM_ENGINE offline suite..."

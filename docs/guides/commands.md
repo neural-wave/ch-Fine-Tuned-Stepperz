@@ -4,10 +4,49 @@ Tutti i comandi di questa pagina partono dalla radice del repository, con
 Python 3.12+ e `uv` disponibili. `uv run` prepara l'ambiente con gli extra
 indicati. I comandi Bash di avvio richiedono Linux o un ambiente equivalente.
 
+## Log automatici nel codice
+
+`sparql-run` e pytest del progetto principale scrivono automaticamente un file
+per processo in `artifacts/logs/`, anche quando i test partono da VS Code.
+Il percorso viene mostrato all'avvio. Non servono wrapper o redirezioni.
+Il nome contiene comando, data UTC e PID; i file precedenti vengono conservati.
+
+Il log contiene caricamento dei modelli, discovery MCP, richieste/risposte del
+generatore, decisioni del classificatore, fasi del workflow, query, analisi,
+risultati rilasciati, tempi e traceback degli errori. Ogni esecuzione del
+workflow ha un `run` distinto, anche nello stesso processo. Pytest registra
+gli esiti dei singoli test e il codice finale della sessione. Il JSON della CLI
+resta su stdout; i report XML restano separati.
+
+Le query compaiono in blocchi SPARQL con vere interruzioni di riga e separatori,
+senza il `repr` Python che mostrava `\n` e apici esterni. Risultati e analytics
+sono JSON indentato. La query restituita dalla funzione conserva il testo
+originale del generatore. Il riepilogo dell'analisi e visibile a `INFO`; il report
+completo con la configurazione dei controlli e disponibile a `DEBUG`.
+
+Nel workflow il riepilogo `INFO` e responsabilita dell'orchestratore: prompt,
+decisione, query e usage non vengono ripetuti dagli adapter. Usando un adapter
+direttamente (anche negli health check), questo continua a stampare la propria
+risposta. `DEBUG` include anche il dettaglio dei backend. Piu richieste HTTP
+distinte possono essere normali turni di retrieval/generazione, non log duplicati.
+
+Si usa il modulo standard `logging`, con un handler comune anche per i messaggi
+delle librerie Python. `SPARQL_LOG_DIR` cambia cartella; `SPARQL_LOG_LEVEL`
+cambia livello (`INFO` predefinito, `DEBUG` per maggior dettaglio). Non si
+registra il JSON completo di configurazione o le chiavi API. I file contengono
+invece prompt, query, risultati rilasciati e dettagli delle eccezioni.
+
+Le stampe dirette di programmi esterni non passano da `logging`: vLLM e MCP
+restano nei rispettivi log di servizio in `/workspace/logs/`. I test propri di
+`LLM_ENGINE` usano la configurazione di quel sottoprogetto. Nessun trace dei
+tool o del modello viene inventato se la libreria non lo emette al livello scelto.
+
 ## Quale percorso usare
 
 | Obiettivo | Ingresso | Modelli | Dati / risultato |
 |---|---|---|---|
+| Valutazione end to end su prompt etichettati | `python -m system_validation prepare` poi `run` | API reale gia avviata | [Log di metriche e tempi Virtuoso](../../system_validation/README.md), senza soglie |
+| API per il client | `bash start-api.sh` | Laya e LLM reali | [Query, token e verdetto HTTP](http-api.md), nessuna esecuzione |
 | Prompt → query → risultato | `sparql-run --prompt ... --dataset ...` | Laya e LLM reali | RDF locale; risultato controllato o blocco |
 | Prompt → sola query | `sparql-run --prompt ...` | Laya e LLM reali | Schemi MCP o testo; query analizzata, non eseguita |
 | Verificare una query esistente | `sparql-check file.rq` | Nessuno | Analisi statica; nessuna esecuzione |
@@ -55,6 +94,16 @@ uv run --extra local sparql-run --prompt "Conta i pazienti distinti con diagnosi
 La CLI stampa JSON; termina con 0 per `released` o `query_ready`, 1 per gli
 altri esiti del workflow. `--help` elenca le opzioni. L'avvio puo fallire prima
 del workflow se configurazione, file o servizi non sono disponibili.
+
+`blocked_query` comprende anche funzionalita non supportate: controllare
+`analysis.status` e `analysis.findings`. `unsupported` non significa che la
+query abbia intenzioni malevole. I raggruppamenti esterni per categoria non
+sono ancora eseguibili dal runtime predefinito; il solo toggle `category_group`
+non estende il motore. Un caso concreto e nella [revisione della query per sesso](../security/query-by-sex-review.md).
+
+Il JSON include `analytics.token_usage` e `analytics.timings`: token per modello
+e fase, totale, conteggi parziali e tempi. Un totale `null` indica usage mancante
+o incompleto, non consumo nullo. Vedere la [guida ai token](model-usage.md).
 
 Questa CLI usa il profilo deterministico predefinito. I contesti fidati richiesti
 dai profili privacy/SHACL piu restrittivi si collegano tramite l'API Python.

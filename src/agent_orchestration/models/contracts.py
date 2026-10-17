@@ -3,11 +3,32 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import Generic, Mapping, TypeVar
 
+from .usage import ModelResponse, TokenUsage
+
 InputT = TypeVar("InputT")
 OutputT = TypeVar("OutputT")
 
 
 class Model(ABC, Generic[InputT, OutputT]):
+    token_counter = None
+
+    def __init__(self, *, token_counter=None):
+        self.token_counter = token_counter
+
+    def count_tokens(self, request: InputT, output: OutputT) -> TokenUsage:
+        """Optional tokenizer fallback; never guess tokens from character counts."""
+        if self.token_counter is None:
+            return TokenUsage()
+        usage = self.token_counter(request, output)
+        if not isinstance(usage, TokenUsage):
+            raise TypeError("token_counter must return TokenUsage")
+        return usage
+
+    async def run_with_usage(self, request: InputT) -> ModelResponse[OutputT]:
+        """Return per-call accounting without shared mutable last_usage state."""
+        output = await self.run(request)
+        return ModelResponse(output, self.count_tokens(request, output))
+
     @abstractmethod
     async def run(self, request: InputT) -> OutputT:
         """Evaluate input without executing generated queries or actions."""

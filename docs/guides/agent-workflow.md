@@ -36,6 +36,12 @@ del parser o del motore produce `error`, mai un successo di sicurezza.
 Gli esiti del workflow distinguono `blocked_prompt`, `review_prompt`,
 `blocked_query`, `blocked_runtime`, `query_ready`, `released`, `error`.
 
+Ogni esito contiene `analytics.token_usage` con input, output, totale e dettaglio
+per fase; `analytics.timings` affianca il campo `timings` precedente. I contatori
+sono specifici della richiesta, includono i turni/retry rendicontati dal backend
+e distinguono dati disponibili, stime e valori mancanti. Contratto, struttura dei
+modelli e backend personalizzati nella [guida ai token](model-usage.md).
+
 `PromptRequest` e un alias di `SparqlRequest`: validatore e generatore ricevono
 lo stesso contesto, senza conversioni intermedie. `run(request)` esegue anche
 la query e richiede un executor. `run(request, execute=False)` segue gli stessi

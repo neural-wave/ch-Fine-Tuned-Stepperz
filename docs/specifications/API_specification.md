@@ -2,6 +2,12 @@
 
 Translates a natural language question into a SPARQL query over SPHN data stored in Virtuoso.
 
+> Original supplied contract retained below. The implementation generates standard
+> SPARQL and does not connect to a database. It also applies the stricter SELECT-only
+> aggregate security constraints supplied in Query_Compliance.md. Database extensions
+> are reported as unsupported. See the [HTTP API guide](../guides/http-api.md) for
+> startup, accounting and actual behavior.
+
 - `200` means the translation finished. A non-compliant query is still a successful response; `compliance_reason` explains why it is not compliant.
 - `is_compliant` is true if the query is valid for Virtuoso (Virtuoso extensions such as `DEFINE` and `OPTION(inference)` are allowed) and is read-only (`SELECT`, `ASK`, `CONSTRUCT` or `DESCRIBE`).
 

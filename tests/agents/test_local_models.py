@@ -48,7 +48,7 @@ def test_chat_http_mcp_and_checked_workflow(tmp_path, monkeypatch):
     calls, loads = [], []
     def laya_load(*args, **kwargs):
         loads.append(args)
-        return SimpleNamespace(predict=lambda *a, **k: {"usage": {}, "answers": {
+        return SimpleNamespace(predict=lambda *a, **k: {"usage": {"input_tokens": 50, "output_tokens": 0}, "answers": {
             "decision": {"choice": "allow", "answer_confidence": 0.9, "confidence": 0.1}}})
     monkeypatch.setitem(sys.modules, "laya", SimpleNamespace(load=laya_load))
     config = tmp_path / "models.json"
@@ -87,6 +87,8 @@ def test_chat_http_mcp_and_checked_workflow(tmp_path, monkeypatch):
                     result = await workflow.run(PromptRequest("count patients", "schema", "policy"))
                     assert result.status == "released", result
                     assert result.prompt_validation.probability == 0.9
+                    assert result.analytics["token_usage"]["total_tokens"] == 110
+                    assert result.analytics["token_usage"]["by_stage"]["generation"]["requests"] == 2
                     assert result.result["results"]["bindings"][0]["patients"]["value"] == "8"
     asyncio.run(exercise())
     assert len(loads) == 1 and len(calls) == 4

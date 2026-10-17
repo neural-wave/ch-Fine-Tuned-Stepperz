@@ -6,7 +6,7 @@
 set -Eeuo pipefail
 
 APP_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
-MODEL="Qwen/Qwen3-30B-A3B-GPTQ-Int4"
+MODEL="daniel-dona/sparql-model-era-lora-128-qwen3-8b"
 LLM_URL="http://127.0.0.1:18000/v1"
 MCP_URL="http://127.0.0.1:18888/mcp"
 VLLM_SESSION="sphn-qwen"
@@ -15,6 +15,11 @@ LOG_DIR="/workspace/logs"
 MODEL_DIR="/workspace/models"
 ENV_FILE="$APP_DIR/.env.remote"
 VOID_FILE="$APP_DIR/metadata/sphn-schema-void.ttl"
+# New starts use CUDA graphs and shared-prefix caching. Eager mode is an
+# explicit fallback for GPU/version incompatibilities; existing services stay up.
+VLLM_ENFORCE_EAGER="${VLLM_ENFORCE_EAGER:-0}"
+VLLM_PREFIX_CACHING="${VLLM_PREFIX_CACHING:-1}"
+[[ "$VLLM_ENFORCE_EAGER" =~ ^[01]$ && "$VLLM_PREFIX_CACHING" =~ ^[01]$ ]] || { echo "vLLM switches must be 0 or 1" >&2; exit 1; }
 
 cd "$APP_DIR"
 
@@ -42,7 +47,7 @@ mkdir -p "$LOG_DIR" "$MODEL_DIR" "$APP_DIR/results"
 if [[ ! -f "$ENV_FILE" ]]; then
   cat > "$ENV_FILE" <<'ENV'
 LLM_BASE_URL=http://127.0.0.1:18000/v1
-LLM_MODEL=Qwen/Qwen3-30B-A3B-GPTQ-Int4
+LLM_MODEL=daniel-dona/sparql-model-era-lora-128-qwen3-8b
 LLM_API_KEY=EMPTY
 MCP_URL=http://127.0.0.1:18888/mcp
 RETRIEVAL_BACKEND=sphn-void
@@ -55,7 +60,7 @@ fi
 # Validate critical settings, so an old Windows tunnel address cannot be used accidentally.
 for required in \
   'LLM_BASE_URL=http://127.0.0.1:18000/v1' \
-  'LLM_MODEL=Qwen/Qwen3-30B-A3B-GPTQ-Int4' \
+  'LLM_MODEL=daniel-dona/sparql-model-era-lora-128-qwen3-8b' \
   'MCP_URL=http://127.0.0.1:18888/mcp' \
   'ENABLE_SPARQL_EXECUTION=false'; do
   grep -Fxq "$required" "$ENV_FILE" || fail ".env.remote must contain: $required"
@@ -92,6 +97,7 @@ model_ready() {
 
 if model_ready; then
   info "Qwen already serving on $LLM_URL — not starting a second copy."
+  info "Launch options are unchanged for this running service. To apply tuning, deliberately stop its owner/session and run again."
 else
   if model_response >/dev/null; then
     fail "Port 18000 serves a different model. Stop it deliberately before starting $MODEL."
@@ -108,18 +114,25 @@ else
       --max-model-len 8192
       --max-num-seqs 1
       --gpu-memory-utilization 0.90
-      --enforce-eager
       --enable-auto-tool-choice
       --tool-call-parser hermes
       --default-chat-template-kwargs '{"enable_thinking": false}')
+    if [[ "$VLLM_ENFORCE_EAGER" == 1 ]]; then vllm_args+=(--enforce-eager); fi
+    if [[ "$VLLM_PREFIX_CACHING" == 1 ]]; then
+      vllm_args+=(--enable-prefix-caching)
+    else
+      vllm_args+=(--no-enable-prefix-caching)
+    fi
     printf -v command_str '%q ' "${vllm_args[@]}"
+    printf '%s\n' "$command_str" > "$LOG_DIR/qwen30b-command.txt"
+    info "vLLM eager=$VLLM_ENFORCE_EAGER prefix_caching=$VLLM_PREFIX_CACHING (launch command saved in $LOG_DIR/qwen30b-command.txt)"
     tmux new-session -d -s "$VLLM_SESSION" -c "$APP_DIR" \
       "exec $command_str >> '$LOG_DIR/qwen30b.log' 2>&1"
   fi
 
-  info "Waiting for model readiness (up to 15 minutes)..."
+  info "Waiting for model readiness (up to 30 minutes)..."
   ready=0
-  for ((i=0; i<180; i++)); do
+  for ((i=0; i<360; i++)); do
     if model_ready; then ready=1; break; fi
     if model_response >/dev/null; then
       fail "A different model responded on port 18000."

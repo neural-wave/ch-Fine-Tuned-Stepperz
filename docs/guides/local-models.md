@@ -44,6 +44,8 @@ Modificare [models.json](../../config/agents/models.json):
 | `model`, `base_url` | LLM e indirizzo chat; Ollama nel preset |
 | `laya.model_id`, `subfolder`, `device` | Checkpoint e dispositivo del classificatore nativo |
 | `mcp_url` | MCP SPHN di LLM_ENGINE, `http://127.0.0.1:18888/mcp` nel preset |
+| `generation_mode` | `prefetch` nel preset; `agentic` lascia gli strumenti al modello |
+| `retrieval_classes` | Suggerimenti opzionali per le classi del prefetch, massimo sei |
 
 Il collegamento HTTP non importa l'SDK MCP 2 del sottoprogetto nel processo
 principale, che usa il proprio SDK MCP 1. I due ambienti restano indipendenti.
@@ -51,14 +53,17 @@ Le variabili LLM del prototipo non vengono ereditate: modello e indirizzo
 rimangono quelli del JSON del progetto principale.
 
 Il server SPHN espone `search_sparql_examples` e `search_sparql_classes`.
-Il generatore vede solo strumenti di recupero schema/esempi; quelli di
-esecuzione sono esclusi. L'esecuzione resta nell'executor verificato.
+In `prefetch` il codice recupera il contesto e il generatore riceve solo i dati;
+in `agentic` il generatore vede gli strumenti di recupero schema/esempi.
+L'esecuzione resta nell'executor verificato. Configurazione vLLM e confronto
+dei tempi sono nella [guida alle prestazioni](inference-performance.md).
 Il server pubblico SIB e il compose `LLM_ENGINE/compose.local.yml` sono
 configurati per UniProt e non sono il server SPHN avviato qui.
 
 Per un MCP gia attivo cambiare soltanto `mcp_url`. Per il vecchio avvio stdio,
 rimuovere `mcp_url` e impostare `mcp_settings: "sparql-mcp.json"`: avvia
 `uvx sparql-llm` con i tool `search_sparql_docs` e `get_classes_schema`.
+In questo caso impostare anche `generation_mode: "agentic"`.
 URL e settings non possono essere attivi insieme. Per disattivare MCP,
 omettere entrambi o impostarli a null e fornire `--schema-file`.
 

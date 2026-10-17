@@ -3,12 +3,17 @@ import argparse
 import asyncio
 from dataclasses import asdict
 import json
+import logging
 from pathlib import Path
+import sys
 
 from rdflib import Dataset
 
 from . import CheckedQueryExecutor, PromptRequest, SparqlWorkflow, StaticQueryAnalyzer
 from .local_models import CONFIG, check_mcp, open_models
+from .logging_setup import configure_logging
+
+logger = logging.getLogger(__name__)
 
 
 async def generate(args):
@@ -48,12 +53,28 @@ def main():
     parser.add_argument("--dataset", type=Path, help="Local RDF dataset to execute against (e.g. TriG with patient named graphs)")
     parser.add_argument("--rdf-format", help="RDFLib format; otherwise inferred from the dataset extension")
     args = parser.parse_args()
+    log_path = configure_logging("sparql-run")
+    print(f"Log file: {log_path}", file=sys.stderr)
+    logger.info("CLI started config=%s check_mcp=%s dataset=%s",
+                args.config, args.check_mcp, args.dataset)
     if args.check_mcp:
-        print(json.dumps(asyncio.run(check_mcp(args.config)), ensure_ascii=False, indent=2))
+        try:
+            report = asyncio.run(check_mcp(args.config))
+        except Exception:
+            logger.exception("MCP diagnostic failed")
+            raise
+        logger.info("MCP diagnostic result=%r", report)
+        print(json.dumps(report, ensure_ascii=False, indent=2))
         return 0
     if not args.prompt:
         parser.error("Specify --prompt or --check-mcp")
-    result = asyncio.run(generate(args))
+    try:
+        result = asyncio.run(generate(args))
+    except Exception:
+        logger.exception("CLI failed before workflow completion")
+        raise
+    logger.info("CLI finished status=%s stage=%s executed=%s",
+                result["status"], result["stage"], result["executed"])
     print(json.dumps(result, ensure_ascii=False, indent=2))
     return 0 if result["status"] in {"query_ready", "released"} else 1
 

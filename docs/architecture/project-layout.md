@@ -13,6 +13,8 @@ fuori dal codice applicativo.
 | `src/sparql_analyzer/governance/` | Contesto fidato, ACL, identita, storico e validazione SHACL |
 | `src/sparql_analyzer/shared/` | Vocabolario, algebra, espressioni e contratto numerico condivisi |
 | `src/agent_orchestration/` | CLI applicativa, modelli, validazione prompt, workflow e valutatori |
+| `src/agent_orchestration/models/` | Contratti, accounting dei token e modelli fittizi |
+| `src/agent_orchestration/adapters/` | Backend PydanticAI, classificatori nativi, Laya e MCP |
 | `config/agents/` | Modelli, MCP, policy testuale e permessi di esempio |
 | `config/policies/` | Profili JSON dei controlli deterministici |
 | `schemas/sphn/` | Schemi sorgenti SPHN e terminologie |
@@ -58,9 +60,13 @@ propria posizione. `PATIENTS_DIR`, `ONTOLOGIES_DIR` e `ONTOLOGY_CACHE_DIR`
 configurano i percorsi usati nei bind mount; i dati locali restano in
 `patients/`, `ontologies/` e `.ontology_cache/`.
 
-`start-ollama.sh` prepara il server LLM su Linux; il client e il collegamento
-Laya/MCP sono in `agent_orchestration/local_models.py`. La configurazione e in
-`config/agents/models.json`. I modelli fittizi sono in `fakes.py`.
+`start-and-test.sh` riusa lo stack vLLM/Qwen e MCP di `LLM_ENGINE` sulla VM;
+`start-ollama.sh` resta il percorso alternativo Ollama. I backend sono separati
+in `agent_orchestration/adapters/`; `local_models.py` li compone e mantiene gli
+import esistenti. La configurazione e in `config/agents/models.json` e, per i test
+remoti, nel preset derivato in `artifacts/tests/models.remote.json`.
+I contratti, le metriche e i modelli fittizi sono in `models/`; `fakes.py` resta
+un modulo di import compatibile. Dettagli nella [guida ai token](../guides/model-usage.md).
 
 `src/agent_orchestration/cli.py` e la CLI applicativa, avviata con
 `sparql-run`. Usa lo stesso `SparqlWorkflow` del programma,

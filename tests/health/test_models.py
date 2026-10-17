@@ -1,5 +1,7 @@
 """Explicit real-inference smoke tests; never execute the generated query."""
 import asyncio
+from dataclasses import asdict
+import json
 from pathlib import Path
 from time import perf_counter
 
@@ -30,10 +32,12 @@ def test_classifier_health(model_config, record_property):
     """Load the real configured classifier and check its decision contract."""
     async def exercise():
         guard = await load_classifier(model_config)
-        return await guard.run(REQUEST)
+        return await guard.run_with_usage(REQUEST)
 
     started = perf_counter()
-    verdict = asyncio.run(exercise())
+    response = asyncio.run(exercise())
+    verdict = response.output
+    record_property("token_usage", json.dumps(asdict(response.usage)))
     record_property("elapsed_seconds", round(perf_counter() - started, 3))
     record_property("decision", verdict.decision)
     assert verdict.decision in {"allow", "block", "review"}
@@ -45,10 +49,12 @@ def test_generator_health(model_config, record_property):
     """Use the production generator/MCP wiring and require parseable SELECT output."""
     async def exercise():
         async with open_generator(model_config) as generator:
-            return await generator.run(REQUEST)
+            return await generator.run_with_usage(REQUEST)
 
     started = perf_counter()
-    result = asyncio.run(exercise())
+    response = asyncio.run(exercise())
+    result = response.output
+    record_property("token_usage", json.dumps(asdict(response.usage)))
     record_property("elapsed_seconds", round(perf_counter() - started, 3))
     assert result.query.strip()
     parsed = parseQuery(result.query)
