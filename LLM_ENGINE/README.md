@@ -321,3 +321,22 @@ uv run python scripts/benchmark_sphn.py --examples data/sphn/queries-example.md 
 The adapter has **no execution tool**. `http://example.invalid/sphn/sparql` is only a generated-query label, not a database. Ontology imports/terminology graphs are not downloaded. The `shex` compatibility field contains a readable OWL restriction summary, not formal ShEx. RDFLib cannot validate Virtuoso's `OPTION (inference ...)` extension; syntax failures there must be distinguished from invalid Virtuoso syntax. The clinical privacy checker remains unimplemented, including for examples 11–15.
 
 The server and SSH tunnel were left running at the last successful observation. Stop `qwen30b-prototype` when inference is no longer needed; stopping the GPU instance itself is a separate Vast billing action.
+
+## 10. Local SPHN VoID retrieval backend
+
+The SPHN-only backend reads `metadata/sphn-schema-void.ttl` offline. It uses SIB's `get_schema_for_endpoint()` when its optional dependencies are installed, with an RDFLib parser for the same VoID relationships otherwise. The MCP adapter indexes SPHN class/predicate descriptions and schema-derived aggregate query patterns in memory. It never reads the 15 benchmark reference queries; privacy counterexamples 11–15 are not indexed. The patterns are starting points, not validated clinical or privacy-compliant queries. No Virtuoso or other data endpoint is contacted.
+
+Start the retrieval-only adapter in one terminal:
+
+```powershell
+.\.venv\Scripts\python.exe scripts\serve_sphn_void.py
+```
+
+Then select it explicitly in another terminal. The flag forces the loopback MCP URL, the placeholder SPHN target label, and disabled execution; it leaves the LLM settings unchanged.
+
+```powershell
+.\.venv\Scripts\python.exe -m sparql_agent.cli doctor --retrieval-backend sphn-void --mcp-only
+.\.venv\Scripts\python.exe -m sparql_agent.cli ask "Once someone is diagnosed with cancer, what usually happens next: surgery, radiotherapy, both, or nothing? And how long do they typically wait for their first treatment?" --retrieval-backend sphn-void --mode deterministic --classes OncologyDiagnosis OncologySurgery RadiotherapyProcedure
+```
+
+`--mode autonomous` remains available with the same backend. Omit `--retrieval-backend` to retain the public SIB configuration, or set `RETRIEVAL_BACKEND=sphn-void` in the environment. The benchmark script also accepts `--retrieval-backend sphn-void|legacy-lexical` (VoID is its default) and `--void-file`; its legacy mode retains the prior per-example holdout behavior. Run the two tool checks before generation. The new backend uses a local lexical index over SIB-compatible VoID relationships, not SIB's Qdrant vector index, and the schema-derived patterns do not encode the full cancer-treatment analysis.

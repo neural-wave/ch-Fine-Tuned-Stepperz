@@ -22,6 +22,7 @@ class Config:
     llm_reasoning_effort: str = "none"
     llm_extra_body: dict = field(default_factory=dict)
     mcp_url: str = "https://chat.expasy.org/mcp/"
+    retrieval_backend: str = "public"
     mcp_timeout_seconds: float = 90.0
     max_agent_iterations: int = 5
     enable_sparql_execution: bool = False
@@ -52,6 +53,8 @@ class Config:
             raise ValueError("LLM_MODEL cannot be empty")
         if not isinstance(self.llm_extra_body, dict):
             raise ValueError("LLM_EXTRA_BODY must be a JSON object")
+        if self.retrieval_backend not in {"public", "sphn-void"}:
+            raise ValueError("RETRIEVAL_BACKEND must be public or sphn-void")
         reserved = {"model", "messages", "tools", "tool_choice", "temperature", "max_tokens", "stream"}
         if reserved & self.llm_extra_body.keys():
             raise ValueError("LLM_EXTRA_BODY cannot override core request fields")

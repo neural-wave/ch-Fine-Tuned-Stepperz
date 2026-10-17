@@ -14,10 +14,11 @@ from jsonschema import validate
 from .agent import error_text, parse_output, run_question
 from .config import Config
 from .llm_client import LLMClient
-from .mcp_client import MCPClient
+from .mcp_client import MCPClient, select_retrieval_backend
 from .storage import append_jsonl, save_result
 
 SMOKE_QUESTION = "Write a SPARQL query to retrieve human proteins encoded by the LCT gene from UniProt."
+SPHN_SMOKE_QUESTION = "Count oncology diagnoses and cancer treatments by surgery or radiotherapy."
 
 
 async def diagnose(config: Config, *, mcp_only: bool = False) -> dict:
@@ -56,8 +57,8 @@ async def diagnose(config: Config, *, mcp_only: bool = False) -> dict:
                 "seconds": perf_counter() - start,
             }
             for name, arguments in (
-                ("search_sparql_examples", {"question": SMOKE_QUESTION, "steps": []}),
-                ("search_sparql_classes", {"classes": ["UniProt Protein", "UniProt Gene"]}),
+                ("search_sparql_examples", {"question": SPHN_SMOKE_QUESTION if config.retrieval_backend == "sphn-void" else SMOKE_QUESTION, "steps": []}),
+                ("search_sparql_classes", {"classes": ["OncologyDiagnosis", "OncologySurgery", "RadiotherapyProcedure"] if config.retrieval_backend == "sphn-void" else ["UniProt Protein", "UniProt Gene"]}),
             ):
                 start_tool = perf_counter()
                 try:
@@ -122,15 +123,22 @@ def parser() -> argparse.ArgumentParser:
     root.add_argument("--env-file", default=".env")
     root.add_argument("--model", help="Override LLM_MODEL")
     root.add_argument("--fallback", action="store_true", help="Explicitly select LLM_FALLBACK_MODEL")
+    root.add_argument("--retrieval-backend", choices=["public", "sphn-void"],
+                      dest="global_retrieval_backend",
+                      help="Select public SIB or the local SPHN VoID MCP server")
     sub = root.add_subparsers(dest="command", required=True)
     ask = sub.add_parser("ask")
     ask.add_argument("question")
     ask.add_argument("--mode", choices=["autonomous", "deterministic"], default="autonomous")
+    ask.add_argument("--retrieval-backend", choices=["public", "sphn-void"],
+                     help="Select retrieval backend for this question")
     ask.add_argument("--classes", nargs="+", help="Optional schema terms for deterministic retrieval")
     ask.add_argument("--json", action="store_true", help="Print complete result JSON")
     doctor = sub.add_parser("doctor", help="Test connectivity, discovery and both real retrieval tools")
+    doctor.add_argument("--retrieval-backend", choices=["public", "sphn-void"])
     doctor.add_argument("--mcp-only", action="store_true")
-    sub.add_parser("tools", help="Discover tool schemas from the selected server")
+    tools = sub.add_parser("tools", help="Discover tool schemas from the selected server")
+    tools.add_argument("--retrieval-backend", choices=["public", "sphn-void"])
     execute = sub.add_parser(
         "execute", help="Separately execute a saved query; requires opt-in environment flag"
     )
@@ -200,6 +208,10 @@ def main() -> None:
             raise ValueError("Use either --model or --fallback")
         if args.model or args.fallback:
             config = replace(config, llm_model=args.model or config.llm_fallback_model)
+        backend = getattr(args, "retrieval_backend", None) or args.global_retrieval_backend
+        config = select_retrieval_backend(config, backend)
+        if config.retrieval_backend == "sphn-void" and args.command == "execute":
+            raise ValueError("SPHN VoID retrieval does not support query execution")
         code = asyncio.run(dispatch(args, config))
     except (Exception, KeyboardInterrupt) as exc:
         print(error_text(exc), file=sys.stderr)
