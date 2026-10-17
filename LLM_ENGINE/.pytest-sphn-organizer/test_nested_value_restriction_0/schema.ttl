@@ -1,0 +1,8 @@
+
+@prefix sphn: <https://biomedit.ch/rdf/sphn-schema/sphn#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+<https://biomedit.ch/rdf/sphn-schema/sphn> owl:versionIRI <https://biomedit.ch/rdf/sphn-schema/sphn/2026/1> .
+sphn:Example a owl:Class ; rdfs:label "Example" ;
+ rdfs:subClassOf [a owl:Restriction; owl:onProperty sphn:hasPattern;
+ owl:someValuesFrom [a owl:Restriction; owl:onProperty sphn:hasTypeCode]] .
