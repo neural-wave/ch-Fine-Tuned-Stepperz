@@ -1,0 +1,23 @@
+flowchart TB
+    caller["Servizio chiamante<br/>query SPARQL e Dataset"] --> api["execution/service.py<br/>execute_checked"]
+    policy["configuration/policy.py<br/>Policy e dipendenze dei toggle"] -.-> api
+    trusted["governance/privacy.py<br/>ExecutionContext fidato"] -.-> api
+    api --> privacy["governance/privacy.py<br/>ACL, snapshot e storico"]
+    shaclContext["ShaclContext<br/>shape e ontologia fidate"] -.-> adequacy["governance/adequacy.py<br/>SHACL, target e severita"]
+    api --> adequacy
+    adequacy <--> data
+    api --> validation["static/validation.py<br/>validazione statica"]
+    subgraph staticLayer["Comprendere e validare la query"]
+        validation --> parser["parsing/parser.py<br/>AST, algebra e scope"]
+        validation --> analysis["parsing/analysis.py<br/>sensibilita e classificazioni"]
+        validation --> rules["static/rules.py<br/>regole e Report"]
+    end
+    subgraph executionLayer["Calcolare e controllare il risultato"]
+        api --> flat["execution/flat.py<br/>aggregazioni globali semplici"]
+        api --> nested["execution/nested.py<br/>aggregazioni e provenienza"]
+        nested --> lineage["execution/provenance.py<br/>origini e dipendenze"]
+        flat --> results["shared/results.py<br/>contratto JSON e numeri"]
+        nested --> results
+        flat <--> data["Dataset RDFLib locale"]
+        nested <--> data
+    end

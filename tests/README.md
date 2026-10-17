@@ -1,5 +1,10 @@
 # Test dell'analizzatore SPARQL
 
+Le suite sono suddivise in `analysis/`, `runtime/`, `configuration/`, `privacy/`
+e `adequacy/`. Query e dati versionati sono in `fixtures/`, i costruttori comuni
+in `support/`. `tests/paths.py` centralizza i percorsi. Gli export rigenerabili
+vengono scritti in `artifacts/tests/` dalla radice del repository.
+
 ## Profili usati nei test
 
 L'ultima esecuzione completa, con la policy SHACL, ha prodotto **503 test passati, nessun xfail**.
@@ -24,18 +29,18 @@ attacco o di accettazione di ogni query innocua. Alcune regole sono conservative
 Per eseguire le regressioni dei 17 scenari:
 
 ```powershell
-uv run pytest tests/test_complex_attacks.py tests/test_adversarial_sequences.py -m security_gap -v
+uv run pytest tests/privacy/test_complex_attacks.py tests/privacy/test_adversarial_sequences.py -m security_gap -v
 ```
 
-Per i controlli positivi e i toggle privacy: `uv run pytest tests/test_privacy_policies.py -v`.
-I dettagli del contesto necessario e dei limiti sono nella [guida privacy](../docs/privacy-policies.md).
+Per i controlli positivi e i toggle privacy: `uv run pytest tests/privacy/test_privacy_policies.py -v`.
+I dettagli del contesto necessario e dei limiti sono nella [guida privacy](../docs/policies/privacy.md).
 Le fixture privacy restano intenzionalmente minimali e non conformi alle shape
-SPHN complete. La nuova suite usa [shape dedicate](shacl/shapes.ttl) e carica
+SPHN complete. La nuova suite usa [shape dedicate](fixtures/shacl/shapes.ttl) e carica
 anche il file SPHN completo per verificare un'istanza Algorithm valida e una
 invalida tramite target SPARQL. Il meta-schema del file completo e verificato
 nel caso valido, non nuovamente nella variante invalida con shape identiche.
-Per eseguirla: `uv run pytest tests/test_adequacy.py -v`.
-Vedi [policy di adeguatezza e limiti](../docs/adequacy-shacl.md).
+Per eseguirla: `uv run pytest tests/adequacy/test_adequacy.py -v`.
+Vedi [policy di adeguatezza e limiti](../docs/policies/adequacy-shacl.md).
 
 Dalla radice del progetto:
 
@@ -45,11 +50,11 @@ uv run pytest -v
 ```
 
 - `test_compliance.py`: 19 regressioni e 32 casi parametrizzati (51 test statici).
-- `cases/`: query .rq separate, indice e cases.json con esiti attesi e motivi.
-- `export_results.py`: genera alberi e verdetti, senza eseguire le query.
-- `results/`: un risultato per caso e report.json riepilogativo, rigenerabili.
+- `fixtures/cases/`: query .rq separate, indice e cases.json con esiti attesi e motivi.
+- `tools/export_test_results.py`: genera alberi, verdetti e osservazioni runtime dei sottocorpus.
+- `artifacts/tests/`: un risultato per caso e report.json riepilogativo, rigenerabili.
 
-Per rigenerare i risultati: `uv run python -m tests.export_results`.
+Per rigenerare i risultati: `uv run python -m tools.export_test_results`.
 Per un singolo caso: `uv run pytest -v -k identifier_alias`.
 In VS Code usare il pannello Testing, che cerca nella cartella tests/.
 
@@ -57,13 +62,13 @@ Regole: R1 singolo paziente; R2 risultati non aggregati; R3 scansione libera;
 R4 query diversa da SELECT; R5 identificatori in uscita. Una query puo violare
 piu regole. I casi non supportati sono bloccati senza essere approvati.
 
-[Indice delle query](cases/README.md) e [policy e limiti](../docs/sparql.md).
+[Indice delle query](fixtures/cases/README.md) e [policy e limiti](../docs/guides/sparql.md).
 
 ## Pazienti sintetici e runtime
 
 ```powershell
-uv run python -m tests.generate_synthetic_data --patients 12 --seed 42
-uv run python -m tests.demo_runtime
+uv run python -m tools.generate_synthetic_data --patients 12 --seed 42
+uv run python -m examples.runtime_demo
 ```
 
 - test_runtime.py: 29 test di coorte, risultato, soppressione e tipi inattesi.
@@ -77,17 +82,17 @@ La suite originaria comprende 80 test. Il runtime locale non e collegato a Virtu
 I 17 requisiti storici prima xfail (6 scenari generali e 11 varianti complesse)
 sono ora test di blocco del profilo hardened. La configurazione predefinita
 mantiene le dimostrazioni dei rischi per verificare l'effetto dei toggle.
-Vedi `test_privacy_policies.py` e la [guida alle nuove policy](../docs/privacy-policies.md).
+Vedi `test_privacy_policies.py` e la [guida alle nuove policy](../docs/policies/privacy.md).
 I conteggi e gli xfail indicati nelle sezioni storiche sotto documentano le suite precedenti.
 
-Vedi [corpus, matrice e lacune](adversarial/README.md): 45 casi singoli con query
+Vedi [corpus, matrice e lacune](fixtures/adversarial/README.md): 45 casi singoli con query
 separate, 12 test di risposte alterate e 10 scenari con 6 lacune riprodotte come
 xfail strict e 4 dimostrazioni di rischio. Con i divieti espliciti e le statistiche numeriche, la suite precedente comprende 241 test:
 235 passano e 6 sono fallimenti attesi, non protezioni riuscite.
 
 ```powershell
 uv run pytest -v
-uv run python -m tests.export_results
+uv run python -m tools.export_test_results
 uv run pytest -m security_gap --runxfail -v
 ```
 
@@ -106,7 +111,7 @@ r05 e diventato un controllo positivo dell'aritmetica su conteggi.
 
 ## Query complesse che aggirano il controllo
 
-Vedi [sonde complesse e bypass riprodotti](adversarial_complex/README.md).
+Vedi [sonde complesse e bypass riprodotti](fixtures/adversarial_complex/README.md).
 La nuova suite aggiunge 25 query separate e 36 test: 25 osservazioni, di cui 11
 riproducono esposizioni, e 11 requisiti di blocco ancora falliti (xfail strict).
 Sono varianti di alcune famiglie di lacune, non 11 vulnerabilita indipendenti.
@@ -116,6 +121,6 @@ risk_demonstration non sono prove di protezione. Il controllore non e stato
 modificato per questa aggiunta: si sta misurando il suo comportamento attuale.
 
 ```powershell
-uv run pytest tests/test_complex_attacks.py -v
-uv run python -m tests.complex_attacks
+uv run pytest tests/privacy/test_complex_attacks.py -v
+uv run python -m tests.support.complex_attacks
 ```
