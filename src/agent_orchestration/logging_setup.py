@@ -1,5 +1,6 @@
 """One native Python log file per process, shared by workflow and test events."""
 from datetime import datetime, timezone
+from contextvars import ContextVar
 from dataclasses import asdict, is_dataclass
 import json
 import logging
@@ -11,6 +12,12 @@ from textwrap import indent
 
 _handler = None
 _lock = Lock()
+active_workflow = ContextVar("active_workflow", default=None)
+
+
+def backend_log_level():
+    """Workflow owns INFO summaries; standalone adapters still log their output."""
+    return logging.DEBUG if active_workflow.get() is not None else logging.INFO
 
 
 def log_block(logger, title, content, *, level=logging.INFO):

@@ -89,6 +89,13 @@ def _term(iri: str) -> str:
     return f"<{iri}>"
 
 
+def _value_type(iri: str) -> str:
+    """VoID range classes describe the object's rdf:type, not a fixed object IRI."""
+    if iri.startswith("http://www.w3.org/2001/XMLSchema#") or iri == "http://www.w3.org/1999/02/22-rdf-syntax-ns#langString":
+        return _term(iri)
+    return "{ a [ " + _term(iri) + " ] }"
+
+
 class SphnVoidRetrieval:
     def __init__(self, void_file: Path, ontology_file: Path | None = None):
         self.void_file = void_file
@@ -103,11 +110,17 @@ class SphnVoidRetrieval:
             label = labels.get(iri, iri[len(SPHN):])
             lines = [f"shape:{iri[len(SPHN):]} {{", f"  a [ {_term(iri)} ] ;"]
             for predicate, values in sorted(predicates.items()):
-                value_text = "[ " + " ".join(_term(value) for value in values) + " ]" if values else "IRI"
+                alternatives = [_value_type(value) for value in values]
+                value_text = ("(" + " OR ".join(alternatives) + ")" if len(alternatives) > 1
+                              else alternatives[0] if alternatives else "IRI")
                 lines.append(f"  {_term(predicate)} {value_text} ;")
             lines[-1] = lines[-1].rstrip(" ;")
             lines.append("}")
             self.classes.append({"label": label, "iri": iri, "shex": "\n".join(lines),
+                                 "declared_value_types": predicates,
+                                 "schema_notes": "VoID lists range classes/datatypes, not fixed data values or terminology codes. "
+                                                 "A coding-system class IRI is not a diagnosis code. "
+                                                 "Retrieve every class needed for the requested join; do not invent predicates.",
                                  "endpoint_url": TARGET})
             # An aggregate pattern does not return patient identifiers or individual rows.
             # It is derived solely from VoID, never from benchmark reference answers.
@@ -129,7 +142,10 @@ class SphnVoidRetrieval:
         selected = []
         seen = set()
         for term in classes[:6]:
-            for row in rank(term, self.classes, lambda item: item["label"] + " " + item["iri"])[:2]:
+            exact = [row for row in self.classes
+                     if term in {row["iri"], row["iri"].rsplit("#", 1)[-1], _term(row["iri"])}]
+            candidates = exact or rank(term, self.classes, lambda item: item["label"] + " " + item["iri"])[:2]
+            for row in candidates:
                 if row["iri"] not in seen:
                     selected.append(row)
                     seen.add(row["iri"])
@@ -152,7 +168,7 @@ class SphnVoidRetrieval:
                          "hasStartDateTime" if any(term in cls["iri"] for term in ("Surgery", "Radiotherapy")) else "")
             patterns.sort(key=lambda row: (row["predicate_iri"].endswith(preferred) if preferred else False), reverse=True)
             row = patterns[0]
-            selected.append({key: row[key] for key in ("question", "query", "endpoint_url", "source")})
+            selected.append({key: row[key] for key in ("question", "query", "endpoint_url", "source", "class_iri")})
             if len(selected) == 3:
                 break
         return {"query_examples": selected}

@@ -18,6 +18,11 @@ runtime. Modificare un testo non aggiorna i controlli dell'esecutore.
 Caricamento e differenze dei profili sono nella [guida alle policy](../docs/policies/configuration.md).
 `unrestricted` serve a confronti e dimostrazioni con controlli disabilitati.
 
+`generation_mode` sceglie `prefetch` (preset: recupero MCP dal codice prima
+della generazione) oppure `agentic` (strumenti scelti dal modello; default se
+il campo manca). `retrieval_classes` permette fino a sei suggerimenti opzionali
+di classi per il prefetch. Vedere [prestazioni e benchmark](../docs/guides/inference-performance.md).
+
 `sparql-run` usa attualmente il profilo deterministico predefinito. I JSON in
 `policies/` non vengono selezionati automaticamente da `models.json`:
 `sparql-check --policy FILE` li usa per l'analisi statica; il runtime si

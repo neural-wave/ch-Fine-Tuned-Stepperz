@@ -10,6 +10,10 @@ i file nella destinazione indicata.
 
 ## Benchmark del workflow
 
+Per confrontare latenza e richieste al modello tra recupero agentico e prefetch:
+`uv run --extra local python -m tools.benchmark_inference --help`.
+Comandi VM, parametri vLLM e limiti nella [guida alle prestazioni](../docs/guides/inference-performance.md).
+
 Per valutare il corpus prompt-query con risposte predisposte, senza modelli:
 
 ```bash

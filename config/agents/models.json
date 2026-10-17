@@ -1,6 +1,8 @@
 {
   "base_url": "http://localhost:11434/v1",
   "model": "qwen3:14b",
+  "generation_mode": "prefetch",
+  "retrieval_classes": [],
   "laya": {
     "model_id": "convaiinnovations/laya",
     "subfolder": "multilingual",

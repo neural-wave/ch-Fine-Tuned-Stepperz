@@ -9,6 +9,13 @@ o leggere i file paziente.
 
 ## Utilizzo
 
+Il MCP SPHN distingue le classi/datatype di range dai valori fissi: per esempio
+`hasCode` con range ICD descrive il tipo del nodo codice, non richiede come
+oggetto l'IRI della classe ICD stessa. Le risposte includono
+`declared_value_types` e una nota di interpretazione. La rappresentazione
+ShEx-like dei tipi usa shape degli oggetti e datatype, conservando i value set
+per il solo `rdf:type`. Non sostituisce lo SHACL completo o un lookup terminologico.
+
 Il preset principale usa questo VoID nel server SPHN di `LLM_ENGINE`, avviato
 da `bash start-mcp.sh` e collegato tramite `mcp_url` in `models.json`.
 Per il precedente backend stdio, la configurazione opzionale

@@ -24,6 +24,12 @@ sono JSON indentato. La query restituita dalla funzione conserva il testo
 originale del generatore. Il riepilogo dell'analisi e visibile a `INFO`; il report
 completo con la configurazione dei controlli e disponibile a `DEBUG`.
 
+Nel workflow il riepilogo `INFO` e responsabilita dell'orchestratore: prompt,
+decisione, query e usage non vengono ripetuti dagli adapter. Usando un adapter
+direttamente (anche negli health check), questo continua a stampare la propria
+risposta. `DEBUG` include anche il dettaglio dei backend. Piu richieste HTTP
+distinte possono essere normali turni di retrieval/generazione, non log duplicati.
+
 Si usa il modulo standard `logging`, con un handler comune anche per i messaggi
 delle librerie Python. `SPARQL_LOG_DIR` cambia cartella; `SPARQL_LOG_LEVEL`
 cambia livello (`INFO` predefinito, `DEBUG` per maggior dettaglio). Non si
@@ -86,6 +92,12 @@ uv run --extra local sparql-run --prompt "Conta i pazienti distinti con diagnosi
 La CLI stampa JSON; termina con 0 per `released` o `query_ready`, 1 per gli
 altri esiti del workflow. `--help` elenca le opzioni. L'avvio puo fallire prima
 del workflow se configurazione, file o servizi non sono disponibili.
+
+`blocked_query` comprende anche funzionalita non supportate: controllare
+`analysis.status` e `analysis.findings`. `unsupported` non significa che la
+query abbia intenzioni malevole. I raggruppamenti esterni per categoria non
+sono ancora eseguibili dal runtime predefinito; il solo toggle `category_group`
+non estende il motore. Un caso concreto e nella [revisione della query per sesso](../security/query-by-sex-review.md).
 
 Il JSON include `analytics.token_usage` e `analytics.timings`: token per modello
 e fase, totale, conteggi parziali e tempi. Un totale `null` indica usage mancante
