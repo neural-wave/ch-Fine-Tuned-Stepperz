@@ -60,6 +60,18 @@ si possono indicare nomi o IRI esatti in `retrieval_classes`. Dopo modifiche al
 retrieval occorre riavviare il processo MCP: riavviare solo l'API non basta.
 In `prefetch` il codice recupera il contesto e il generatore riceve solo i dati;
 in `agentic` il generatore vede gli strumenti di recupero schema/esempi.
+Il tipo atteso e `SparqlResult(query: str)`: anche per un risultato booleano,
+il generatore deve restituire la query come testo, senza eseguirla. PydanticAI
+usa un output tool; il backend deve supportare `tool_choice=required`.
+Ogni richiesta a vLLM include `chat_template_kwargs: {"enable_thinking": false}`,
+anche nei retry SDK, senza dipendere dai default del processo gia avviato.
+Il [template del modello SPARQL Qwen3](https://huggingface.co/daniel-dona/sparql-model-era-lora-128-qwen3-8b/blob/main/tokenizer_config.json)
+espone questo parametro; dettagli nella [documentazione vLLM](https://docs.vllm.ai/en/stable/features/reasoning_outputs/).
+Se il modello non restituisce un output utilizzabile, il log
+`Generator failed - model responses and validation feedback` conserva le risposte,
+il `finish_reason` e il feedback SDK disponibile. Un errore di formato non e
+un rifiuto dell'analizzatore statico. `query_retries` riguarda invece le
+correzioni dopo l'analisi: il relativo feedback viene incluso nel payload.
 L'esecuzione resta nell'executor verificato. Configurazione vLLM e confronto
 dei tempi sono nella [guida alle prestazioni](inference-performance.md).
 Il server pubblico SIB e il compose `LLM_ENGINE/compose.local.yml` sono

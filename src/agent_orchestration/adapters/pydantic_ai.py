@@ -83,19 +83,37 @@ class PydanticAISparqlLLM(SparqlLLM):
         return (await self.run_with_usage(request)).output
 
     async def run_with_usage(self, request: SparqlRequest) -> ModelResponse[SparqlResult]:
+        from pydantic_ai import capture_run_messages
+        from pydantic_ai.messages import ModelResponse as SDKResponse, RetryPromptPart
+
         configure_logging()
         logger.log(backend_log_level(), "Generator request prompt=%r", request.prompt)
         # Stable context precedes the varying question so serving backends can
-        # reuse shared prefixes. Field values and the output contract stay intact.
+        # reuse shared prefixes. Checker feedback must reach repair attempts.
         fields = asdict(request)
-        payload = json.dumps({key: fields[key] for key in ("policy", "permissions", "schema", "prompt")}, ensure_ascii=False)
-        try:
-            response = await run_agent(self.agent, payload, expected_type=SparqlResult,
-                                       usage_limits=self.usage_limits, token_counter=self.token_counter,
-                                       request=request)
-        except Exception:
-            logger.exception("Generator request failed")
-            raise
+        payload = json.dumps({key: fields[key] for key in ("policy", "permissions", "schema", "prompt", "feedback")}, ensure_ascii=False)
+        with capture_run_messages() as messages:
+            try:
+                response = await run_agent(self.agent, payload, expected_type=SparqlResult,
+                                           usage_limits=self.usage_limits, token_counter=self.token_counter,
+                                           request=request)
+            except Exception:
+                # Preserve evidence when the SDK fails before returning a result.
+                # Log model responses and validation feedback, not the full context.
+                diagnostic = []
+                for message in messages:
+                    if isinstance(message, SDKResponse):
+                        diagnostic.append({"model": message.model_name,
+                            "finish_reason": message.finish_reason,
+                            "parts": [asdict(part) for part in message.parts]})
+                    else:
+                        diagnostic.extend({"validation_feedback": part.content}
+                            for part in message.parts if isinstance(part, RetryPromptPart))
+                if diagnostic:
+                    log_block(logger, "Generator failed - model responses and validation feedback",
+                              diagnostic, level=logging.ERROR)
+                logger.exception("Generator request failed")
+                raise
         log_block(logger, "Generator response - SPARQL query", response.output.query, level=backend_log_level())
         log_block(logger, "Generator response - token usage", response.usage, level=backend_log_level())
         return response
@@ -109,6 +127,6 @@ def chat_model(name, base_url="http://127.0.0.1:18000/v1"):
     return OpenAIChatModel(name, provider=OpenAIProvider(
         base_url=base_url, api_key=os.getenv("MODEL_API_KEY", "local")),
         profile=OpenAIModelProfile(openai_supports_strict_tool_definition=False,
-                                   openai_supports_tool_choice_required=False))
+                                   openai_supports_tool_choice_required=True))
 
 

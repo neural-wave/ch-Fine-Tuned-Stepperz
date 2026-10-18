@@ -35,16 +35,19 @@ def test_text_adapter_with_actual_agent():
     assert asyncio.run(adapter.run("test")) == "hello"
 
 
-def test_structured_generation_receives_all_fields():
+@pytest.mark.parametrize("feedback", [(), ({"attempt": 1, "query": "SELECT WHERE",
+    "findings": [{"code": "SYNTAX", "reason": "Invalid query"}]},)])
+def test_structured_generation_receives_all_fields(feedback):
     received = []
     def generate_query(messages, info):
         prompt = next(part.content for message in reversed(messages) for part in message.parts if isinstance(part, UserPromptPart))
         received.append(json.loads(prompt))
         return ModelResponse(parts=[ToolCallPart(info.output_tools[0].name, {"query": EXAMPLE_QUERY})])
     adapter = PydanticAISparqlLLM(Agent(FunctionModel(generate_query), output_type=SparqlResult))
-    result = asyncio.run(adapter.run(SparqlRequest("count", "RDF schema", "only counts", "analyst")))
+    result = asyncio.run(adapter.run(SparqlRequest("count", "RDF schema", "only counts", "analyst", feedback)))
     assert result.query == EXAMPLE_QUERY
-    assert received == [{"prompt": "count", "schema": "RDF schema", "policy": "only counts", "permissions": "analyst"}]
+    assert received == [{"prompt": "count", "schema": "RDF schema", "policy": "only counts",
+                         "permissions": "analyst", "feedback": list(feedback)}]
 
 
 def test_actual_pydantic_agents_in_full_pipeline():

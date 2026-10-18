@@ -26,7 +26,7 @@ class ModelTests(unittest.IsolatedAsyncioTestCase):
         result = await PydanticAISparqlLLM(agent).run(SparqlRequest("request", "schema", "policy"))
         self.assertEqual(result, query)
         self.assertEqual(json.loads(agent.run.call_args.args[0]), {
-            "prompt": "request", "schema": "schema", "policy": "policy", "permissions": "",
+            "prompt": "request", "schema": "schema", "policy": "policy", "permissions": "", "feedback": [],
         })
 
     async def test_invalid_sparql_outputs_rejected(self):
