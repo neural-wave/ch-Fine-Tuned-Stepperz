@@ -7,6 +7,7 @@ import os
 from time import perf_counter
 
 from agent_orchestration.adapters.mcp import CONFIG, RETRIEVAL_TOOLS, schema_server
+from agent_orchestration.model_discovery import select_served_model
 from .virtuoso import ready
 
 logger = logging.getLogger(__name__)
@@ -61,13 +62,11 @@ def check(config, clients, *, inference=False, with_virtuoso=False):
 
     def generator():
         url = models["base_url"].rstrip("/") + "/models"
-        headers = {"Authorization": f"Bearer {os.environ['MODEL_API_KEY']}"} if os.getenv("MODEL_API_KEY") else {}
+        headers = {"Authorization": f"Bearer {os.getenv('MODEL_API_KEY', 'local')}"}
         response = clients.http.get(url, headers=headers, timeout=10)
         response.raise_for_status()
-        available = [row.get("id") for row in response.json().get("data", [])]
-        if models["model"] not in available:
-            raise ValueError(f"Configured model {models['model']!r} not served; available: {available}")
-        return {"url": url, "model": models["model"]}
+        served_model = select_served_model(response.json(), models.get("model"))
+        return {"url": url, "model": served_model, "configured_model": models.get("model")}
 
     def exercise():
         response, seconds = clients.translate(PROMPT)

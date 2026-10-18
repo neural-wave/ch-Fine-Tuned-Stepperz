@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f5f8fa">
+  <meta name="description" content="Fine-Tuned Stepperz turns clinical questions into SPHN-oriented SPARQL with prompt and query checks.">
+  <title>Query Studio · Fine-Tuned Stepperz</title>
+  <link rel="stylesheet" href="/ui/app.css">
+  <script src="/ui/app.js" defer></script>
+</head>
+<body>
+  <a class="skip-link" href="#studio">Skip to query studio</a>
+  <div class="topline"><span>FINE-TUNED STEPPERZ</span><span>CLINICAL DATA · QUERY STUDIO</span></div>
+  <header class="site-header wrap">
+    <a class="brand" href="/" aria-label="Fine-Tuned Stepperz home">
+      <span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
+      <span>fine-tuned<br><strong>stepperz</strong></span>
+    </a>
+    <nav aria-label="Main navigation">
+      <a href="#studio">Try the studio</a>
+      <a href="#approach">How it works</a>
+      <a class="nav-outline" href="/docs">API docs <span aria-hidden="true">↗</span></a>
+    </nav>
+  </header>
+
+  <main>
+    <section class="hero wrap" aria-labelledby="hero-title">
+      <div class="hero-copy">
+        <div class="eyebrow"><span class="eyebrow-line"></span> SPHN-ORIENTED RESEARCH WORKFLOW</div>
+        <h1 id="hero-title">Clinical questions,<br><em>made queryable.</em></h1>
+        <p class="hero-lead">Turn a natural-language research question into a SPARQL query, with visible prompt screening and deterministic query analysis before it reaches your data.</p>
+        <div class="hero-actions">
+          <a class="button button-primary" href="#studio">Explore the studio <span aria-hidden="true">↗</span></a>
+          <span class="hero-note"><span class="small-dot"></span> No patient data is queried here</span>
+        </div>
+      </div>
+      <div class="hero-visual" aria-hidden="true">
+        <div class="visual-grid"></div>
+        <svg class="network-art" viewBox="0 0 570 480" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12 389C104 328 150 321 220 358C303 402 367 344 448 257C493 209 535 205 568 219" stroke="#b8cbd5" stroke-width="1.3"/>
+          <path d="M4 288C103 241 162 262 217 291C306 339 384 260 471 120C502 71 535 48 569 57" stroke="#d3e0e6" stroke-width="1.3"/>
+          <path d="M29 122C116 170 171 157 251 89C319 31 411 47 556 171" stroke="#d3e0e6" stroke-width="1.3"/>
+          <path d="M77 107L154 184L235 93L314 167L419 88L510 161M77 107L64 269L154 184L237 286L314 167L431 255L510 161M64 269L139 369L237 286L349 361L431 255" stroke="#9eb8c7" stroke-width="1.5"/>
+          <path d="M154 184L314 167M237 286L431 255M314 167L349 361" stroke="#cfdee5" stroke-width="1"/>
+          <circle cx="77" cy="107" r="6" fill="#8aaaba"/><circle cx="154" cy="184" r="9" fill="#fff" stroke="#668ba1" stroke-width="2"/>
+          <circle cx="235" cy="93" r="6" fill="#8aaaba"/><circle cx="314" cy="167" r="10" fill="#fff" stroke="#668ba1" stroke-width="2"/>
+          <circle cx="419" cy="88" r="7" fill="#8aaaba"/><circle cx="510" cy="161" r="6" fill="#8aaaba"/>
+          <circle cx="64" cy="269" r="7" fill="#8aaaba"/><circle cx="237" cy="286" r="10" fill="#fff" stroke="#668ba1" stroke-width="2"/>
+          <circle cx="431" cy="255" r="7" fill="#8aaaba"/><circle cx="139" cy="369" r="6" fill="#8aaaba"/>
+          <circle cx="349" cy="361" r="6" fill="#8aaaba"/>
+          <circle cx="314" cy="167" r="28" fill="#e00024" fill-opacity=".08"/><circle cx="314" cy="167" r="5" fill="#e00024"/>
+          <circle cx="237" cy="286" r="26" fill="#e00024" fill-opacity=".08"/><circle cx="237" cy="286" r="5" fill="#e00024"/>
+        </svg>
+        <div class="visual-tag tag-top"><span class="tag-icon">{ }</span><span>natural language<br><strong>→ structured query</strong></span></div>
+        <div class="visual-tag tag-bottom"><span class="tag-shield">✓</span><span>preflight checks<br><strong>before execution</strong></span></div>
+        <div class="visual-caption">INTEROPERABILITY · CLARITY · CONTROL</div>
+      </div>
+    </section>
+
+    <section class="intro-strip" id="approach" aria-label="Our approach">
+      <div class="wrap intro-grid">
+        <div><span class="strip-number">01 /</span><strong>Speak in clinical terms</strong><p>Start with the research question you actually want to ask.</p></div>
+        <div><span class="strip-number">02 /</span><strong>Ground it in SPHN</strong><p>Retrieve local schema context to guide SPARQL generation.</p></div>
+        <div><span class="strip-number">03 /</span><strong>Make checks visible</strong><p>See the prompt verdict and static query findings together.</p></div>
+      </div>
+    </section>
+
+    <section class="studio-section wrap" id="studio" aria-labelledby="studio-title">
+      <div class="section-heading">
+        <div><div class="eyebrow"><span class="eyebrow-line"></span> INTERACTIVE PROTOTYPE</div><h2 id="studio-title">The query studio<span class="red-dot">.</span></h2></div>
+        <p>One question in. A query and an explainable preflight verdict out.</p>
+      </div>
+      <div class="studio-grid">
+        <div class="composer-card">
+          <div class="card-kicker"><span class="card-index">01</span> ASK A QUESTION <span class="tiny-cross" aria-hidden="true">✳</span></div>
+          <form id="query-form">
+            <label for="question">What would you like to learn from the clinical data?</label>
+            <textarea id="question" name="question" maxlength="16384" rows="6" required placeholder="For example: How many patients have an oncology diagnosis?" aria-describedby="question-help"></textarea>
+            <div class="field-meta"><span id="question-help">Describe an aggregate research question. Do not enter real patient information.</span><span id="char-count">0 / 16,384</span></div>
+            <button class="button button-primary submit-button" type="submit" id="submit-button">Generate &amp; assess query <span aria-hidden="true">→</span></button>
+          </form>
+          <div class="example-block">
+            <span class="example-label">TRY AN EXAMPLE</span>
+            <div class="example-list">
+              <button type="button" class="example-chip" data-prompt="How many patients have an oncology diagnosis?">Oncology cohort <span aria-hidden="true">↗</span></button>
+              <button type="button" class="example-chip" data-prompt="Show me the identifiers of every patient with cholera.">Identifier request <span aria-hidden="true">↗</span></button>
+            </div>
+          </div>
+        </div>
+
+        <div class="process-card" aria-labelledby="process-title">
+          <div class="card-kicker"><span class="card-index">02</span> THE WORKFLOW <span class="tiny-cross" aria-hidden="true">✳</span></div>
+          <h3 id="process-title">From intent to inspection.</h3>
+          <p class="process-subtitle">Each response goes through the same sequence. Live stage timings appear after the API returns.</p>
+          <ol class="process-list" id="process-list" aria-busy="false">
+            <li data-stage="prompt"><span class="stage-symbol">01</span><div><strong>Prompt screening</strong><small>Policy and permissions assessment</small></div><span class="stage-state">READY</span></li>
+            <li data-stage="generation"><span class="stage-symbol">02</span><div><strong>AI + SPHN schema</strong><small>Grounded NL → SPARQL generation</small></div><span class="stage-state">READY</span></li>
+            <li data-stage="analysis"><span class="stage-symbol">03</span><div><strong>Static safety analysis</strong><small>Structure and policy checks</small></div><span class="stage-state">READY</span></li>
+          </ol>
+          <div class="process-footer" id="process-footer"><span class="status-pip"></span><span id="process-message" role="status">Waiting for your question.</span><span id="elapsed" aria-live="off"></span></div>
+        </div>
+      </div>
+
+      <section class="result-section" id="result-section" aria-label="Assessment result" hidden>
+        <div class="result-topline"><span>03 / ASSESSMENT RESULT</span><span id="result-id">CURRENT RUN</span></div>
+        <div class="verdict-panel" id="verdict-panel">
+          <div class="verdict-mark" id="verdict-mark" aria-hidden="true">✓</div>
+          <div class="verdict-copy"><span class="verdict-eyebrow" id="verdict-eyebrow">PREFLIGHT ASSESSMENT</span><h3 id="verdict-title" aria-live="polite">Result</h3><p id="verdict-description"></p></div>
+          <div class="verdict-seal" id="verdict-seal" aria-hidden="true">REVIEW<br>BEFORE<br>USE</div>
+        </div>
+        <div class="reason-panel" id="reason-panel" hidden><span class="reason-label">WHY IT WAS FLAGGED</span><p id="reason-text"></p></div>
+        <div class="result-grid">
+          <div class="query-panel">
+            <div class="panel-heading"><div><span class="panel-index">OUTPUT / 01</span><h4>Generated SPARQL</h4></div><button type="button" id="copy-button" class="copy-button">Copy query</button></div>
+            <pre><code id="query-output"></code></pre>
+            <div class="query-disclaimer">This query is displayed for inspection. The studio does not execute it against patient data.</div>
+          </div>
+          <div class="details-panel"><span class="panel-index">OUTPUT / 02</span><h4>Run details</h4>
+            <dl><div><dt>Prompt assessment</dt><dd id="prompt-decision">—</dd></div><div><dt>Static analysis</dt><dd id="query-decision">—</dd></div><div><dt>Model tokens</dt><dd id="tokens">—</dd></div><div><dt>Total time</dt><dd id="total-time">—</dd></div></dl>
+            <p>Preflight approval is not authorization to execute. Dataset access, cohort thresholds, and result safeguards belong to the execution environment.</p>
+          </div>
+        </div>
+      </section>
+    </section>
+  </main>
+
+  <footer class="site-footer"><div class="wrap footer-grid"><div><strong>Fine-Tuned Stepperz</strong><p>An independent hackathon prototype for research questions over interoperable clinical data.</p></div><div><span>INSPIRED BY THE MISSION</span><p>SPHN advances interoperable, high-quality clinical data and secure research environments. <a href="https://sphn.ch/" target="_blank" rel="noopener noreferrer">Learn about SPHN ↗</a></p></div><div class="footer-end">DESIGNED FOR RESPONSIBLE DISCOVERY<br>© 2026 FINE-TUNED STEPPERZ</div></div></footer>
+</body>
+</html>

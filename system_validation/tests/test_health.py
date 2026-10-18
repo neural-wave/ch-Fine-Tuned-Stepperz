@@ -60,7 +60,7 @@ def test_quick_check_verifies_actual_model_and_schema_without_inference(setup):
     assert len(list(setup["out_dir"].glob("health-*.json"))) == 1
 
 
-def test_failures_are_reported_independently_and_empty_schema_fails(setup, monkeypatch):
+def test_model_mismatch_uses_served_id_and_empty_schema_fails(setup, monkeypatch):
     class Empty(MCP):
         async def direct_call_tool(self, name, arguments):
             return {"query_examples": []}
@@ -79,8 +79,10 @@ def test_failures_are_reported_independently_and_empty_schema_fails(setup, monke
         clients.close()
     assert report["ok"] is False
     assert len(report["checks"]) == 3
-    assert all(row["ok"] is False for row in report["checks"].values())
-    assert "different-model" in report["checks"]["generator"]["error"]["message"]
+    assert report["checks"]["api"]["ok"] is False
+    assert report["checks"]["generator"]["ok"] is True
+    assert report["checks"]["generator"]["details"]["model"] == "different-model"
+    assert report["checks"]["generator"]["details"]["configured_model"] == "chosen-model"
     assert "no examples" in report["checks"]["mcp"]["error"]["message"]
 
 

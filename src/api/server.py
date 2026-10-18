@@ -11,17 +11,20 @@ from uuid import uuid4
 
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
-from fastapi.responses import JSONResponse
+from fastapi.responses import FileResponse, JSONResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 from starlette.exceptions import HTTPException
 
 from agent_orchestration.local_models import CONFIG, open_models
+from agent_orchestration.model_discovery import discover_served_model
 from agent_orchestration.logging_setup import configure_logging
 from agent_orchestration.query_retry import validate_query_retries
 from .service import TranslationService
 
 logger = logging.getLogger(__name__)
 REQUEST_TIMEOUT = 12000
+WEB_DIR = Path(__file__).resolve().parent / "static"
 
 
 class NlToSparqlRequest(BaseModel):
@@ -61,18 +64,27 @@ def create_app(service=None):
             yield
         else:
             config = Path(os.getenv("NL2SPARQL_CONFIG", str(CONFIG))).resolve()
+            settings = json.loads(config.read_text(encoding="utf-8-sig"))
+            query_retries = validate_query_retries(settings.get("query_retries", 0))
+            model_name = await discover_served_model(settings["base_url"], settings.get("model"))
+            if model_name != settings.get("model"):
+                logger.warning("Configured model=%s; using served model=%s from /models",
+                               settings.get("model"), model_name)
             directory = CONFIG.parent
             schema = "SPHN clinical RDF. Retrieve class/property details from the schema MCP."
             policy = (directory / "policy.txt").read_text(encoding="utf-8-sig")
             permissions = (directory / "permissions.txt").read_text(encoding="utf-8-sig")
-            settings = json.loads(config.read_text(encoding="utf-8-sig"))
-            query_retries = validate_query_retries(settings.get("query_retries", 0))
-            async with open_models(config, assessment_mode=True) as (guard, generator):
+            async with open_models(config, assessment_mode=True, model_name=model_name) as (guard, generator):
                 app.state.translator = TranslationService(guard, generator, schema=schema,
                     policy=policy, permissions=permissions, query_retries=query_retries)
                 yield
 
     app = FastAPI(title="Natural Language to SPARQL API", version="1.0.0", lifespan=lifespan)
+    app.mount("/ui", StaticFiles(directory=WEB_DIR), name="ui")
+
+    @app.get("/", include_in_schema=False)
+    async def home():
+        return FileResponse(WEB_DIR / "index.html")
 
     @app.middleware("http")
     async def request_log(request: Request, call_next):

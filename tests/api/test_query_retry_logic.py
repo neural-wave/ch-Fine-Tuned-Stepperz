@@ -145,3 +145,19 @@ def test_runtime_rejection_does_not_trigger_query_repair():
                                          Executor(), query_retries=2)
     result = inline(pipe.run(translator.template))
     assert result.status == "blocked_runtime" and len(requests) == 1
+
+
+def test_analysis_failure_never_associates_old_report_with_new_query(monkeypatch):
+    translator, _ = scripted([BAD, EXAMPLE_QUERY])
+    validate = service_module.validate
+    def analyze(query):
+        if query == EXAMPLE_QUERY:
+            raise RuntimeError("checker failed on second query")
+        return validate(query)
+    monkeypatch.setattr(service_module, "validate", analyze)
+    with pytest.raises(RuntimeError) as failure:
+        inline(translator.run("count"))
+    analytics = failure.value.execution_analytics
+    assert failure.value.generated_query == EXAMPLE_QUERY and analytics["query_analysis"] is None
+    assert analytics["query_attempts"][0]["analysis"]["status"] == "unsupported"
+    assert analytics["query_attempts"][1]["analysis"] is None

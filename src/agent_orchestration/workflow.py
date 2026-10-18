@@ -147,6 +147,7 @@ class SparqlWorkflow:
                 log_block(logger, f"run={run_id} generated_query= attempt={index + 1}", query)
                 if not isinstance(query, str) or not query.strip():
                     raise ValueError("Empty or invalid query")
+                analysis = None
                 stage, started = "query_analysis" + suffix, perf_counter()
                 analysis = self.analyzer.run(query)
                 timings[stage] = perf_counter() - started

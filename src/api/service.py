@@ -80,6 +80,7 @@ class TranslationService:
                 query = generated.output.query
                 attempt["query"] = query
                 log_block(logger, f"API generated SPARQL attempt={index + 1}", query)
+                analysis = None
                 stage, stage_started = analysis_stage, perf_counter()
                 analysis = await asyncio.to_thread(validate, query)
                 timings[stage] = perf_counter() - stage_started
