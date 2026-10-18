@@ -58,6 +58,11 @@ Se il MCP non restituisce classi, la generazione si ferma; il log riporta prompt
 hints effettivi, numero di esempi e risposta MCP. Per vocaboli non riconosciuti
 si possono indicare nomi o IRI esatti in `retrieval_classes`. Dopo modifiche al
 retrieval occorre riavviare il processo MCP: riavviare solo l'API non basta.
+Una ricerca valida senza classi ne esempi e senza hints configurati produce
+`SchemaRetrievalMiss`: nell'API e HTTP 400 con richiesta di chiarimento,
+senza eseguire il generatore. L'endpoint di studio conserva il verdetto del
+classificatore e i metadati della ricerca vuota. Errori di connessione,
+formato o risoluzione di hints espliciti restano errori del backend (HTTP 502).
 In `prefetch` il codice recupera il contesto e il generatore riceve solo i dati;
 in `agentic` il generatore vede gli strumenti di recupero schema/esempi.
 Il tipo atteso e `SparqlResult(query: str)`: anche per un risultato booleano,

@@ -10,6 +10,10 @@ logger = logging.getLogger(__name__)
 PREFETCH_TOOLS = {"search_sparql_examples", "search_sparql_classes"}
 
 
+class SchemaRetrievalMiss(ValueError):
+    """A valid lookup found no context; the request may need clarification."""
+
+
 class PrefetchedSparqlLLM(SparqlLLM):
     def __init__(self, generator, server, *, classes=()):
         self.generator, self.server = generator, server
@@ -31,11 +35,24 @@ class PrefetchedSparqlLLM(SparqlLLM):
             if isinstance(row, dict) and isinstance(row.get("class_iri"), str)), request.prompt]))[:6]
         schema = await self.server.direct_call_tool("search_sparql_classes", {"classes": hints})
         if not isinstance(schema, dict) or not isinstance(schema.get("classes_schemas"), list) or not schema["classes_schemas"]:
-            logger.error("MCP schema retrieval failed prompt=%r hints=%r example_count=%s response=%r",
-                         request.prompt, hints, len(examples["query_examples"]), schema)
-            raise ValueError(f"MCP returned no usable classes_schemas for hints={hints!r}; "
-                             "check the MCP schema/profile and restart MCP after retrieval changes, "
-                             "or configure retrieval_classes with exact SPHN class names")
+            no_match = (isinstance(schema, dict) and schema.get("classes_schemas") == []
+                        and not self.classes and not examples["query_examples"])
+            logger.log(logging.WARNING if no_match else logging.ERROR,
+                       "MCP schema retrieval no_match=%s prompt=%r hints=%r example_count=%s response=%r",
+                       no_match, request.prompt, hints, len(examples["query_examples"]), schema)
+            error = (SchemaRetrievalMiss(
+                "No matching clinical schema found for this request. Specify what to count "
+                "(for example patients, diagnoses or admissions), or configure retrieval_classes "
+                "with exact SPHN class names; schema lookup currently uses lexical matching.")
+                if no_match else ValueError(
+                    f"MCP returned no usable classes_schemas for hints={hints!r}; "
+                    "check the MCP schema/profile and restart MCP after retrieval changes, "
+                    "or configure retrieval_classes with exact SPHN class names"))
+            error.model_metadata = {"retrieval": {"classes": 0,
+                "examples": len(examples["query_examples"]), "hints": hints,
+                "status": "no_match" if no_match else "invalid_schema",
+                "seconds": perf_counter() - started}, "model_called": False}
+            raise error
         # This server supplies both readable ShEx and the same ranges as JSON.
         # Keep one representation, including the warnings about class/value IRIs.
         schema = {**schema, "classes_schemas": [

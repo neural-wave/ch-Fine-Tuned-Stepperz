@@ -134,6 +134,21 @@ Anche se il classificatore blocca il prompt, viene prodotta una query da valutar
 non viene eseguita ne trasformata in una richiesta diversa per renderla conforme.
 Gli errori tecnici sono risposte di errore, non verdetti di non conformita.
 
+Se la ricerca MCP risponde correttamente ma non trova ne esempi ne classi,
+e non sono configurate `retrieval_classes`, l'API restituisce **HTTP 400** con
+un messaggio che chiede di specificare l'entita clinica o fornire suggerimenti
+esatti. Per esempio, «conteggio aggregato sul dataset clinico» non specifica
+cosa contare; «conta i pazienti» rende esplicita l'entita. Il retrieval attuale
+usa corrispondenze lessicali: anche termini non riconosciuti possono produrre
+una ricerca vuota. Non viene scelta una classe arbitraria e il generatore
+non viene chiamato.
+L'endpoint `/study/nl-to-sparql` conserva nelle analytics il verdetto originale
+del classificatore, i token conosciuti e `generation_metadata.retrieval` con
+`status: "no_match"` e gli hints usati; `model_called` e `false`.
+Connessioni MCP fallite, risposte malformate o schemi mancanti nonostante
+suggerimenti espliciti restano **HTTP 502**. Nessuno di questi casi costituisce
+un'approvazione o un rifiuto di sicurezza.
+
 ## Correzione della query con feedback
 
 In [models.json](../../config/agents/models.json) impostare `query_retries` e
