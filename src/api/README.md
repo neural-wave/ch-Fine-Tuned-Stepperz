@@ -51,7 +51,12 @@ o limitare l'accesso di rete ai client previsti.
 
 | File | Cosa configurare |
 |---|---|
-| [models.json](../../config/agents/models.json) | Modello, indirizzo chat, Laya, MCP e modalita `prefetch`/`agentic` |
+| [models.json](../../config/agents/models.json) | Modello da avviare con lo script remoto, indirizzo chat, Laya, MCP e modalita `prefetch`/`agentic` |
+
+All'avvio l'API legge `base_url` + `/models` (nel preset,
+`http://127.0.0.1:18000/v1/models`) e usa l'`id` servito. Se il server espone piu modelli, sceglie
+quello presente in `model`; senza una corrispondenza interrompe l'avvio. Il JSON
+rimane la sorgente del modello che `LLM_ENGINE/start_remote.sh` deve avviare.
 | [policy.txt](../../config/agents/policy.txt) | Policy testuale fornita ai modelli |
 | [permissions.txt](../../config/agents/permissions.txt) | Permessi forniti al controllo del prompt |
 

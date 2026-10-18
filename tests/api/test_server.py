@@ -146,15 +146,20 @@ def test_timeout_is_not_a_compliance_verdict(monkeypatch):
 def test_startup_reuses_main_backends_and_closes_them(monkeypatch):
     events = []
     translator = service()
+    async def discover(base_url, configured_model):
+        assert base_url == "http://127.0.0.1:18000/v1"
+        return "served-model"
     @asynccontextmanager
-    async def models(config, *, assessment_mode):
+    async def models(config, *, assessment_mode, model_name):
         assert assessment_mode is True
+        assert model_name == "served-model"
         events.append("open")
         try:
             yield translator.guard, translator.generator
         finally:
             events.append("close")
     monkeypatch.setattr(server, "open_models", models)
+    monkeypatch.setattr(server, "discover_served_model", discover)
     with TestClient(server.create_app()) as client:
         for _ in range(2):
             assert client.post("/nl-to-sparql", json={"text": "count"}).status_code == 200

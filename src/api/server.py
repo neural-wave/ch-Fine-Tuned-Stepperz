@@ -3,6 +3,7 @@ import asyncio
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 import logging
+import json
 import os
 from pathlib import Path
 from time import perf_counter
@@ -15,6 +16,7 @@ from pydantic import BaseModel, Field
 from starlette.exceptions import HTTPException
 
 from agent_orchestration.local_models import CONFIG, open_models
+from agent_orchestration.model_discovery import discover_served_model
 from agent_orchestration.logging_setup import configure_logging
 from .service import TranslationService
 
@@ -58,11 +60,16 @@ def create_app(service=None):
             yield
         else:
             config = Path(os.getenv("NL2SPARQL_CONFIG", str(CONFIG))).resolve()
+            settings = json.loads(config.read_text(encoding="utf-8-sig"))
+            model_name = await discover_served_model(settings["base_url"], settings.get("model"))
+            if model_name != settings.get("model"):
+                logger.warning("Configured model=%s; using served model=%s from /models",
+                               settings.get("model"), model_name)
             directory = CONFIG.parent
             schema = "SPHN clinical RDF. Retrieve class/property details from the schema MCP."
             policy = (directory / "policy.txt").read_text(encoding="utf-8-sig")
             permissions = (directory / "permissions.txt").read_text(encoding="utf-8-sig")
-            async with open_models(config, assessment_mode=True) as (guard, generator):
+            async with open_models(config, assessment_mode=True, model_name=model_name) as (guard, generator):
                 app.state.translator = TranslationService(guard, generator, schema=schema,
                     policy=policy, permissions=permissions)
                 yield
