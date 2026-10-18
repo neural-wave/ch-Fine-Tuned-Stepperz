@@ -10,6 +10,7 @@ Prompt + schema + policy + permessi
   -> PromptValidator: allow / block / review
   -> SparqlLLM: genera query
   -> StaticQueryAnalyzer: controlli esistenti
+     -> se rifiutata: feedback al generatore, entro query_retries
   -> CheckedQueryExecutor: controlli runtime esistenti
   -> risultato rilasciato oppure blocco/errore
 ```
@@ -33,6 +34,15 @@ Prompt + schema + policy + permessi
 
 `block` e `review` fermano entrambi la generazione. Un errore del modello,
 del parser o del motore produce `error`, mai un successo di sicurezza.
+
+Il ciclo opzionale di correzione si abilita con
+`SparqlWorkflow(..., query_retries=2)`, o con `query_retries` nel JSON dei
+modelli per CLI e API. Il default `0` mantiene il percorso singolo. I finding
+del checker alimentano `SparqlRequest.feedback` insieme alle query precedenti;
+prompt e contesto fidato restano invariati. Ogni tentativo torna in
+`analytics.query_attempts`; token e tempi includono tutte le chiamate.
+L'esecuzione controllata avviene soltanto dopo un'approvazione statica e non
+viene ritentata. Il passaggio del checker non prova l'equivalenza semantica.
 Gli esiti del workflow distinguono `blocked_prompt`, `review_prompt`,
 `blocked_query`, `blocked_runtime`, `query_ready`, `released`, `error`.
 

@@ -2,6 +2,7 @@
   "base_url": "http://127.0.0.1:18000/v1",
   "model": "daniel-dona/sparql-model-era-lora-128-qwen3-8b",
   "generation_mode": "prefetch",
+  "query_retries": 0,
   "retrieval_classes": [],
   "laya": {
     "model_id": "convaiinnovations/laya",

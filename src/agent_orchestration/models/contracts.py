@@ -45,6 +45,7 @@ class SparqlRequest:
     schema: str
     policy: str
     permissions: str = ""
+    feedback: tuple[dict, ...] = ()
 
 
 @dataclass(frozen=True)

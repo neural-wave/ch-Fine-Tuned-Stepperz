@@ -3,7 +3,7 @@
 No oracle is passed into the live workflow. Semantic evaluation is offline.
 """
 import asyncio
-from dataclasses import dataclass, field
+from dataclasses import asdict, dataclass, field
 import logging
 from time import perf_counter
 from typing import Literal, Protocol
@@ -17,6 +17,7 @@ from .models import SparqlLLM, SparqlRequest
 from .models.usage import error_usage, invoke_with_usage, summarize_usage
 from .logging_setup import active_workflow, configure_logging, log_block
 from .validation import PromptRequest, PromptValidation, PromptValidator, StaticQueryAnalyzer
+from .query_retry import attempt_for_log, repair_request, validate_query_retries
 
 logger = logging.getLogger(__name__)
 
@@ -64,7 +65,7 @@ class WorkflowResult:
 class SparqlWorkflow:
     def __init__(self, prompt_validator: PromptValidator, generator: SparqlLLM,
                  analyzer: StaticQueryAnalyzer, executor: QueryExecutor | None = None,
-                 *, model_timeout_seconds: float = 60):
+                 *, model_timeout_seconds: float = 60, query_retries=0):
 
         if model_timeout_seconds <= 0:
             raise ValueError("model_timeout_seconds must be positive")
@@ -73,6 +74,7 @@ class SparqlWorkflow:
         self.analyzer = analyzer
         self.executor = executor
         self.model_timeout_seconds = model_timeout_seconds
+        self.query_retries = validate_query_retries(query_retries)
 
     async def run(self, request: PromptRequest, *, execute: bool = True) -> WorkflowResult:
         configure_logging()
@@ -82,16 +84,29 @@ class SparqlWorkflow:
         verdict, query, analysis = None, None, None
         timings = {}
         usage_by_stage = {}
+        attempts = []
+        stop_reason = None
         started = perf_counter()
 
         def finish(status, *, result=None, error_type=None):
             timings[stage] = perf_counter() - started
-            analytics = {"token_usage": summarize_usage(usage_by_stage), "timings": dict(timings)}
+            if attempts and attempts[-1]["status"] == "running":
+                attempts[-1]["status"] = "error"
+                phase = "generation" if stage.startswith("generation") else "analysis"
+                attempts[-1]["timings"][phase] = timings[stage]
+                if stage in usage_by_stage:
+                    attempts[-1]["token_usage"] = asdict(usage_by_stage[stage])
+            analytics = {"token_usage": summarize_usage(usage_by_stage), "timings": dict(timings),
+                         "query_attempts": attempts,
+                         "query_retry": {"configured_retries": self.query_retries,
+                                         "retries_used": max(0, len(attempts) - 1),
+                                         "stop_reason": "error" if status == "error" else stop_reason}}
             logger.info("run=%s completed status=%s stage=%s error_type=%s",
                         run_id, status, stage, error_type)
             if result is not None:
                 log_block(logger, f"run={run_id} Released result", result)
-            log_block(logger, f"run={run_id} Analytics", analytics)
+            log_block(logger, f"run={run_id} Analytics", {**analytics,
+                "query_attempts": [attempt_for_log(row) for row in attempts]})
             return WorkflowResult(status, stage, verdict, query, analysis,
                                   result, error_type, dict(timings), analytics)
 
@@ -108,39 +123,45 @@ class SparqlWorkflow:
             logger.info("run=%s prompt_validation=%r", run_id, verdict)
 
             if verdict.decision != "allow":
+                stop_reason = "prompt_not_allowed"
                 return finish("blocked_prompt" if verdict.decision == "block" else "review_prompt")
 
             timings[stage] = perf_counter() - started
-            stage, started = "generation", perf_counter()
-            logger.info("run=%s stage=%s started", run_id, stage)
-
-            async with asyncio.timeout(self.model_timeout_seconds):
-
-                response = await invoke_with_usage(self.generator,
-                    SparqlRequest(request.prompt, request.schema, request.policy, request.permissions))
-                usage_by_stage[stage] = response.usage
-                generated = response.output
-
-            query = generated.query
-            log_block(logger, f"run={run_id} generated_query=", query)
-
-            if not isinstance(query, str) or not query.strip():
-                raise ValueError("Empty or invalid query")
-
-            timings[stage] = perf_counter() - started
-            stage, started = "query_analysis", perf_counter()
-            logger.info("run=%s stage=%s started", run_id, stage)
-            analysis = self.analyzer.run(query)
-            log_block(logger, f"run={run_id} Query analysis", {
-                key: analysis[key] for key in ("is_compliant", "status", "violations", "findings")
-                if key in analysis})
-            log_block(logger, f"run={run_id} Full query analysis", analysis, level=logging.DEBUG)
-
-            if analysis["is_compliant"] is not True:
-                if analysis.get("status") == "unsupported":
-                    logger.warning("run=%s Query not executed: unsupported capability, not a confirmed policy violation. checks=%s",
-                                   run_id, [finding.get("check") for finding in analysis.get("findings", [])])
-                return finish("blocked_query")
+            generation_request = SparqlRequest(request.prompt, request.schema, request.policy, request.permissions)
+            for index in range(self.query_retries + 1):
+                suffix = f"_retry_{index}" if index else ""
+                stage, started = "generation" + suffix, perf_counter()
+                attempt = {"attempt": index + 1, "query": None, "analysis": None,
+                           "failed_checks": [], "status": "running", "timings": {}}
+                attempts.append(attempt)
+                logger.info("run=%s stage=%s started", run_id, stage)
+                async with asyncio.timeout(self.model_timeout_seconds):
+                    response = await invoke_with_usage(self.generator, generation_request)
+                    usage_by_stage[stage] = response.usage
+                    generated = response.output
+                timings[stage] = perf_counter() - started
+                attempt.update(token_usage=asdict(response.usage), generation_metadata=response.metadata)
+                attempt["timings"]["generation"] = timings[stage]
+                query = generated.query
+                attempt["query"] = query
+                log_block(logger, f"run={run_id} generated_query= attempt={index + 1}", query)
+                if not isinstance(query, str) or not query.strip():
+                    raise ValueError("Empty or invalid query")
+                stage, started = "query_analysis" + suffix, perf_counter()
+                analysis = self.analyzer.run(query)
+                timings[stage] = perf_counter() - started
+                attempt["timings"]["analysis"] = timings[stage]
+                attempt.update(analysis=analysis, status=analysis.get("status", "compliant" if analysis["is_compliant"] is True else "unsupported"),
+                               failed_checks=list(dict.fromkeys(f.get("check") or f["code"]
+                                   for f in analysis.get("findings", []))))
+                log_block(logger, f"run={run_id} Query analysis attempt={index + 1}", attempt_for_log(attempt))
+                if analysis["is_compliant"] is True:
+                    stop_reason = "accepted"
+                    break
+                stop_reason = "retry_limit"
+                if index == self.query_retries:
+                    return finish("blocked_query")
+                generation_request = repair_request(generation_request, attempts)
 
             if not execute:
                 return finish("query_ready")
@@ -157,13 +178,13 @@ class SparqlWorkflow:
             return finish("released", result=result)
 
         except ResultBlocked as error:
-            if stage in {"prompt_validation", "generation"} and stage not in usage_by_stage:
+            if (stage == "prompt_validation" or stage.startswith("generation")) and stage not in usage_by_stage:
                 usage_by_stage[stage] = error_usage(error)
             logger.info("run=%s stage=%s result blocked", run_id, stage)
             return finish("blocked_runtime" if stage == "execution" else "error", error_type="ResultBlocked")
 
         except Exception as error:
-            if stage in {"prompt_validation", "generation"} and stage not in usage_by_stage:
+            if (stage == "prompt_validation" or stage.startswith("generation")) and stage not in usage_by_stage:
                 usage_by_stage[stage] = error_usage(error)
             logger.exception("run=%s stage=%s failed", run_id, stage)
             # A backend/parser crash is an error, not a successful security block.

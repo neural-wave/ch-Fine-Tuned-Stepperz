@@ -3,6 +3,7 @@ import asyncio
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 import logging
+import json
 import os
 from pathlib import Path
 from time import perf_counter
@@ -16,6 +17,7 @@ from starlette.exceptions import HTTPException
 
 from agent_orchestration.local_models import CONFIG, open_models
 from agent_orchestration.logging_setup import configure_logging
+from agent_orchestration.query_retry import validate_query_retries
 from .service import TranslationService
 
 logger = logging.getLogger(__name__)
@@ -32,6 +34,7 @@ class NlToSparqlResponse(BaseModel):
     is_compliant: bool
     compliance_reason: str | None = None
     analytics: dict | None = None
+    query_attempts: list[dict] | None = None
 
 
 class ErrorResponse(BaseModel):
@@ -62,9 +65,11 @@ def create_app(service=None):
             schema = "SPHN clinical RDF. Retrieve class/property details from the schema MCP."
             policy = (directory / "policy.txt").read_text(encoding="utf-8-sig")
             permissions = (directory / "permissions.txt").read_text(encoding="utf-8-sig")
+            settings = json.loads(config.read_text(encoding="utf-8-sig"))
+            query_retries = validate_query_retries(settings.get("query_retries", 0))
             async with open_models(config, assessment_mode=True) as (guard, generator):
                 app.state.translator = TranslationService(guard, generator, schema=schema,
-                    policy=policy, permissions=permissions)
+                    policy=policy, permissions=permissions, query_retries=query_retries)
                 yield
 
     app = FastAPI(title="Natural Language to SPARQL API", version="1.0.0", lifespan=lifespan)

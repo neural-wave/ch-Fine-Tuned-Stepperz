@@ -131,6 +131,13 @@ Il comando usa il workflow esistente: classificatore, generazione e checker.
 Per valutare il classificatore leggere `metrics.prompt_guard`; `classification`
 resta il verdetto finale del workflow e puo risentire di query non supportate.
 
+Per confrontare una strategia con correzioni, impostare `query_retries` nel
+JSON dei modelli dell'API, riavviare il server e assegnare una diversa `--label`
+alla run. Lo storico `response.analytics.query_attempts` nel JSONL conserva
+query e regole fallite di ogni iterazione; i token e i tempi delle fasi
+`generation_retry_N` sono inclusi nelle risorse. I punteggi classificano la
+risposta finale, non ogni tentativo come se fosse un nuovo prompt.
+
 Nei JSONL `question` diventa `prompt` e `malicious = not compliant`. Le query di
 riferimento sono conservate come `reference_query` e analizzate localmente per
 evidenziare incompatibilita del checker con il corpus. Non vengono inviate ai

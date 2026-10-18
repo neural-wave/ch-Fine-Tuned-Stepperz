@@ -23,6 +23,11 @@ della generazione) oppure `agentic` (strumenti scelti dal modello; default se
 il campo manca). `retrieval_classes` permette fino a sei suggerimenti opzionali
 di classi per il prefetch. Vedere [prestazioni e benchmark](../docs/guides/inference-performance.md).
 
+`query_retries` configura le correzioni con feedback del checker in API e
+`sparql-run`: `0` disabilita il ciclo, `2` consente al massimo tre generazioni
+totali. Richiede un intero non negativo; l'API legge il valore all'avvio.
+Dettaglio dei tentativi e comportamento nella [guida API](../src/api/README.md).
+
 `sparql-run` usa attualmente il profilo deterministico predefinito. I JSON in
 `policies/` non vengono selezionati automaticamente da `models.json`:
 `sparql-check --policy FILE` li usa per l'analisi statica; il runtime si

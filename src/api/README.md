@@ -122,14 +122,49 @@ Anche se il classificatore blocca il prompt, viene prodotta una query da valutar
 non viene eseguita ne trasformata in una richiesta diversa per renderla conforme.
 Gli errori tecnici sono risposte di errore, non verdetti di non conformita.
 
+## Correzione della query con feedback
+
+In [models.json](../../config/agents/models.json) impostare `query_retries` e
+riavviare l'API. Il preset contiene `0`, che mantiene una sola generazione.
+Con `2` si consentono al massimo tre generazioni: la prima e due correzioni.
+Il valore deve essere un intero non negativo; non e controllato dal prompt.
+
+Per ogni query rifiutata, il generatore riceve il prompt originale, schema,
+policy e permessi invariati, piu `feedback` con query precedenti, stato e
+finding del checker (`check`, `code`, `reason`, operatori vietati). Non vengono
+disattivate regole. Il ciclo si ferma al primo esito statico positivo o al
+limite configurato. Anche `unsupported` puo generare feedback per una correzione.
+Errori tecnici e timeout interrompono la richiesta: non sono retry del checker.
+
+Un prompt `block` o `review` mantiene il verdetto negativo: l'API genera la
+query per la valutazione, come prima, ma non tenta di correggerla. Il generatore
+riceve l'istruzione di preservare significato, coorte, filtri e output richiesti:
+non deve eliminare condizioni o cambiare la domanda per ottenere un'approvazione.
+La conformita statica non certifica da sola l'equivalenza semantica o la privacy
+runtime; quest'ultima resta responsabilita dell'esecutore.
+
+Nell'endpoint di studio, `analytics.query_attempts` contiene ogni tentativo:
+numero, query, `analysis` completo, `failed_checks`, `token_usage`, metadati e
+tempi. `analytics.query_retry` riporta budget, retry usati e motivo di arresto
+(`accepted`, `retry_limit`, `prompt_not_allowed`, `error`). Con retry abilitati,
+anche l'endpoint ordinario restituisce `query_attempts` senza richiedere header.
+La query principale e il verdetto riguardano l'ultimo tentativo completato;
+se il budget e esaurito resta un verdetto negativo, con HTTP 200.
+
+I token includono il classificatore e tutte le generazioni, senza contare due
+volte i tentativi. Le fasi successive si chiamano `generation_retry_1`,
+`analysis_retry_1` e cosi via. Il dettaglio resta disponibile anche negli errori
+dell'endpoint di studio. Il limite temporale HTTP esistente comprende l'intero
+ciclo; aumentare i retry puo richiedere un timeout client adeguato.
+
 ## Analytics e log
 
 ### Endpoint di studio
 
 `POST /study/nl-to-sparql` accetta lo stesso JSON dell'endpoint ordinario e
 restituisce sempre `analytics`, senza richiedere `X-Include-Analytics`.
-Usa lo stesso workflow e gli stessi backend gia caricati, con una sola
-esecuzione per richiesta e la stessa coda di inferenza.
+Usa lo stesso workflow e gli stessi backend gia caricati, con la stessa coda
+di inferenza e il budget di correzioni configurato.
 
 ```bash
 curl http://127.0.0.1:10100/study/nl-to-sparql \

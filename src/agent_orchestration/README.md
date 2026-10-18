@@ -4,10 +4,20 @@ Ingresso applicativo: `uv run --extra local sparql-run --help`.
 Per i percorsi pronti all'uso vedere la [guida dei comandi](../../docs/guides/commands.md).
 
 Il flusso è: **validazione del prompt → generazione SPARQL → analisi statica →
-esecuzione controllata**. `SparqlWorkflow` si ferma al primo blocco o errore.
+esecuzione controllata**. `SparqlWorkflow` puo ripetere generazione e analisi
+statica con feedback, entro il budget `query_retries` (default `0`).
+Un blocco del prompt o un errore interrompono il workflow; il runtime non viene
+ritentato. I tentativi sono restituiti in `analytics.query_attempts`.
 Con `run(request, execute=False)` prepara soltanto la query e restituisce
 `query_ready`; l'executor serve per l'esecuzione, abilitata per default.
 La valutazione semantica confronta i risultati con gli oracoli nei test offline.
+
+`sparql-run` legge `query_retries` da `config/agents/models.json`, come l'API.
+Nel codice si configura con `SparqlWorkflow(..., query_retries=2)`; il budget
+indica correzioni aggiuntive, quindi al massimo tre generazioni totali.
+Il feedback e disponibile in `SparqlRequest.feedback`. I generatori personalizzati
+devono usarlo per correggere la query mantenendo il significato del prompt.
+Stato, regole fallite, query, tempi e token sono conservati per ogni tentativo.
 
 ## Scegliere i modelli
 

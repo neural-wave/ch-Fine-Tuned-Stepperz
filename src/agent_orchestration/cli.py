@@ -12,6 +12,7 @@ from rdflib import Dataset
 from . import CheckedQueryExecutor, PromptRequest, SparqlWorkflow, StaticQueryAnalyzer
 from .local_models import CONFIG, check_mcp, open_models
 from .logging_setup import configure_logging
+from .query_retry import validate_query_retries
 
 logger = logging.getLogger(__name__)
 
@@ -26,6 +27,7 @@ async def generate(args):
         (args.policy_file or directory / "policy.txt").read_text(encoding="utf-8-sig"),
         (args.permissions_file or directory / "permissions.txt").read_text(encoding="utf-8-sig"))
     config = json.loads(args.config.read_text(encoding="utf-8-sig"))
+    query_retries = validate_query_retries(config.get("query_retries", 0))
     
     if not (config.get("mcp_url") or config.get("mcp_settings")) and not args.schema_file:
         raise ValueError("Without MCP provide --schema-file")
@@ -37,7 +39,8 @@ async def generate(args):
         dataset.parse(args.dataset.resolve(strict=True).as_uri(), format=args.rdf_format)
         executor = CheckedQueryExecutor(dataset)
     async with open_models(args.config) as (guard, generator):
-        workflow = SparqlWorkflow(guard, generator, StaticQueryAnalyzer(), executor, model_timeout_seconds=120)
+        workflow = SparqlWorkflow(guard, generator, StaticQueryAnalyzer(), executor, model_timeout_seconds=120,
+                                 query_retries=query_retries)
         outcome = await workflow.run(request, execute=args.dataset is not None)
         return {**asdict(outcome), "executed": outcome.status == "released"}
 
