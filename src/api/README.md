@@ -5,7 +5,10 @@ e token consumati. Il flusso e **controllo del prompt → generazione → analis
 statica**. L'esecuzione della query resta al client; l'API non richiede Virtuoso.
 
 Tutti i comandi seguenti partono dalla **radice del repository**, non da questa
-cartella. Servono Python 3.12+, uv e i servizi di inferenza/MCP gia avviati.
+cartella. Servono Python 3.12+, uv e il servizio di inferenza gia avviato.
+Su Linux, `start-api.sh` avvia il MCP SPHN locale in una sessione tmux se non
+risponde, poi ne verifica gli strumenti prima di avviare l'API. Gli avvii
+diretti con Uvicorn o debugger richiedono invece il MCP gia attivo.
 L'API carica Laya all'avvio e riusa i backend tra le richieste.
 
 ## Avvio
@@ -22,7 +25,11 @@ Su Windows, direttamente da PowerShell senza Bash/WSL:
 uv run --locked --extra local --extra api python -m uvicorn api.server:app --host 127.0.0.1 --port 8000
 ```
 
-Aprire [Swagger](http://127.0.0.1:8000/docs) per provare le richieste.
+Con `start-api.sh`, aprire la [frontpage](http://127.0.0.1:10100/) per inserire
+una domanda in linguaggio naturale e vedere query, verdetto e tempi; con il
+comando Windows sopra, usare la porta `8000`. La pagina usa
+`POST /study/nl-to-sparql` sullo stesso host dell'API. Aprire anche
+[Swagger](http://127.0.0.1:10100/docs) per provare direttamente le richieste.
 `GET /health` restituisce `{"status":"ok"}` senza fare inferenza.
 Lo schema OpenAPI e disponibile su `/openapi.json`.
 

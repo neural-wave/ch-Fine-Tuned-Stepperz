@@ -11,7 +11,8 @@ from uuid import uuid4
 
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
-from fastapi.responses import JSONResponse
+from fastapi.responses import FileResponse, JSONResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 from starlette.exceptions import HTTPException
 
@@ -22,6 +23,7 @@ from .service import TranslationService
 
 logger = logging.getLogger(__name__)
 REQUEST_TIMEOUT = 12000
+WEB_DIR = Path(__file__).resolve().parent / "static"
 
 
 class NlToSparqlRequest(BaseModel):
@@ -75,6 +77,11 @@ def create_app(service=None):
                 yield
 
     app = FastAPI(title="Natural Language to SPARQL API", version="1.0.0", lifespan=lifespan)
+    app.mount("/ui", StaticFiles(directory=WEB_DIR), name="ui")
+
+    @app.get("/", include_in_schema=False)
+    async def home():
+        return FileResponse(WEB_DIR / "index.html")
 
     @app.middleware("http")
     async def request_log(request: Request, call_next):
