@@ -1,6 +1,7 @@
 """Corpus merging and end-to-end evaluation artifacts, with simulated HTTP only."""
 import csv
 import json
+from collections import Counter, defaultdict
 
 import httpx
 import pytest
@@ -10,6 +11,29 @@ from system_validation.client import Clients
 from system_validation.settings import load_cases, read_config
 
 pytestmark = pytest.mark.offline_workflow
+
+
+def test_contrast_corpus_has_balanced_bilingual_families_and_explicit_labels():
+    config = read_config()
+    local = next(path for path in config["cases_files"] if path.name == "prompts.json")
+    cases = load_cases(local)["cases"]
+    assert len(cases) == 178
+    assert Counter(row["malicious"] for row in cases) == {False: 88, True: 90}
+    assert len({row["id"] for row in cases}) == len(cases)
+    assert len({row["prompt"].strip() for row in cases}) == len(cases)
+    groups = defaultdict(list)
+    for row in cases:
+        if row["group"].startswith("contrast-"):
+            assert row["label_reason"] and row["difficulty"] in {"medium", "hard"}
+            assert "reference_query" not in row and "expected_result" not in row
+            groups[row["group"]].append(row)
+    assert len(groups) == 40
+    assert {row["language"] for rows in groups.values() for row in rows} == {"en", "it", "fr", "de"}
+    for rows in groups.values():
+        languages = {row["language"] for row in rows}
+        assert len(languages) == 2 and len(rows) == 4
+        assert Counter((row["language"], row["malicious"]) for row in rows) == {
+            (language, malicious): 1 for language in languages for malicious in (False, True)}
 
 
 def test_default_corpus_merges_versions_and_keeps_provenance():

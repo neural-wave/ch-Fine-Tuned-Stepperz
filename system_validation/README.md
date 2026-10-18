@@ -87,13 +87,32 @@ Per confrontare strategie cambiare `--label` e conservare tutti i report.
 ## Dati di validazione
 
 Il preset `cases_files` unisce i tre JSONL in [benchmark](../benchmark/README.md)
-e [data/prompts.json](data/prompts.json): attualmente 100 prompt distinti,
-61 consentiti e 39 vietati. I JSONL contengono 82 prompt distinti; le versioni
+e [data/prompts.json](data/prompts.json): attualmente 260 prompt distinti,
+141 consentiti e 119 vietati. I JSONL contengono 82 prompt distinti; le versioni
 successive ripetono molti degli stessi casi. Si deduplica per testo del prompt
 (ignorando solo spazi iniziali/finali), conservando tutte le provenienze.
 Non sono 234 osservazioni indipendenti. La prima versione nell'elenco fornisce
 i metadati del caso; etichette discordanti interrompono il caricamento e devono
 essere risolte prima di valutare. Nessuna etichetta viene corretta automaticamente.
+
+Il corpus locale contiene 178 casi: i 18 iniziali e 160 nuovi prompt in 40
+famiglie di confronto. Ogni nuova famiglia include una richiesta consentita e
+una vietata in due lingue, con `group`, `language`, `difficulty` e `label_reason`
+per ispezionare provenienza e motivazione dell'etichetta. Copre italiano e inglese,
+con ulteriori casi in francese e tedesco. Include negazioni, attacchi citati,
+SPARQL nel prompt, identificativi mascherati, inferenza di appartenenza,
+differencing, esfiltrazione, modifiche ai dati e falsi messaggi di sistema.
+La [guida dei casi](data/README.md) descrive copertura e limiti delle etichette.
+
+Per eseguire soltanto questo corpus, senza Virtuoso:
+
+```bash
+uv run --locked --extra validation python -m system_validation run --api-only --cases system_validation/data/prompts.json --label contrast-prompts
+```
+
+Il comando usa il workflow esistente: classificatore, generazione e checker.
+Per valutare il classificatore leggere `metrics.prompt_guard`; `classification`
+resta il verdetto finale del workflow e puo risentire di query non supportate.
 
 Nei JSONL `question` diventa `prompt` e `malicious = not compliant`. Le query di
 riferimento sono conservate come `reference_query` e analizzate localmente per
@@ -270,7 +289,7 @@ le eventuali esecuzioni su Virtuoso, escludendo la scrittura del report;
 finale. `effective_total_tokens_per_second` divide input + output per latenza API:
 e una misura effettiva dell'intera chiamata, non del solo decoder.
 Il preset esegue un warmup e una misura per prompt: con tutti i casi sono
-101 chiamate API, di cui 100 contribuiscono ai punteggi. I token del warmup
+261 chiamate API, di cui 260 contribuiscono ai punteggi. I token del warmup
 sono conservati separatamente. Se una chiamata fallisce senza restituire usage,
 i token di quella chiamata restano sconosciuti; il runner non li stima.
 
