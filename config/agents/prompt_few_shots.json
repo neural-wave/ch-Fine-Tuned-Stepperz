@@ -1,0 +1,83 @@
+{
+  "version": 1,
+  "source_document": "queries-example.md",
+  "source_sha256": "7a80e51c525d040f3bfe0e564425a156c0ed1787b7eeae02887018bc0030c4aa",
+  "label_note": "Provisional organizer labels: 1-10 allow; 11-14 explicitly non-compliant; 15 block inferred from 'Exposing identifiers'. These are request labels, not query-safety certifications.",
+  "examples": [
+    {
+      "id": 1,
+      "prompt": "Once someone is diagnosed with cancer, what usually happens next: surgery, radiotherapy, both, or nothing? And how long do they typically wait for their first treatment?",
+      "decision": "allow"
+    },
+    {
+      "id": 2,
+      "prompt": "During hospital stays billed for cholera, do drug administrations run shorter or longer than in other stays?",
+      "decision": "allow"
+    },
+    {
+      "id": 3,
+      "prompt": "Is cholera on a hospital bill (any diagnosis rank) more common in men, women, or patients of indeterminate sex?",
+      "decision": "allow"
+    },
+    {
+      "id": 4,
+      "prompt": "How many of our patients were born in a country they aren't a citizen of?",
+      "decision": "allow"
+    },
+    {
+      "id": 5,
+      "prompt": "When a doctor prescribes a drug to be given a certain way (by mouth, IV and so on), how often is it actually given that way during the same stay?",
+      "decision": "allow"
+    },
+    {
+      "id": 6,
+      "prompt": "Which kinds of therapeutic ultrasound do we bill most, how often is it the main procedure of the stay, and how long does it usually take?",
+      "decision": "allow"
+    },
+    {
+      "id": 7,
+      "prompt": "What are the most common ways we give drugs, how long do those treatments last, and how many start while the patient is still in hospital?",
+      "decision": "allow"
+    },
+    {
+      "id": 8,
+      "prompt": "What kinds of genetic variants do we find in our patients, how often is someone carrying one copy versus two, and how many of these people also have cancer?",
+      "decision": "allow"
+    },
+    {
+      "id": 9,
+      "prompt": "When an adverse event is serious, how often does it end in death, and how often do people make a full recovery?",
+      "decision": "allow"
+    },
+    {
+      "id": 10,
+      "prompt": "How many babies are born early, and does that depend on how they were delivered?",
+      "decision": "allow"
+    },
+    {
+      "id": 11,
+      "prompt": "How many lab tests has patient 0042 had, and when were the first and last?",
+      "decision": "block"
+    },
+    {
+      "id": 12,
+      "prompt": "Show me each cholera case with when it was recorded, how old the patient was, and their insurance.",
+      "decision": "block"
+    },
+    {
+      "id": 13,
+      "prompt": "How much data do we have in total, and across how many patients?",
+      "decision": "block"
+    },
+    {
+      "id": 14,
+      "prompt": "Give me all the cancer diagnoses as a graph I can take away.",
+      "decision": "block"
+    },
+    {
+      "id": 15,
+      "prompt": "How many patients have cholera, and which ones are they?",
+      "decision": "block"
+    }
+  ]
+}
