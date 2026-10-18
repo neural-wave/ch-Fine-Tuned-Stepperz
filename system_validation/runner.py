@@ -7,7 +7,9 @@ from pathlib import Path
 from time import perf_counter
 
 from sparql_analyzer.validation import validate
-from .metrics import summarize
+from .metrics import summarize, token_totals
+from .diagnostics import diagnose
+from .client import TranslationError
 from .settings import load_cases
 from .virtuoso import ready
 
@@ -28,8 +30,9 @@ def trial(case, clients, config, *, index, warmup, api_only=False):
                              if row["prompt_predicted_malicious"] is not None else None)
     row["outcome"] = ("error" if predicted is None else
                       ("tp" if predicted else "fn") if case["malicious"] else ("fp" if predicted else "tn"))
-    tokens = row.get("response", {}).get("tokens_consumed")
+    tokens, _ = token_totals(row)
     row["effective_total_tokens_per_second"] = tokens / row["api_seconds"] if tokens is not None and row["api_seconds"] > 0 else None
+    row["diagnostics"] = diagnose(row)
     logger.info("Case completed %s", json.dumps(row, ensure_ascii=False))
     return row
 
@@ -46,6 +49,8 @@ def _trial(case, clients, config, *, index, warmup, api_only):
         logger.exception("API request failed id=%s", case["id"])
         row.update(api_seconds=perf_counter() - started,
                    error={"type": type(error).__name__, "message": str(error)})
+        if isinstance(error, TranslationError):
+            row.update(response=error.payload, api_seconds=error.seconds, http_status=error.response.status_code)
         return row
     # Labels are held by the evaluator, never sent to the API. No query from a
     # malicious labeled prompt is executed, including false negative approvals.
@@ -81,12 +86,19 @@ def save_summary(directory, rows, metadata):
     with (directory / "trials.csv").open("w", newline="", encoding="utf-8") as stream:
         fields = ["id", "prompt", "category", "repeat", "warmup", "malicious", "predicted_malicious", "correct", "outcome",
                   "prompt_decision", "prompt_predicted_malicious", "prompt_correct",
-                  "api_seconds", "total_seconds", "tokens_consumed", "effective_total_tokens_per_second", "execution_status", "error"]
+                  "api_seconds", "total_seconds", "tokens_consumed", "known_total_tokens", "effective_total_tokens_per_second", "execution_status", "error",
+                  "causes", "failed_stage", "query_status", "query_analysis_source", "compliance_reason", "reference_status"]
         writer = csv.DictWriter(stream, fieldnames=fields)
         writer.writeheader()
         for row in rows:
+            diagnostics = row.get("diagnostics") or diagnose(row)
             writer.writerow({**{key: row.get(key) for key in fields},
-                "tokens_consumed": row.get("response", {}).get("tokens_consumed"),
+                "causes": ";".join(diagnostics["causes"]), "failed_stage": diagnostics["failed_stage"],
+                "query_status": (diagnostics["query_analysis"] or {}).get("status"),
+                "query_analysis_source": diagnostics["query_analysis_source"],
+                "compliance_reason": diagnostics["compliance_reason"],
+                "reference_status": (diagnostics["reference_analysis"] or {}).get("status"),
+                "tokens_consumed": token_totals(row)[0], "known_total_tokens": token_totals(row)[1],
                 "execution_status": row["execution"]["status"]})
     return report
 
@@ -130,7 +142,7 @@ def _run(config, clients, *, label, case_limit, api_only, timestamp, directory):
         "loaded_patient_files": len(receipt["sources"]["patients"]) if receipt else None,
         "loaded_ontology_files": len(receipt["sources"]["ontologies"]) if receipt else None,
         "positive_class": "malicious", "prediction": "not API.is_compliant (end-to-end verdict)",
-        "oracle": "Dataset malicious/compliant labels only; no query reference or semantic-equivalence score",
+        "oracle": "Dataset malicious/compliant labels. Reference queries are checked locally for diagnostics only; no semantic-equivalence score.",
         "throughput_note": "Effective output tokens per stage wall time includes retrieval/prefill; not decoder tokens/s or TTFT",
         "classification_note": "Accuracy includes API errors as failures; confusion matrix/precision/recall use valid verdicts. Coverage and per-class all-attempt rates expose errors.",
         "database_note": "Source hashes plus loader/graph inventory, not a transactional snapshot. Keep the database isolated from writers.",

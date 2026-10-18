@@ -1,4 +1,4 @@
-"""python -m system_validation check|prepare|run --config system_validation/config.json"""
+"""python -m system_validation check|prepare|run|report --config system_validation/config.json"""
 import argparse
 import json
 import logging
@@ -14,7 +14,8 @@ from .virtuoso import prepare
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("command", choices=["check", "prepare", "run"])
+    parser.add_argument("command", choices=["check", "prepare", "run", "report"])
+    parser.add_argument("--trials", help="report only: saved trials.jsonl to analyze offline")
     parser.add_argument("--inference", action="store_true", help="check only: run one real API translation including Laya and generator")
     parser.add_argument("--with-virtuoso", action="store_true", help="check only: verify loaded data and preparation receipt")
     parser.add_argument("--config", default=DEFAULT_CONFIG)
@@ -24,6 +25,8 @@ def main():
     parser.add_argument("--cases", action="append", help="run only: JSON/JSONL dataset; repeat to merge files")
     parser.add_argument("--reset-patients", action="store_true", help="prepare only: explicitly clear patient graphs before loading the mock dataset")
     args = parser.parse_args()
+    if (args.command == "report") != (args.trials is not None):
+        parser.error("report requires --trials; --trials is only valid for report")
     if args.limit is not None and args.limit < 1:
         parser.error("limit must be positive")
     if args.reset_patients and args.command != "prepare":
@@ -37,8 +40,14 @@ def main():
         from pathlib import Path
         config["cases_files"] = [Path(value).resolve() for value in args.cases]
     configure_logging("system-validation")
-    clients = Clients(config)
+    clients = None
     try:
+        if args.command == "report":
+            from .report import rebuild
+            directory, _ = rebuild(config, args.trials)
+            print(f"Report: {directory}")
+            return 0
+        clients = Clients(config)
         if args.command == "check":
             from .health import check
             report = check(config, clients, inference=args.inference, with_virtuoso=args.with_virtuoso)
@@ -59,7 +68,8 @@ def main():
         print(f"Validation could not complete: {error}", file=sys.stderr)
         return 2
     finally:
-        clients.close()
+        if clients is not None:
+            clients.close()
 
 
 if __name__ == "__main__":

@@ -40,7 +40,7 @@ def test_api_only_runs_every_unique_prompt_and_keeps_all_statistics(tmp_path, mo
     received = []
 
     def respond(request):
-        assert request.url.path == "/nl-to-sparql"
+        assert request.url.path == "/study/nl-to-sparql"
         body = json.loads(request.content)
         assert set(body) == {"text"}
         assert request.headers["x-include-analytics"] == "true"
@@ -116,7 +116,7 @@ def test_api_errors_are_measured_and_do_not_stop_later_cases(tmp_path):
     rows = [json.loads(line) for line in (directory / "trials.jsonl").read_text(encoding="utf-8").splitlines()]
     assert rows[0]["outcome"] == "error" and rows[0]["correct"] is None
     assert rows[1]["outcome"] == "tn"
-    assert "HTTPStatusError" in (directory / "execution.log").read_text(encoding="utf-8")
+    assert "TranslationError" in (directory / "execution.log").read_text(encoding="utf-8")
 
 
 def test_interruption_preserves_partial_reports_and_closes_log(tmp_path):

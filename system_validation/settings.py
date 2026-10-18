@@ -49,7 +49,8 @@ def load_cases(path):
         payload = {"version": 1, "annotation": "Benchmark compliant labels mapped to malicious = not compliant.",
                    "cases": [{"id": row["id"], "prompt": row["question"], "malicious": not row["compliant"],
                               "category": row.get("category", "uncategorized"),
-                              "difficulty": row.get("difficulty"), "expected_reason": row.get("why_non_compliant")}
+                              "difficulty": row.get("difficulty"), "expected_reason": row.get("why_non_compliant"),
+                              "reference_query": row.get("reference")}
                              for row in rows]}
     else:
         payload = json.loads(Path(path).read_text(encoding="utf-8-sig"))

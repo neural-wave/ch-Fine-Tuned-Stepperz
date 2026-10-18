@@ -3,6 +3,14 @@ from time import perf_counter
 import httpx
 
 
+class TranslationError(httpx.HTTPStatusError):
+    """HTTP failure retaining study telemetry without creating a verdict."""
+    def __init__(self, response, payload, seconds):
+        super().__init__(f"Translation HTTP {response.status_code}",
+                         request=response.request, response=response)
+        self.payload, self.seconds = payload, seconds
+
+
 class Clients:
     def __init__(self, config, *, transport=None):
         self.config = config
@@ -13,10 +21,15 @@ class Clients:
 
     def translate(self, prompt):
         started = perf_counter()
-        response = self.http.post(self.config["api_url"].rstrip("/") + "/nl-to-sparql",
+        response = self.http.post(self.config["api_url"].rstrip("/") + "/study/nl-to-sparql",
                                   json={"text": prompt}, headers={"X-Include-Analytics": "true"})
         elapsed = perf_counter() - started
-        response.raise_for_status()
+        if not response.is_success:
+            try:
+                payload = response.json()
+            except ValueError:
+                payload = {}
+            raise TranslationError(response, payload if isinstance(payload, dict) else {}, elapsed)
         payload = response.json()
         if (type(payload.get("is_compliant")) is not bool or not isinstance(payload.get("sparql_query"), str)
                 or type(payload.get("tokens_consumed")) is not int or payload["tokens_consumed"] < 0):

@@ -94,7 +94,7 @@ def test_optional_inference_uses_existing_api_and_checks_loaded_data(setup, monk
         if request.url.path == "/v1/models":
             assert request.headers["Authorization"] == "Bearer secret-test-key"
             return httpx.Response(200, json={"data": [{"id": "chosen-model"}]})
-        assert request.url.path == "/nl-to-sparql"
+        assert request.url.path == "/study/nl-to-sparql"
         assert json.loads(request.content) == {"text": health.PROMPT}
         return httpx.Response(200, json={"is_compliant": False, "sparql_query": "SELECT (COUNT(*) AS ?n) WHERE {}",
             "tokens_consumed": 42, "analytics": {"prompt_decision": "review"}})

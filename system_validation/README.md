@@ -95,10 +95,12 @@ Non sono 234 osservazioni indipendenti. La prima versione nell'elenco fornisce
 i metadati del caso; etichette discordanti interrompono il caricamento e devono
 essere risolte prima di valutare. Nessuna etichetta viene corretta automaticamente.
 
-Nei JSONL `question` diventa `prompt` e `malicious = not compliant`. Query di
-riferimento, risultati attesi e tempi preesistenti non entrano nell'inferenza
-o nelle metriche di questa valutazione. Le annotazioni esistenti sono l'oracolo,
-non una verifica indipendente della policy.
+Nei JSONL `question` diventa `prompt` e `malicious = not compliant`. Le query di
+riferimento sono conservate come `reference_query` e analizzate localmente per
+evidenziare incompatibilita del checker con il corpus. Non vengono inviate ai
+modelli, eseguite sul database o usate per correggere i verdetti. Risultati
+attesi e tempi preesistenti non entrano nelle metriche. Le annotazioni esistenti
+sono l'oracolo, non una verifica indipendente della policy.
 
 Per scegliere singoli file o unirne altri, ripetere `--cases`:
 
@@ -246,10 +248,15 @@ stesso prompt non sono campioni statisticamente indipendenti.
 Si conservano token totali e per modello/fase, input/output, cache, reasoning,
 numero di chiamate quando riportati, distribuzioni dei tempi (media, mediana,
 p95, min/max e deviazione standard) e costo dei warmup separato dalle misure.
-I token mancanti rimangono sconosciuti, con somme parziali esplicite. L'header
-`X-Include-Analytics: true` abilita questi dettagli senza cambiare la risposta
-standard degli altri client. Server vecchi possono fornire solo il totale:
-`calls_missing_detailed_analytics` lo rende visibile.
+Il runner chiama `POST /study/nl-to-sparql`, che include sempre le analytics:
+serve una versione dell'API che esponga questo endpoint. Anche i corpi delle
+risposte HTTP fallite sono conservati, inclusi token, fase fallita e tempi gia
+disponibili. Queste risposte restano errori, senza inventare un verdetto.
+`total_tokens` resta `null` se manca il conteggio completo di una chiamata;
+`known_total_tokens` include anche i consumi parziali, senza contarli due volte.
+`calls_with_partial_token_usage` e `calls_without_token_usage` distinguono
+conteggi incompleti e assenti. I warmup restano separati. Le vecchie run prive
+di analytics sono segnalate da `calls_missing_detailed_analytics`.
 
 I tempi Virtuoso misurano richiesta HTTP completa, inclusa la rete, per query
 eseguite in sequenza; non il solo tempo CPU del motore. Il throughput per fase
@@ -271,6 +278,34 @@ Non ci sono soglie o assert sui punteggi. Anche una run con falsi positivi,
 falsi negativi o errori sulle singole richieste produce log e termina normalmente.
 Solo setup non valido, dati non pronti o cambiati e interruzioni della run
 impediscono di considerare completa la misura. I dati gia raccolti restano su disco.
+
+## Capire i rifiuti e riesaminare una run
+
+`metrics.diagnostics` conta separatamente `prompt_block`, `prompt_review`,
+`query_non_compliant`, `query_unsupported` ed errori tecnici. Le cause possono
+sovrapporsi. Un limite del checker non dimostra un'intenzione malevola.
+`classification.class_support` mostra quanti casi benigni e maligni sono stati
+selezionati; `both_classes_present: false` segnala che mancano esempi di una
+classe. `--limit` seleziona i primi casi, quindi puo produrre un campione sbilanciato.
+
+Ogni riga JSONL conserva la query generata, le analytics originali e la diagnosi.
+Il CSV aggiunge cause, motivo del rifiuto, fase fallita, stato del checker e
+stato della query di riferimento. Il confronto con i riferimenti usa la policy
+locale predefinita: non misura equivalenza semantica o anonimizzazione runtime
+e non modifica le direttive Virtuoso.
+
+Per riesaminare un vecchio file senza servizi attivi:
+
+```bash
+uv run --locked --extra validation python -m system_validation report --trials artifacts/system-validation/NOME_RUN/trials.jsonl
+```
+
+Scrive una nuova cartella `report-...` con JSON, CSV e `metrics.log`, conservando
+l'originale e gli hash delle sorgenti. Se la vecchia run non contiene il report
+del checker, esegue un controllo locale della query salvata e lo marca
+`local_recheck`, separato dalle cause riportate dal server. I riferimenti sono
+abbinati per testo del prompt usando il corpus configurato. Token persi e query
+non salvate non possono essere ricostruiti. Il solo `summary.json` non basta.
 
 ## Verificare il codice senza servizi
 
