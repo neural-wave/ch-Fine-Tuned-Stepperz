@@ -17,6 +17,7 @@ from pydantic import BaseModel, Field
 from starlette.exceptions import HTTPException
 
 from agent_orchestration.local_models import CONFIG, open_models
+from agent_orchestration.adapters.prefetch import SchemaRetrievalMiss
 from agent_orchestration.model_discovery import discover_served_model
 from agent_orchestration.logging_setup import configure_logging
 from agent_orchestration.query_retry import validate_query_retries
@@ -163,6 +164,11 @@ def create_app(service=None):
                     elif request.headers.get("x-include-analytics") != "true":
                         result.pop("analytics", None)
                     return result
+        except SchemaRetrievalMiss as error:
+            logger.info("Translation needs schema context: %s", error)
+            if study:
+                return study_error(error, str(error), 400)
+            raise HTTPException(400, str(error)) from None
         except TimeoutError as error:
             logger.exception("Translation deadline exceeded")
             if study:
@@ -184,7 +190,7 @@ def create_app(service=None):
     @app.post("/study/nl-to-sparql", response_model=StudyResponse,
               response_model_exclude_none=True, operation_id="studySparql",
               summary="Translate and return execution metrics and assessment metadata",
-              responses={"default": {"model": ErrorResponse}, 400: {"model": ErrorResponse},
+              responses={"default": {"model": ErrorResponse}, 400: {"model": ErrorResponse | StudyErrorResponse},
                          **{code: {"model": StudyErrorResponse} for code in (502, 504)}})
     async def study_translate(body: NlToSparqlRequest, request: Request):
         return await run_translation(body, request, study=True)

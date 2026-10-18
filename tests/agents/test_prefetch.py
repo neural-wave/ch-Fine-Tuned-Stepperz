@@ -12,7 +12,7 @@ from pydantic_ai.models.function import FunctionModel
 
 from agent_orchestration import PromptRequest, SparqlWorkflow, StaticQueryAnalyzer
 from agent_orchestration import local_models
-from agent_orchestration.adapters.prefetch import PrefetchedSparqlLLM
+from agent_orchestration.adapters.prefetch import PrefetchedSparqlLLM, SchemaRetrievalMiss
 from agent_orchestration.models import ModelResponse as Response, SparqlResult, TokenUsage
 from agent_orchestration.validation import PromptValidation
 from sparql_analyzer.demo import EXAMPLE_QUERY
@@ -80,6 +80,22 @@ def test_retrieval_failure_never_calls_generator(broken):
             pytest.fail("No generation with missing retrieval")
     with pytest.raises((ValueError, ConnectionError)):
         asyncio.run(PrefetchedSparqlLLM(Generator(), Server()).run(PromptRequest("p", "s", "policy")))
+
+
+def test_generic_aggregate_prompt_is_a_lookup_miss_with_the_actual_mcp(tmp_path):
+    prompt = "Genera soltanto un conteggio aggregato sul dataset clinico autorizzato per una demo, mantenendo tutti i controlli privacy."
+    with shared_server(tmp_path) as url:
+        async def exercise():
+            async with local_models.schema_server({"mcp_url": url}) as server:
+                # None makes any accidental call to the generator fail the test.
+                generator = PrefetchedSparqlLLM(None, server)
+                with pytest.raises(SchemaRetrievalMiss) as caught:
+                    await generator.run(PromptRequest(prompt, "schema", "policy"))
+                metadata = caught.value.model_metadata
+                assert metadata["model_called"] is False
+                assert metadata["retrieval"]["status"] == "no_match"
+                assert metadata["retrieval"]["hints"] == [prompt]
+        asyncio.run(exercise())
 
 
 def test_prefetch_does_not_weaken_prompt_gate():
