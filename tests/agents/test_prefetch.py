@@ -57,6 +57,10 @@ def test_prefetch_actual_mcp_needs_one_model_turn(tmp_path, monkeypatch, prompt,
                     response = await generator.run_with_usage(request)
                     assert response.output.query == query
                     assert response.usage.requests == 1
+                    retrieval = response.metadata["retrieval"]
+                    assert retrieval["classes"] > 0 and retrieval["examples"] > 0
+                    assert retrieval["seconds"] >= 0
+                    assert any(value.endswith(expected_class) for value in retrieval["class_iris"])
         asyncio.run(exercise())
     assert len(calls) == 2
     assert request.schema == "trusted schema"

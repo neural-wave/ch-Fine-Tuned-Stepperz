@@ -84,9 +84,9 @@ class SystemOnePromptValidator(PromptValidator):
         if decision.choice == "allow" and self.min_allow_probability is not None:
             if decision.probability is None or decision.probability < self.min_allow_probability:
                 return ModelResponse(PromptValidation("review", "Insufficient probability for automatic acceptance",
-                                                      decision.probability), response.usage)
+                                                      decision.probability), response.usage, response.metadata)
         return ModelResponse(PromptValidation(decision.choice, "Native decision model assessment",
-                                               decision.probability), response.usage)
+                                               decision.probability), response.usage, response.metadata)
 
 
 class StaticQueryAnalyzer:

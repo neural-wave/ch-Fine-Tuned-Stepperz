@@ -18,6 +18,18 @@ pytestmark = pytest.mark.offline_workflow
 REQUEST = PromptRequest("Count patients", "schema", "aggregate only")
 
 
+@pytest.mark.parametrize("threshold,expected", [(None, "allow"), (.9, "review")])
+def test_native_prompt_adapter_preserves_backend_metadata(threshold, expected):
+    response = ModelResponse(Decision("allow", .8), TokenUsage(7, 0, source="reported"),
+                             {"backend": "scripted-native"})
+    guard = SystemOnePromptValidator(CallableSystemOneModel(lambda request: response),
+                                    min_allow_probability=threshold)
+    result = asyncio.run(guard.run_with_usage(REQUEST))
+    assert result.output.decision == expected
+    assert result.metadata == {"backend": "scripted-native"}
+    assert result.usage == response.usage
+
+
 @pytest.mark.parametrize("kwargs", [
     {"input_tokens": -1}, {"output_tokens": 1.5}, {"input_tokens": True},
     {"input_tokens": 2, "output_tokens": 3, "total_tokens": 4, "source": "reported"},

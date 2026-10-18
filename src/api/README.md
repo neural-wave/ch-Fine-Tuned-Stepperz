@@ -124,6 +124,56 @@ Gli errori tecnici sono risposte di errore, non verdetti di non conformita.
 
 ## Analytics e log
 
+### Endpoint di studio
+
+`POST /study/nl-to-sparql` accetta lo stesso JSON dell'endpoint ordinario e
+restituisce sempre `analytics`, senza richiedere `X-Include-Analytics`.
+Usa lo stesso workflow e gli stessi backend gia caricati, con una sola
+esecuzione per richiesta e la stessa coda di inferenza.
+
+```bash
+curl http://127.0.0.1:10100/study/nl-to-sparql \
+  -H 'Content-Type: application/json' \
+  -d '{"text":"How many patients are in the database?"}' \
+  -o study.json
+python -m json.tool study.json
+```
+
+La risposta conserva `sparql_query`, `tokens_consumed`, `is_compliant` ed
+eventuale `compliance_reason`. `analytics` contiene:
+
+| Campo | Contenuto |
+|---|---|
+| `status`, `executed` | Stato del workflow; `executed` e sempre `false`, perche l'API non interroga il database |
+| `token_usage` | Totali e dettaglio per fase: input, output, modello, fonte, completezza, richieste/retry, cache e reasoning quando disponibili |
+| `timings` | Secondi per `prompt_validation`, `generation`, `analysis`, `total`, attesa del lock `queue` e `request_total` |
+| `prompt_assessment` | Decisione, motivazione e probabilita del classificatore, quando disponibile |
+| `prompt_decision` | Decisione sintetica, compatibile con il benchmark esistente |
+| `query_analysis` | Report completo dell'analizzatore: stato, finding, violazioni, operatori vietati e configurazione delle regole |
+| `prompt_metadata`, `generation_metadata` | Metadati prodotti dai backend; in prefetch, `retrieval` riporta numero di classi/esempi, IRI delle classi e tempo del recupero |
+| `effective_output_tokens_per_second` | Token output divisi per tempo della fase; `null` se non misurabile |
+| `request` | ID, prompt elaborato, `received_at` e `finished_at` in UTC; l'ID e registrato anche nel log |
+
+`total` misura il workflow. `request_total` misura l'handler fino alla
+preparazione della risposta, includendo la coda ma escludendo serializzazione
+finale e rete verso il client. Il tempo `generation` include il prefetch MCP.
+Il throughput e una misura effettiva della fase, non il solo decoder o il TTFT.
+La risposta non contiene risultati di esecuzione SPARQL, accuracy o precision:
+queste ultime richiedono etichette e si calcolano nel benchmark.
+
+Gli errori tecnici rimangono HTTP 502/504 con il messaggio pubblico generico.
+Su questo endpoint includono anche `analytics` parziali, `status: "error"` e,
+se il workflow era partito, `failed_stage`. I token dei passi completati e i
+contatori parziali del backend sono conservati; quelli sconosciuti rimangono
+`null`, con `known_total_tokens` per la somma nota. Un timeout mentre si
+attende il lock puo avere solo i tempi della richiesta, senza contatori modello.
+Se la query era gia stata generata prima dell'errore, viene restituita anche
+`sparql_query`, insieme alle metriche parziali.
+Non vengono restituite le stringhe delle eccezioni interne o il contenuto dei
+file di log. Input non valido restituisce il normale errore 400 prima dei modelli.
+
+### Endpoint ordinario
+
 Aggiungere l'header `X-Include-Analytics: true` per ottenere anche `analytics`:
 
 ```bash

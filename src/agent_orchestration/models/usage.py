@@ -1,5 +1,5 @@
 """Provider-independent, per-invocation token accounting (no inference imports)."""
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, field
 import json
 from typing import Generic, Literal, TypeVar
 
@@ -80,10 +80,13 @@ class TokenUsage:
 class ModelResponse(Generic[OutputT]):
     output: OutputT
     usage: TokenUsage
+    metadata: dict = field(default_factory=dict)
 
     def __post_init__(self):
         if not isinstance(self.usage, TokenUsage):
             raise TypeError("usage must be TokenUsage")
+        if not isinstance(self.metadata, dict):
+            raise TypeError("metadata must be a dictionary")
 
 
 def summarize_usage(by_stage: dict[str, TokenUsage]) -> dict:

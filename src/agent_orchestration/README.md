@@ -65,7 +65,9 @@ backend espone una probabilità significativa. Gli executor applicano i controll
 deterministici; non richiedono un modello.
 
 Per ottenere anche i token usare `run_with_usage(request)`, che restituisce
-`ModelResponse(output, usage)`. Il workflow include i contatori per fase e totali
+`ModelResponse(output, usage, metadata={...})`, con metadati opzionali per chiamata.
+L'API di studio espone questi metadati, inclusi i dettagli del prefetch MCP.
+Il workflow include i contatori per fase e totali
 in `analytics.token_usage`, anche dopo blocchi/errori. Conteggi mancanti restano
 `null`; stime e consumi simulati sono distinguibili. Esempi e contratto nella
 [guida ai token](../../docs/guides/model-usage.md).

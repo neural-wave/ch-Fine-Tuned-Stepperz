@@ -16,6 +16,7 @@ I comandi seguenti partono dalla radice del repository.
 | Valutare tutti i prompt etichettati | `python -m system_validation run --api-only` | [100 casi unificati](system_validation/README.md), token, tempi e metriche di classificazione |
 | Aggiungere esecuzione su Virtuoso | `python -m system_validation prepare`, poi `run` | [Verifica dati e tempi delle query](system_validation/README.md), senza soglie pass/fail |
 | Esporre traduzione e verdetto via HTTP | `bash start-api.sh` | [README API](src/api/README.md): query, token totali e conformita, senza esecuzione |
+| Studiare una singola esecuzione | `POST /study/nl-to-sparql` | [Query, verdetti e analytics complete](src/api/README.md#endpoint-di-studio): tempi, token e metadati |
 | Prompt → risultato su RDF locale | `sparql-run --prompt ... --dataset ...` | Risultato JSON oppure blocco/errore |
 | Prompt → sola query | `sparql-run --prompt ...` | Query analizzata, non eseguita |
 | Controllare una query esistente | `sparql-check file.rq` | Verdetto statico |
