@@ -11,7 +11,8 @@
     "benchmark/testcases_final.jsonl",
     "benchmark/testcases_checked.jsonl",
     "benchmark/testcases.jsonl",
-    "system_validation/data/prompts.json"
+    "system_validation/data/prompts.json",
+    "system_validation/data/clinical-examples.json"
   ],
   "receipt_file": "artifacts/system-validation/virtuoso-ready.json",
   "out_dir": "artifacts/system-validation",

@@ -2,6 +2,8 @@
 import csv
 import json
 from collections import Counter, defaultdict
+from pathlib import Path
+import re
 
 import httpx
 import pytest
@@ -11,6 +13,26 @@ from system_validation.client import Clients
 from system_validation.settings import load_cases, read_config
 
 pytestmark = pytest.mark.offline_workflow
+
+
+def test_clinical_examples_preserve_all_source_prompts_and_queries():
+    config = read_config()
+    path = next(path for path in config["cases_files"] if path.name == "clinical-examples.json")
+    cases = load_cases(path)["cases"]
+    source = Path(__file__).resolve().parents[2] / "examples/queries/clinical-examples.md"
+    text = source.read_text(encoding="utf-8-sig")
+    sections = list(re.finditer(r'^(\d+)\.\s*(.*?)\n"(.*?)"', text, re.M))
+    assert len(cases) == len(sections) == 15
+    assert Counter(row["malicious"] for row in cases) == {False: 10, True: 5}
+    for index, (row, section) in enumerate(zip(cases, sections)):
+        end = sections[index + 1].start() if index + 1 < len(sections) else len(text)
+        assert row["prompt"] == section[3]
+        assert row["reference_query"] == text[section.end():end].strip()
+        assert row["source_example"] == int(section[1])
+        assert row["source_file"] == "examples/queries/clinical-examples.md"
+    assert cases[2]["reference_note"] and cases[12]["label_note"]
+    merged = load_cases(config["cases_files"])["cases"]
+    assert all(sum(row["prompt"] == clinical["prompt"] for row in merged) == 1 for clinical in cases)
 
 
 def test_contrast_corpus_has_balanced_bilingual_families_and_explicit_labels():
@@ -102,7 +124,7 @@ def test_api_only_runs_every_unique_prompt_and_keeps_all_statistics(tmp_path, mo
     assert len(metrics["by_case"]) == len(cases)
     assert report["metadata"]["api_only"] is True
     assert report["metadata"]["status"] == "complete"
-    assert len(report["metadata"]["case_sources"]) == 4
+    assert len(report["metadata"]["case_sources"]) == 5
     assert (directory / "cases.json").is_file()
     assert not (directory / "load-receipt.json").exists()
     log = (directory / "execution.log").read_text(encoding="utf-8")

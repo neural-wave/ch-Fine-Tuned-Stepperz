@@ -87,8 +87,10 @@ Per confrontare strategie cambiare `--label` e conservare tutti i report.
 ## Dati di validazione
 
 Il preset `cases_files` unisce i tre JSONL in [benchmark](../benchmark/README.md)
-e [data/prompts.json](data/prompts.json): attualmente 260 prompt distinti,
-141 consentiti e 119 vietati. I JSONL contengono 82 prompt distinti; le versioni
+con [data/prompts.json](data/prompts.json) e
+[data/clinical-examples.json](data/clinical-examples.json): attualmente 271 prompt
+distinti, 151 consentiti e 120 vietati secondo le etichette delle sorgenti.
+I JSONL contengono 82 prompt distinti; le versioni
 successive ripetono molti degli stessi casi. Si deduplica per testo del prompt
 (ignorando solo spazi iniziali/finali), conservando tutte le provenienze.
 Non sono 234 osservazioni indipendenti. La prima versione nell'elenco fornisce
@@ -103,6 +105,21 @@ con ulteriori casi in francese e tedesco. Include negazioni, attacchi citati,
 SPARQL nel prompt, identificativi mascherati, inferenza di appartenenza,
 differencing, esfiltrazione, modifiche ai dati e falsi messaggi di sistema.
 La [guida dei casi](data/README.md) descrive copertura e limiti delle etichette.
+
+Sono inclusi anche tutti i 15 prompt originali di
+[clinical-examples.md](../examples/queries/clinical-examples.md), con fonte e
+query di riferimento conservate senza riscritture. Quattro erano gia nei
+benchmark: aggiungono 11 prompt distinti. Il caso clinico 13 mantiene l'etichetta
+non conforme della fonte per la scansione libera della query, ma il prompt
+chiede totali aggregati: non e un ground truth affidabile di intenzione malevola.
+Il caso 3 chiede qualsiasi rango diagnostico, mentre la query fornita filtra
+`Principal`: il riferimento non e un oracolo semantico. Le note sono nel dataset.
+
+Per eseguire solo gli esempi clinici:
+
+```bash
+uv run --locked --extra validation python -m system_validation run --api-only --cases system_validation/data/clinical-examples.json --label clinical-examples
+```
 
 Per eseguire soltanto questo corpus, senza Virtuoso:
 
@@ -289,7 +306,7 @@ le eventuali esecuzioni su Virtuoso, escludendo la scrittura del report;
 finale. `effective_total_tokens_per_second` divide input + output per latenza API:
 e una misura effettiva dell'intera chiamata, non del solo decoder.
 Il preset esegue un warmup e una misura per prompt: con tutti i casi sono
-261 chiamate API, di cui 260 contribuiscono ai punteggi. I token del warmup
+272 chiamate API, di cui 271 contribuiscono ai punteggi. I token del warmup
 sono conservati separatamente. Se una chiamata fallisce senza restituire usage,
 i token di quella chiamata restano sconosciuti; il runner non li stima.
 

@@ -36,3 +36,27 @@ e le parafrasi non sono osservazioni indipendenti. Questa suite non simula una
 cronologia di attacchi distribuiti su piu richieste o misura la sicurezza runtime.
 
 Comandi, metriche e log nella [guida di validazione](../README.md).
+
+## Esempi clinici originali
+
+[clinical-examples.json](clinical-examples.json) riproduce tutti i 15 prompt e
+le query di [clinical-examples.md](../../examples/queries/clinical-examples.md).
+Il preset include anche questa fonte; quattro prompt gia presenti nei benchmark
+vengono deduplicati. Le etichette importate sono 10 consentite e 5 vietate.
+`source_file`, `source_example` e `source_title` conservano la provenienza;
+`reference_query` serve soltanto alla diagnosi locale del checker.
+
+Due limiti sono annotati esplicitamente:
+
+- Il caso 3 chiede qualsiasi rango diagnostico, ma la query di riferimento
+  contiene il filtro `Principal`. Il riferimento e conservato, non corretto o
+  assunto semanticamente equivalente.
+- Il caso 13 e etichettato non conforme nella fonte per il pattern libero
+  `?s ?p ?o`, mentre il solo prompt chiede totali aggregati. L'etichetta rimane
+  quella della fonte, gia presente nel benchmark, ma non dimostra un'intenzione
+  malevola del prompt. Va rivista separatamente quando si interpreta l'accuracy
+  del classificatore. La deduplicazione mantiene i metadati della prima fonte;
+  la nota completa resta in questo dataset.
+
+Queste query non sono eseguite come oracoli ne inviate al generatore. Sintassi
+Virtuoso e forme non supportate dal checker restano visibili, senza riscritture.
